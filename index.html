@@ -409,15 +409,67 @@ document.getElementById('firma-display').addEventListener('keydown',e=>{const dd
 document.getElementById('firma-dd').addEventListener('click',e=>{const it=e.target.closest('.fd-item');if(it)selectFirma(it.dataset.v);});
 document.addEventListener('click',e=>{const wrap=document.getElementById('firma-wrap');if(wrap&&!wrap.contains(e.target)){document.getElementById('firma-dd').classList.remove('on');const disp=document.getElementById('firma-display').value.trim();const hid=document.getElementById('firma-in').value.trim();if(disp&&!hid){const exact=musList.find(f=>trl(f)===trl(disp));if(exact)selectFirma(exact);}}});
 
+// ── Çevrimdışı banner ────────────────────────────────────────────────────────
+let _isOffline=false;
+function setOfflineMode(offline){
+  _isOffline=offline;
+  let ob=document.getElementById('offline-banner');
+  if(!ob){
+    ob=document.createElement('div');
+    ob.id='offline-banner';
+    ob.style.cssText='display:none;position:sticky;top:0;z-index:200;background:#b45309;color:#fff;text-align:center;padding:6px 12px;font-size:12px;font-weight:700;letter-spacing:.03em;';
+    document.body.insertBefore(ob,document.body.firstChild);
+  }
+  if(offline){
+    ob.textContent='📴 Çevrimdışı — Son kaydedilen veriler gösteriliyor. Değişiklik yapılamaz.';
+    ob.style.display='block';
+  } else {
+    ob.style.display='none';
+  }
+}
+
 // ── Sync ─────────────────────────────────────────────────────────────────────
 async function sync(){
   dot('busy');
-  const[mdRes,dataRes]=await Promise.all([db.from('musteriler').select('firma_adi').order('firma_adi',{ascending:true}),db.from('numuneler').select('*').order('created_at',{ascending:false})]);
-  musList=[...new Set((mdRes.data||[]).map(m=>(m.firma_adi||'').trim()).filter(Boolean))].sort((a,b)=>a.localeCompare(b,'tr'));
-  if(dataRes.error){dot('err');document.getElementById('list').innerHTML='<div class="empty"><div class="ei">⚠️</div><h3>Bağlantı hatası</h3><p>'+esc(dataRes.error.message)+'</p></div>';return;}
-  R=dataRes.data||[];
-  R.sort((a,b)=>{const ta=new Date(a.created_at).getTime(),tb=new Date(b.created_at).getTime();if(ta===tb)return isV(a.numune)?1:-1;return tb-ta;});
-  dot('ok');updBanner();render();
+  try {
+    const[mdRes,dataRes]=await Promise.all([
+      db.from('musteriler').select('firma_adi').order('firma_adi',{ascending:true}),
+      db.from('numuneler').select('*').order('created_at',{ascending:false})
+    ]);
+
+    // Çevrimdışı flag kontrolü (SW boş data+null error+_offline döndürür)
+    const offline = !!(dataRes._offline || mdRes._offline);
+    setOfflineMode(offline);
+
+    if(!offline && mdRes.data && mdRes.data.length > 0){
+      musList=[...new Set((mdRes.data||[]).map(m=>(m.firma_adi||'').trim()).filter(Boolean))].sort((a,b)=>a.localeCompare(b,'tr'));
+    }
+
+    if(dataRes.error && !dataRes._offline){
+      dot('err');
+      document.getElementById('list').innerHTML='<div class="empty"><div class="ei">⚠️</div><h3>Bağlantı hatası</h3><p>'+esc(dataRes.error.message)+'</p></div>';
+      return;
+    }
+
+    const freshData = dataRes.data||[];
+    if(freshData.length > 0 || !offline){
+      R = freshData;
+      R.sort((a,b)=>{const ta=new Date(a.created_at).getTime(),tb=new Date(b.created_at).getTime();if(ta===tb)return isV(a.numune)?1:-1;return tb-ta;});
+    }
+
+    dot(offline ? 'err' : 'ok');
+    updBanner();
+    render();
+  } catch(e) {
+    // Ağ tamamen erişilemez (SW de devrede değilse)
+    dot('err');
+    setOfflineMode(true);
+    if(R.length > 0){
+      render(); // Bellekteki son veriyi göster
+    } else {
+      document.getElementById('list').innerHTML='<div class="empty"><div class="ei">📴</div><h3>Çevrimdışı</h3><p>Uygulama bir kez açık internet ile yüklenirse veriler çevrimdışında da görünür.</p></div>';
+    }
+  }
 }
 
 function onSearch(){document.getElementById('qc').classList.toggle('on',document.getElementById('q').value.length>0);clearTimeout(sTo);sTo=setTimeout(render,200);}
@@ -523,7 +575,7 @@ LA.addEventListener('keydown',e=>{if(e.key!=='Enter')return;if(e.target.dataset&
 
 
 // ── DB ────────────────────────────────────────────────────────────────────────
-async function upField(id,col,val){dot('busy');const{error}=await db.from('numuneler').update({[col]:val}).eq('id',id);if(error){dot('err');toast('Hata','bad');return;}const it=R.find(x=>String(x.id)===String(id));if(it)it[col]=val;dot('ok');}
+async function upField(id,col,val){if(_isOffline){toast('Çevrimdışı: Değişiklik kaydedilemez','bad');return;}dot('busy');const{error}=await db.from('numuneler').update({[col]:val}).eq('id',id);if(error){dot('err');toast('Hata','bad');return;}const it=R.find(x=>String(x.id)===String(id));if(it)it[col]=val;dot('ok');}
 async function upStatus(id,st){dot('busy');const{error}=await db.from('numuneler').update({durum:st}).eq('id',id);if(error){dot('err');toast('Hata','bad');return;}const it=R.find(x=>String(x.id)===String(id));if(it)it.durum=st;dot('ok');toast('Durum: '+st,'ok');updateCounts();}
 function updateCounts(){const active=R.filter(i=>i.arsiv!==true);document.getElementById('c-all').textContent=active.length;document.getElementById('c-bek').textContent=active.filter(i=>i.durum==='Beklemede').length;document.getElementById('c-tak').textContent=active.filter(i=>i.durum==='Takip Et').length;document.getElementById('c-gon').textContent=active.filter(i=>i.durum==='Gönderildi').length;document.getElementById('c-ona').textContent=active.filter(i=>i.durum==='Onaylandı').length;document.getElementById('c-red').textContent=active.filter(i=>i.durum==='Reddedildi').length;document.getElementById('c-ars').textContent=R.filter(i=>i.arsiv===true).length;}
 async function toggleArc(id){const it=R.find(x=>String(x.id)===String(id));if(!it)return;const nv=!it.arsiv;dot('busy');const{error}=await db.from('numuneler').update({arsiv:nv}).eq('id',id);if(error){dot('err');toast('Hata','bad');return;}it.arsiv=nv;dot('ok');toast(nv?'📂 Arşivlendi':'↩ Çıkarıldı','ok');render();}
@@ -570,11 +622,13 @@ sync();
 <script>
   if ('serviceWorker' in navigator) {
     window.addEventListener('load', () => {
-      navigator.serviceWorker.register('/sw.js')
+      navigator.serviceWorker.register('./sw.js')
         .then(reg => console.log('Yanteks Pro Çevrimdışı Mod Aktif!', reg.scope))
         .catch(err => console.log('SW Hatası:', err));
     });
   }
+  window.addEventListener('online', () => { console.log('[Yanteks] Bağlandı'); sync(); });
+  window.addEventListener('offline', () => { if(typeof setOfflineMode==='function') setOfflineMode(true); });
 </script>
 </body>
 </html>
