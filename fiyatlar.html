@@ -711,7 +711,7 @@ sync();
 <script>
   if ('serviceWorker' in navigator) {
     window.addEventListener('load', () => {
-      navigator.serviceWorker.register('/sw.js')
+      navigator.serviceWorker.register('./sw.js', { scope: '/yanteks_pro/' })
         .then(reg => console.log('Yanteks Pro Çevrimdışı Mod Aktif!', reg.scope))
         .catch(err => console.log('SW Hatası:', err));
     });
