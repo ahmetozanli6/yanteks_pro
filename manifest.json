@@ -1,7 +1,8 @@
 {
   "name": "Yanteks Pro",
   "short_name": "Yanteks",
-  "start_url": "/index.html",
+  "start_url": "/yanteks_pro/index.html",
+  "scope": "/yanteks_pro/",
   "display": "standalone",
   "background_color": "#0b0f1a",
   "theme_color": "#0b0f1a",
