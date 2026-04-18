@@ -169,10 +169,64 @@ body{background:var(--bg);font-family:'Plus Jakarta Sans',sans-serif;color:var(-
 *{-webkit-overflow-scrolling:touch}
 a,button{-webkit-tap-highlight-color:transparent}
 
-.topbar-nav{display:flex;align-items:center;gap:4px;}
-.tnav{width:34px;height:34px;border-radius:10px;border:1px solid rgba(255,255,255,.1);background:rgba(255,255,255,.05);display:flex;align-items:center;justify-content:center;font-size:16px;text-decoration:none;transition:.2s;-webkit-tap-highlight-color:transparent;}
 .tnav:hover{background:rgba(99,102,241,.2);border-color:rgba(99,102,241,.4);}
 .tnav:active{transform:scale(.9);}
+
+/* ── ALT NAV ── */
+.bnav{
+  position:fixed;
+  bottom:0;left:0;right:0;
+  z-index:500;
+  display:flex;
+  align-items:stretch;
+  background:rgba(11,15,26,.97);
+  border-top:1px solid rgba(255,255,255,.09);
+  /* Safe area için padding-bottom */
+  padding-bottom:env(safe-area-inset-bottom);
+  /* Toplam yükseklik = 58px buton + safe area */
+  box-shadow:0 -4px 24px rgba(0,0,0,.4);
+}
+.bnav-item{
+  flex:1;
+  min-width:0;
+  height:58px;
+  display:flex;
+  flex-direction:column;
+  align-items:center;
+  justify-content:center;
+  gap:3px;
+  text-decoration:none;
+  color:rgba(255,255,255,.3);
+  font-size:9px;
+  font-weight:700;
+  letter-spacing:.05em;
+  text-transform:uppercase;
+  -webkit-tap-highlight-color:transparent;
+  cursor:pointer;
+  border:none;
+  background:none;
+  font-family:inherit;
+  transition:color .15s, background .15s;
+}
+.bnav-item.active{color:#818cf8;}
+.bnav-item:active{background:rgba(255,255,255,.04);}
+.bnav-item .ni{font-size:21px;line-height:1;}
+.bnav-item .nl{font-size:8px;line-height:1;}
+.bnav-mid{
+  color:#818cf8 !important;
+  background:rgba(99,102,241,.12);
+  border-radius:16px;
+  margin:7px 3px;
+  height:44px !important;
+  flex:1.15;
+  border:1px solid rgba(99,102,241,.2);
+}
+.bnav-mid:active{background:rgba(99,102,241,.25) !important;}
+/* Sayfa içeriğinin nav arkasına gizlenmesini engelle */
+.bnav-spacer{
+  height:calc(58px + env(safe-area-inset-bottom));
+  flex-shrink:0;
+}
 </style>
 <link rel="prefetch" href="index.html">
 <link rel="prefetch" href="musteriler.html">
@@ -185,11 +239,6 @@ a,button{-webkit-tap-highlight-color:transparent}
     <div class="topbar-logo">Y</div>
     <div class="topbar-title">YANTEKS <span>FİYAT</span></div>
   </div>
-    <div class="topbar-nav">
-      <a href="index.html" class="tnav">📦</a>
-      <a href="musteriler.html" class="tnav">👥</a>
-      <a href="notlar.html" class="tnav">📝</a>
-    </div>
   <div class="topbar-actions">
     <span class="sync-dot" id="sd"></span>
   </div>
@@ -714,5 +763,24 @@ sync();
     });
   }
 </script>
+
+<nav class="bnav" id="bnav">
+  <a href="index.html" class="bnav-item">
+    <span class="ni">📦</span><span class="nl">Numune</span>
+  </a>
+  <a href="musteriler.html" class="bnav-item">
+    <span class="ni">👥</span><span class="nl">Müşteri</span>
+  </a>
+  <button class="bnav-item bnav-mid" onclick="openDwNew()">
+    <span class="ni">＋</span><span class="nl">Yeni</span>
+  </button>
+  <a href="notlar.html" class="bnav-item">
+    <span class="ni">📝</span><span class="nl">Notlar</span>
+  </a>
+  <a href="fiyatlar.html" class="bnav-item active">
+    <span class="ni">💰</span><span class="nl">Fiyat</span>
+  </a>
+</nav>
+<div class="bnav-spacer"></div>
 </body>
 </html>
