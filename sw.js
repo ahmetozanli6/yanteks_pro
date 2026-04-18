@@ -1,13 +1,14 @@
 const CACHE = 'yanteks-v2';
 const DATA_CACHE = 'yanteks-data-v2';
 
+const BASE_PATH = '/yanteks_pro'; // GitHub Pages alt dizin
 const STATIC = [
-  './index.html',
-  './musteriler.html',
-  './notlar.html',
-  './fiyatlar.html',
-  './asistan.html',
-  './manifest.json'
+  BASE_PATH + '/index.html',
+  BASE_PATH + '/musteriler.html',
+  BASE_PATH + '/notlar.html',
+  BASE_PATH + '/fiyatlar.html',
+  BASE_PATH + '/asistan.html',
+  BASE_PATH + '/manifest.json'
 ];
 
 const CDN = [
