@@ -29,7 +29,7 @@
 }
 *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent;outline:none}
 html{scroll-behavior:smooth}
-body{background:var(--bg);font-family:'Plus Jakarta Sans',sans-serif;color:var(--text);padding-bottom:calc(56px + env(safe-area-inset-bottom));font-size:14px;-webkit-font-smoothing:antialiased;line-height:1.5;min-height:100vh;background-image:radial-gradient(ellipse at 50% 0%,rgba(99,102,241,.08) 0%,transparent 60%)}
+body{background:var(--bg);font-family:'Plus Jakarta Sans',sans-serif;color:var(--text);padding-bottom:env(safe-area-inset-bottom);font-size:14px;-webkit-font-smoothing:antialiased;line-height:1.5;min-height:100vh;background-image:radial-gradient(ellipse at 50% 0%,rgba(99,102,241,.08) 0%,transparent 60%)}
 .topbar{position:sticky;top:0;z-index:100;background:rgba(11,15,26,.82);backdrop-filter:blur(20px) saturate(1.4);-webkit-backdrop-filter:blur(20px) saturate(1.4);border-bottom:1px solid var(--border);padding:calc(14px + env(safe-area-inset-top)) 20px 14px;display:flex;justify-content:space-between;align-items:center}
 .topbar-brand{display:flex;align-items:center;gap:11px}
 .topbar-logo{width:34px;height:34px;border-radius:10px;background:linear-gradient(135deg,var(--accent),#a78bfa);color:#fff;display:flex;align-items:center;justify-content:center;font-weight:900;font-size:14px;box-shadow:0 2px 12px var(--accent-glow)}
@@ -168,12 +168,11 @@ body{background:var(--bg);font-family:'Plus Jakarta Sans',sans-serif;color:var(-
 @media(max-width:480px){.topbar{padding:10px 14px}.list{padding:0 8px 8px}.item{grid-template-columns:18px 1fr .5fr 1fr 60px;gap:5px;padding:8px 10px}.item-name{font-size:11px}.denye-tag{font-size:9px;padding:2px 6px}.price-val{font-size:10px;padding:3px 5px}.ib{width:22px;height:22px;font-size:11px}.stats-sec,.toolbar{padding-left:14px;padding-right:14px}.search-sec{padding-left:14px;padding-right:14px}}
 *{-webkit-overflow-scrolling:touch}
 a,button{-webkit-tap-highlight-color:transparent}
-.bnav{position:fixed;bottom:0;left:0;right:0;height:calc(56px + env(safe-area-inset-bottom));background:rgba(11,15,26,.96);border-top:1px solid rgba(255,255,255,.08);display:flex;align-items:flex-start;z-index:200;padding-bottom:env(safe-area-inset-bottom);}
-.bnav-item{flex:1;height:56px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;text-decoration:none;color:rgba(255,255,255,.35);font-size:9px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;-webkit-tap-highlight-color:transparent;cursor:pointer;border:none;background:none;font-family:inherit;padding:0;}
-.bnav-item.on{color:#818cf8;}
-.bnav-item .ni{font-size:20px;line-height:1;}
-.bnav-item .nl{font-size:8.5px;}
-.bnav-mid{color:#818cf8 !important;background:rgba(99,102,241,.15);border-radius:14px;margin:8px 2px;padding:2px 8px;flex:1.2;}
+
+.topbar-nav{display:flex;align-items:center;gap:4px;}
+.tnav{width:34px;height:34px;border-radius:10px;border:1px solid rgba(255,255,255,.1);background:rgba(255,255,255,.05);display:flex;align-items:center;justify-content:center;font-size:16px;text-decoration:none;transition:.2s;-webkit-tap-highlight-color:transparent;}
+.tnav:hover{background:rgba(99,102,241,.2);border-color:rgba(99,102,241,.4);}
+.tnav:active{transform:scale(.9);}
 </style>
 <link rel="prefetch" href="index.html">
 <link rel="prefetch" href="musteriler.html">
@@ -186,6 +185,11 @@ a,button{-webkit-tap-highlight-color:transparent}
     <div class="topbar-logo">Y</div>
     <div class="topbar-title">YANTEKS <span>FİYAT</span></div>
   </div>
+    <div class="topbar-nav">
+      <a href="index.html" class="tnav">📦</a>
+      <a href="musteriler.html" class="tnav">👥</a>
+      <a href="notlar.html" class="tnav">📝</a>
+    </div>
   <div class="topbar-actions">
     <span class="sync-dot" id="sd"></span>
   </div>
@@ -217,13 +221,6 @@ a,button{-webkit-tap-highlight-color:transparent}
   <div class="skel"><div class="sk"></div><div class="sk"></div><div class="sk"></div><div class="sk"></div></div>
 </div>
 
-<nav class="bnav">
-  <a href="index.html" class="bnav-item "><span class="ni">📦</span><span class="nl">Numune</span></a>
-  <a href="musteriler.html" class="bnav-item "><span class="ni">👥</span><span class="nl">Müşteri</span></a>
-  <a href="#" class="bnav-item bnav-mid" onclick="openDwNew();return false;"><span class="ni">＋</span><span class="nl">Yeni</span></a>
-  <a href="notlar.html" class="bnav-item "><span class="ni">📝</span><span class="nl">Notlar</span></a>
-  <a href="fiyatlar.html" class="bnav-item on"><span class="ni">💰</span><span class="nl">Fiyatlar</span></a>
-</nav>
 
 <!-- Ana Overlay -->
 <div class="overlay" id="ov" onclick="closeDw()"></div>
