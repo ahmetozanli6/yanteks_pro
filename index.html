@@ -204,12 +204,57 @@ body{background:var(--bg);font-family:'Plus Jakarta Sans',sans-serif;color:var(-
   .toolbar-row{padding:6px 14px 0}
 }
 .bnav-spacer{height:calc(58px + env(safe-area-inset-bottom));flex-shrink:0;display:block;}
+
+/* ── SPLASH ── */
+#splash{position:fixed;inset:0;background:#0b0f1a;z-index:99999;display:flex;align-items:center;justify-content:center;transition:opacity .5s ease,transform .5s ease}
+#splash.hide{opacity:0;transform:scale(1.05);pointer-events:none}
+.splash-inner{display:flex;flex-direction:column;align-items:center;gap:16px;animation:splashIn .6s cubic-bezier(.32,.72,0,1) both}
+.splash-svg{width:300px;height:auto;filter:drop-shadow(0 4px 24px rgba(99,102,241,.35));animation:splashGlow 2s ease infinite alternate}
+.splash-tagline{font-size:10px;font-weight:800;color:rgba(255,255,255,.4);letter-spacing:.25em;text-transform:uppercase;font-family:'Plus Jakarta Sans',sans-serif}
+.splash-bar{width:140px;height:2px;background:rgba(255,255,255,.1);border-radius:2px;overflow:hidden;margin-top:4px}
+.splash-fill{height:100%;background:linear-gradient(90deg,#6366f1,#a78bfa,#6366f1);background-size:200% 100%;border-radius:2px;animation:splashSlide 1.3s ease forwards}
+@keyframes splashIn{from{opacity:0;transform:translateY(16px)}to{opacity:1;transform:translateY(0)}}
+@keyframes splashSlide{from{width:0}to{width:100%}}
+@keyframes splashGlow{from{filter:drop-shadow(0 4px 20px rgba(99,102,241,.2))}to{filter:drop-shadow(0 4px 32px rgba(99,102,241,.5))}}to{width:100%}}
+
+/* ── PULL TO REFRESH ── */
+#ptr-indicator{position:fixed;top:calc(env(safe-area-inset-top) + 56px);left:50%;transform:translateX(-50%) translateY(-60px);z-index:300;background:rgba(11,15,26,.95);border:1px solid rgba(255,255,255,.1);border-radius:100px;padding:8px 18px;display:flex;align-items:center;gap:8px;font-size:12px;font-weight:700;color:#818cf8;transition:transform .25s cubic-bezier(.32,.72,0,1),opacity .25s;opacity:0;pointer-events:none;box-shadow:0 4px 20px rgba(0,0,0,.4)}
+#ptr-indicator.show{transform:translateX(-50%) translateY(0);opacity:1}
+#ptr-indicator.spin .ptr-icon{animation:ptrSpin .6s linear infinite}
+@keyframes ptrSpin{to{transform:rotate(360deg)}}
+.ptr-icon{font-size:14px;transition:transform .3s}
+
+/* ── SONSUZ SCROLL ── */
+.inf-loader{text-align:center;padding:20px;color:#64748b;font-size:12px;font-weight:700;letter-spacing:.06em;display:none}
+.inf-loader.on{display:block}
+#inf-sentinel{height:1px}
 </style>
 <link rel="prefetch" href="musteriler.html">
 <link rel="prefetch" href="notlar.html">
 <link rel="prefetch" href="fiyatlar.html">
 </head>
 <body>
+<div id="splash">
+  <div class="splash-inner">
+    <svg class="splash-svg" viewBox="0 0 340 130" xmlns="http://www.w3.org/2000/svg">
+      <text x="170" y="82" font-family="'Plus Jakarta Sans',Georgia,serif" font-weight="900" font-size="80" text-anchor="middle" fill="white" letter-spacing="-3" opacity="0.97">Yanteks</text>
+      <path d="M20,103 C60,90 110,110 170,102 C230,94 280,108 320,98" fill="none" stroke="white" stroke-width="4" stroke-linecap="round" opacity="0.9"/>
+      <path d="M35,118 C75,105 125,122 185,115 C245,108 290,120 325,112" fill="none" stroke="white" stroke-width="2.5" stroke-linecap="round" opacity="0.6"/>
+    </svg>
+    <div class="splash-tagline">YÖNETİM SİSTEMİ</div>
+    <div class="splash-bar"><div class="splash-fill"></div></div>
+  </div>
+</div>
+  <div>
+    <div class="splash-title">YANTEKS <span>PRO</span></div>
+    <div class="splash-sub">Yükleniyor...</div>
+  </div>
+  <div class="splash-bar"><div class="splash-fill"></div></div>
+</div>
+<div id="ptr-indicator">
+  <span class="ptr-icon">↻</span>
+  <span class="ptr-text">Yenilemek için çekin</span>
+</div>
 <header class="topbar">
   <div class="topbar-brand">
     <div class="topbar-logo">Y</div>
