@@ -1,4 +1,5 @@
 <!DOCTYPE html>
+
 <html lang="tr">
 <head>
 <meta charset="UTF-8">
@@ -32,13 +33,9 @@
 html{scroll-behavior:smooth}
 body{background:var(--bg);font-family:'Plus Jakarta Sans',sans-serif;color:var(--text);font-size:14px;-webkit-font-smoothing:antialiased;line-height:1.5;min-height:100vh;}
 body::before{content:'';position:fixed;inset:0;background:radial-gradient(ellipse at 70% -10%,rgba(99,102,241,.12) 0%,transparent 55%),radial-gradient(ellipse at 10% 80%,rgba(52,211,153,.05) 0%,transparent 45%);pointer-events:none;z-index:0;}
-
-/* ── GLOBAL FORM FIX ── */
 input,textarea,select,button{color:var(--text);font-family:'Plus Jakarta Sans',sans-serif;-webkit-appearance:none;appearance:none;}
 input::placeholder,textarea::placeholder{color:var(--text3);}
 select option{background:var(--surface2);color:var(--text);}
-
-/* ── TOPBAR ── */
 .topbar{position:sticky;top:0;z-index:100;background:rgba(11,15,26,.85);backdrop-filter:blur(24px) saturate(1.5);border-bottom:1px solid var(--border);padding:calc(12px + env(safe-area-inset-top)) 20px 12px;display:flex;justify-content:space-between;align-items:center;}
 .topbar-brand{display:flex;align-items:center;gap:11px}
 .topbar-logo{width:34px;height:34px;border-radius:10px;background:linear-gradient(135deg,var(--accent),#a78bfa);color:#fff;display:flex;align-items:center;justify-content:center;font-weight:900;font-size:14px;box-shadow:0 2px 12px var(--accent-glow)}
@@ -51,8 +48,6 @@ select option{background:var(--surface2);color:var(--text);}
 .chip:active{transform:scale(.96)}
 .chip.primary{background:linear-gradient(135deg,var(--accent),#a78bfa);color:#fff;-webkit-text-fill-color:#fff;border-color:transparent;box-shadow:0 2px 12px var(--accent-glow)}
 .chip:disabled{opacity:.4;pointer-events:none}
-
-/* ── ALERT BANNER ── */
 .alert-banner{margin:12px 16px 0;border-radius:var(--r);padding:10px 14px;display:flex;align-items:center;gap:10px;font-size:12px;font-weight:600;cursor:pointer;transition:var(--t);border:1px solid;}
 .alert-banner.red{background:var(--red-soft);border-color:rgba(248,113,113,.25);color:var(--red);}
 .alert-banner.amber{background:var(--amber-soft);border-color:rgba(251,191,36,.25);color:var(--amber);}
@@ -60,8 +55,6 @@ select option{background:var(--surface2);color:var(--text);}
 .alert-banner-icon{font-size:16px;flex-shrink:0;}
 .alert-banner-text{flex:1;}
 .alert-banner-count{font-family:'JetBrains Mono',monospace;font-size:16px;font-weight:900;flex-shrink:0;}
-
-/* ── DASHBOARD ── */
 .dash{padding:16px 16px 6px;position:relative;z-index:1;}
 .kpi-row{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:10px}
 .kpi{background:var(--surface);border:1px solid var(--border);border-radius:var(--r2);padding:14px 10px;display:flex;flex-direction:column;align-items:center;cursor:pointer;transition:var(--t);position:relative;overflow:hidden}
@@ -73,8 +66,6 @@ select option{background:var(--surface2);color:var(--text);}
 .kpi-val{font-size:26px;font-weight:900;letter-spacing:-.04em;font-family:'JetBrains Mono',monospace;line-height:1}
 .kpi.k-total .kpi-val{color:var(--accent2)}.kpi.k-done .kpi-val{color:var(--green)}.kpi.k-wait .kpi-val{color:var(--amber)}
 .kpi-sub{font-size:8px;color:var(--text3);margin-top:3px;font-weight:600;}
-
-/* ── MINI STATS ── */
 .mini-stats{display:flex;gap:7px;overflow-x:auto;padding-bottom:8px;scrollbar-width:none}.mini-stats::-webkit-scrollbar{display:none}
 .ms{padding:8px 12px;border-radius:var(--r);background:var(--surface);border:1px solid var(--border);display:flex;align-items:center;gap:8px;flex-shrink:0;}
 .ms-icon{font-size:15px;flex-shrink:0}
@@ -82,8 +73,6 @@ select option{background:var(--surface2);color:var(--text);}
 .ms-label{font-size:8px;font-weight:800;color:var(--text3);text-transform:uppercase;letter-spacing:.08em;white-space:nowrap}
 .ms-val{font-size:13px;font-weight:900;font-family:'JetBrains Mono',monospace;color:var(--text);white-space:nowrap}
 .ms-val.grn{color:var(--green)}.ms-val.amb{color:var(--amber)}.ms-val.blu{color:var(--blue)}.ms-val.pur{color:var(--accent2)}.ms-val.red{color:var(--red)}.ms-val.cyn{color:var(--cyan)}
-
-/* ── SEARCH + TOOLBAR ── */
 .search-sec{padding:0 16px 8px;display:flex;gap:8px;position:relative;z-index:1;}
 .search-box{flex:1;position:relative}
 .search-box input{width:100%;padding:11px 14px 11px 40px;border-radius:var(--r);border:1px solid var(--border);font-size:13px;font-family:inherit;background:var(--surface);color:var(--text);transition:var(--t);-webkit-text-fill-color:var(--text);}
@@ -97,23 +86,17 @@ select option{background:var(--surface2);color:var(--text);}
 .tool-btn:hover{border-color:var(--accent);color:var(--text);-webkit-text-fill-color:var(--text);}
 .tool-btn.amber:hover{border-color:var(--amber);color:var(--amber);-webkit-text-fill-color:var(--amber);background:var(--amber-soft);}
 .tool-btn.on{border-color:var(--accent);background:var(--accent-soft);color:var(--accent2);-webkit-text-fill-color:var(--accent2);}
-
-/* ── FILTERS ── */
 .filters{display:flex;gap:6px;overflow-x:auto;padding:0 16px 12px;scrollbar-width:none}.filters::-webkit-scrollbar{display:none}
 .ft{padding:7px 14px;border-radius:100px;border:1px solid var(--border);background:var(--surface);font-size:11px;font-weight:700;color:var(--text3);cursor:pointer;transition:var(--t);white-space:nowrap;font-family:inherit;display:flex;align-items:center;gap:5px;flex-shrink:0;-webkit-text-fill-color:var(--text3);}
 .ft:hover{border-color:var(--border2);color:var(--text2);-webkit-text-fill-color:var(--text2);}
 .ft.on{background:var(--accent);color:#fff;-webkit-text-fill-color:#fff;border-color:var(--accent);box-shadow:0 2px 12px var(--accent-glow)}
 .ft .n{font-size:9px;font-weight:800;padding:1px 6px;border-radius:10px;font-family:'JetBrains Mono',monospace;}
 .ft.on .n{background:rgba(255,255,255,.2)}.ft:not(.on) .n{background:var(--surface2);color:var(--text3)}
-
-/* ── SORT BAR ── */
 .sort-bar{display:flex;gap:6px;overflow-x:auto;padding:0 16px 8px;scrollbar-width:none;}.sort-bar::-webkit-scrollbar{display:none;}
 .sort-bar label{font-size:9px;font-weight:800;color:var(--text3);text-transform:uppercase;letter-spacing:.08em;display:flex;align-items:center;flex-shrink:0;padding-top:2px;}
 .sort-chip{padding:5px 12px;border-radius:20px;border:1px solid var(--border);background:var(--surface2);font-size:10px;font-weight:700;color:var(--text3);cursor:pointer;font-family:inherit;transition:var(--t);white-space:nowrap;flex-shrink:0;-webkit-text-fill-color:var(--text3);}
 .sort-chip:hover{border-color:var(--border2);color:var(--text2);-webkit-text-fill-color:var(--text2);}
 .sort-chip.on{border-color:var(--cyan);background:var(--cyan-soft);color:var(--cyan);-webkit-text-fill-color:var(--cyan);}
-
-/* ── LIST ── */
 .list{padding:0 12px 12px;position:relative;z-index:1;}
 .region{margin-top:10px;border-radius:var(--r2);overflow:hidden;border:1px solid var(--border);background:var(--surface);box-shadow:var(--shadow);animation:fadeUp .35s both;transition:box-shadow var(--t);}
 .region:hover{box-shadow:0 6px 30px rgba(0,0,0,.45);}
@@ -128,31 +111,22 @@ select option{background:var(--surface2);color:var(--text);}
 .r-badge{font-size:10px;font-weight:800;padding:2px 8px;border-radius:10px;background:var(--accent);color:#fff;font-family:'JetBrains Mono',monospace;-webkit-text-fill-color:#fff;flex-shrink:0;}
 .r-prog{font-size:10px;color:var(--text3);font-weight:600;white-space:nowrap;flex-shrink:0;}
 .r-bar{height:3px;background:var(--surface3);border-radius:2px;margin-left:auto;width:50px;overflow:hidden;flex-shrink:0;}.r-bar-fill{height:100%;background:linear-gradient(90deg,var(--green),var(--accent2));border-radius:2px;transition:width .5s}
-
-/* ── BÖLGE AKSİYONLARI ── */
 .region-acts{display:flex;gap:2px;flex-shrink:0;}
 .rb{width:28px;height:28px;border-radius:8px;border:none;background:transparent;cursor:pointer;font-size:12px;display:flex;align-items:center;justify-content:center;color:var(--text3);transition:var(--t);opacity:.5;font-family:inherit;}
 .rb:hover{opacity:1;background:rgba(255,255,255,.07)}.rb.dng:hover{background:var(--red-soft);color:var(--red)}.rb.grn:hover{background:var(--green-soft);color:var(--green);}
 @media(hover:none){.rb{opacity:.8}}
-
-/* ── DRAG & DROP BÖLGE ── */
 .region.drag-over{border-color:var(--accent);box-shadow:0 0 0 2px var(--accent);}
 .region.dragging{opacity:.45;transform:scale(.98);}
-
-/* ── FİRMA ── */
 .region-body{border-top:1px solid var(--border)}.region.closed .region-body{display:none}
 .firm{padding:11px 14px;border-bottom:1px solid var(--border);display:flex;justify-content:space-between;align-items:flex-start;gap:10px;transition:background var(--t);position:relative;}
 .firm:last-child{border-bottom:none}.firm:hover{background:rgba(255,255,255,.018)}
 .firm.done{border-left:3px solid var(--green);background:linear-gradient(90deg,rgba(52,211,153,.05),transparent 40%);}
 .firm.wait{border-left:3px solid var(--border2);}
-
-/* ── GEÇ ZİYARET UYARISI ── */
 .firm.warn-amber{border-left:3px solid var(--amber);}
 .firm.warn-red{border-left:3px solid var(--red);}
 .late-badge{display:inline-flex;align-items:center;gap:3px;padding:2px 7px;border-radius:6px;font-weight:700;font-size:9px;font-family:'JetBrains Mono',monospace;}
 .late-badge.amber{background:var(--amber-soft);color:var(--amber);border:1px solid rgba(251,191,36,.2);}
 .late-badge.red{background:var(--red-soft);color:var(--red);border:1px solid rgba(248,113,113,.2);}
-
 .firm-info{flex:1;min-width:0}
 .firm-name{font-size:13px;font-weight:700;word-break:break-word}
 .firm-name a{color:var(--text);text-decoration:none;transition:var(--t);}.firm-name a:hover{color:var(--accent2);text-decoration:underline}
@@ -166,13 +140,9 @@ select option{background:var(--surface2);color:var(--text);}
 .num-mini{display:inline-flex;gap:3px;align-items:center;margin-left:3px}
 .nm-dot{width:6px;height:6px;border-radius:50%;flex-shrink:0}.nm-dot.g{background:var(--green)}.nm-dot.a{background:var(--amber)}.nm-dot.b{background:var(--blue)}.nm-dot.r{background:var(--red)}
 .nm-cnt{font-size:8px;font-weight:800;font-family:'JetBrains Mono',monospace;color:var(--text3)}
-
-/* ── NOT ÖNİZLEME ── */
 .firm-note-preview{margin-top:6px;padding:6px 10px;border-radius:8px;background:rgba(52,211,153,.06);border:1px solid rgba(52,211,153,.12);font-size:11px;color:var(--text2);cursor:pointer;transition:var(--t);display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;text-decoration:none;word-break:break-word;line-height:1.5;}
 .firm-note-preview:hover{background:rgba(52,211,153,.1);border-color:rgba(52,211,153,.2);}
 .firm-note-preview-label{font-size:8px;font-weight:800;color:var(--green);text-transform:uppercase;letter-spacing:.08em;margin-bottom:2px;display:block;}
-
-/* ── FİRMA KONTROLLER ── */
 .firm-ctrl{display:flex;gap:4px;align-items:flex-start;flex-shrink:0;padding-top:2px;flex-direction:column;}
 .firm-ctrl-top{display:flex;gap:4px;align-items:center;}
 .st-sel{padding:5px 8px;border-radius:8px;border:1px solid var(--border);font-size:10px;font-weight:700;font-family:inherit;cursor:pointer;background:var(--surface2);color:var(--text2);transition:var(--t);-webkit-text-fill-color:var(--text2);}
@@ -180,13 +150,9 @@ select option{background:var(--surface2);color:var(--text);}
 .sb{width:28px;height:28px;border-radius:8px;border:none;background:transparent;cursor:pointer;font-size:12px;display:flex;align-items:center;justify-content:center;color:var(--text3);transition:var(--t);font-family:inherit;}
 .sb:hover{background:var(--accent-soft);color:var(--accent2)}.sb.dng:hover{background:var(--red-soft);color:var(--red)}
 .sb.grn:hover{background:var(--green-soft);color:var(--green);}
-
-/* ── BUGÜN ZİYARET BUTONU ── */
 .visit-today-btn{display:inline-flex;align-items:center;gap:4px;padding:4px 9px;border-radius:8px;border:1px solid rgba(52,211,153,.25);background:var(--green-soft);color:var(--green);-webkit-text-fill-color:var(--green);font-size:9px;font-weight:800;cursor:pointer;font-family:inherit;transition:var(--t);white-space:nowrap;letter-spacing:.02em;}
 .visit-today-btn:hover{background:rgba(52,211,153,.2);border-color:var(--green);transform:scale(1.03);}
 .visit-today-btn:active{transform:scale(.97);}
-
-/* ── BÖLGE SIRA DEĞİŞTİR ── */
 .sort-modal-list{max-height:360px;overflow-y:auto;margin-top:12px;}
 .sort-modal-item{display:flex;align-items:center;gap:10px;padding:10px 12px;border-radius:var(--r);border:1px solid var(--border);background:var(--surface2);margin-bottom:6px;cursor:grab;user-select:none;transition:var(--t);}
 .sort-modal-item:hover{border-color:var(--border2);}
@@ -195,8 +161,6 @@ select option{background:var(--surface2);color:var(--text);}
 .smi-drag{color:var(--text3);font-size:14px;flex-shrink:0;}
 .smi-name{flex:1;font-weight:700;font-size:13px;}
 .smi-count{font-size:10px;font-family:'JetBrains Mono',monospace;color:var(--text3);background:var(--surface3);padding:2px 7px;border-radius:8px;}
-
-/* ── MODALLER + DRAWER ── */
 .overlay{position:fixed;inset:0;background:rgba(0,0,0,.6);backdrop-filter:blur(6px);z-index:200;opacity:0;pointer-events:none;transition:opacity .25s}.overlay.on{opacity:1;pointer-events:auto}
 .drawer{position:fixed;bottom:0;left:0;width:100%;background:var(--surface);border-radius:24px 24px 0 0;padding:22px 24px calc(36px + env(safe-area-inset-bottom));transform:translateY(100%);transition:transform var(--t2);z-index:201;max-height:92vh;overflow-y:auto;box-shadow:var(--shadow-xl);border-top:1px solid var(--border2);}.drawer.on{transform:translateY(0)}
 .dw-bar{width:40px;height:4px;background:var(--surface3);border-radius:2px;margin:-6px auto 18px}
@@ -214,33 +178,27 @@ select option{background:var(--surface2);color:var(--text);}
 .btn.pri{background:linear-gradient(135deg,var(--accent),#a78bfa);color:#fff;box-shadow:0 2px 12px var(--accent-glow)}.btn.pri:hover{box-shadow:0 4px 20px var(--accent-glow)}.btn.pri:disabled{opacity:.4;cursor:not-allowed}
 .btn.gho{background:var(--surface2);color:var(--text);border:1px solid var(--border2)}.btn.gho:hover{background:var(--surface3)}
 .btn.amb{background:linear-gradient(135deg,var(--amber),#f59e0b);color:#0b0f1a;}
-
 .modal{position:fixed;inset:0;z-index:300;display:none;align-items:center;justify-content:center;padding:20px;background:rgba(0,0,0,.65);backdrop-filter:blur(6px)}.modal.on{display:flex}
 .m-card{background:var(--surface);border:1px solid var(--border2);border-radius:var(--r3);max-width:400px;width:100%;padding:26px;box-shadow:var(--shadow-xl);animation:pop .22s}
 @keyframes pop{from{opacity:0;transform:scale(.92)}to{opacity:1;transform:scale(1)}}
 .m-card h3{font-size:17px;font-weight:900;margin-bottom:6px;display:flex;align-items:center;gap:8px;color:var(--text);}
 .m-card p{font-size:13px;color:var(--text2);margin-bottom:18px;line-height:1.5}
 .mi{width:34px;height:34px;border-radius:10px;display:inline-flex;align-items:center;justify-content:center;font-size:17px}.mi.dng{background:var(--red-soft)}.mi.wrn{background:var(--amber-soft)}.mi.ok{background:var(--green-soft)}.mi.inf{background:var(--accent-soft)}
-
-/* ── SKELETON ── */
 .skel{padding:20px}.sk{height:56px;border-radius:var(--r);background:linear-gradient(90deg,var(--surface) 25%,var(--surface2) 50%,var(--surface) 75%);background-size:200% 100%;animation:shimmer 1.5s infinite;margin-bottom:10px}
 @keyframes shimmer{0%{background-position:200% 0}100%{background-position:-200% 0}}
-
-/* ── EMPTY ── */
 .empty{text-align:center;padding:60px 20px;color:var(--text3)}.empty .ei{font-size:48px;opacity:.2;margin-bottom:14px}.empty h3{font-size:16px;font-weight:800;color:var(--text);margin-bottom:4px}.empty p{font-size:12px;max-width:260px;margin:0 auto}
-
-/* ── TOAST ── */
 .toasts{position:fixed;bottom:80px;left:50%;transform:translateX(-50%);z-index:500;display:flex;flex-direction:column;gap:8px;pointer-events:none}
 .toast{padding:11px 18px;border-radius:var(--r);font-size:12px;font-weight:700;box-shadow:var(--shadow-lg);animation:tIn .3s;pointer-events:auto;max-width:92vw;backdrop-filter:blur(12px);display:flex;align-items:center;gap:7px;}
 .toast.ok{background:rgba(52,211,153,.92);color:#0b0f1a}.toast.bad{background:rgba(248,113,113,.92);color:#0b0f1a}.toast.wrn{background:rgba(251,191,36,.92);color:#0b0f1a}.toast.info{background:rgba(99,102,241,.92);color:#fff}
 @keyframes tIn{from{opacity:0;transform:translateY(10px)}}@keyframes tOut{to{opacity:0;transform:translateY(10px)}}
-
-/* ── NAV ── */
 .bnav{position:fixed;bottom:0;left:0;right:0;height:calc(56px + env(safe-area-inset-bottom));background:rgba(11,15,26,.96);border-top:1px solid rgba(255,255,255,.08);display:flex;align-items:stretch;z-index:200;padding-bottom:env(safe-area-inset-bottom);}
 .bnav-item{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;text-decoration:none;color:rgba(255,255,255,.35);font-size:9px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;-webkit-tap-highlight-color:transparent;cursor:pointer;border:none;background:none;font-family:inherit;padding:0;}
 .bnav-item.on{color:#818cf8;}.bnav-item .ni{font-size:20px;line-height:1;}.bnav-item .nl{font-size:8.5px;}
 .bnav-mid{color:#818cf8 !important;background:rgba(99,102,241,.15);border-radius:14px;margin:8px 2px;padding:2px 8px;flex:1.2;}
-
+/* Bölge dropdown */
+.bolge-dd-item{padding:11px 14px;cursor:pointer;font-size:13px;font-weight:600;border-bottom:1px solid var(--border);transition:background var(--t);}
+.bolge-dd-item:last-child{border-bottom:none;}
+.bolge-dd-item:hover{background:var(--surface2);}
 @media(max-width:480px){
   .topbar{padding:10px 14px}.dash{padding:12px 12px 4px}.kpi{padding:11px 7px}.kpi-val{font-size:22px}
   .list{padding:0 8px 8px}.firm{padding:10px 11px}.search-sec{padding:0 12px 8px}
@@ -250,8 +208,6 @@ select option{background:var(--surface2);color:var(--text);}
 *{-webkit-overflow-scrolling:touch}
 a,button{-webkit-tap-highlight-color:transparent}
 .bnav-spacer{height:calc(58px + env(safe-area-inset-bottom));flex-shrink:0;display:block;}
-
-/* ── SPLASH ── */
 #splash{position:fixed;inset:0;background:#0b0f1a;z-index:99999;display:flex;align-items:center;justify-content:center;transition:opacity .35s ease,transform .35s ease}
 #splash.hide{opacity:0;transform:scale(1.05);pointer-events:none}
 .splash-inner{display:flex;flex-direction:column;align-items:center;gap:16px;animation:splashIn .6s cubic-bezier(.32,.72,0,1) both}
@@ -261,19 +217,12 @@ a,button{-webkit-tap-highlight-color:transparent}
 .splash-fill{height:100%;background:linear-gradient(90deg,#6366f1,#a78bfa,#6366f1);background-size:200% 100%;border-radius:2px;animation:splashSlide .55s ease forwards}
 @keyframes splashIn{from{opacity:0;transform:translateY(16px)}to{opacity:1;transform:translateY(0)}}
 @keyframes splashSlide{from{width:0}to{width:100%}}
-@keyframes splashGlow{from{filter:drop-shadow(0 4px 20px rgba(99,102,241,.2))}to{filter:drop-shadow(0 4px 32px rgba(99,102,241,.5))}}to{width:100%}}
-
-/* ── PULL TO REFRESH ── */
+@keyframes splashGlow{from{filter:drop-shadow(0 4px 20px rgba(99,102,241,.2))}to{filter:drop-shadow(0 4px 32px rgba(99,102,241,.5))}}
 #ptr-indicator{position:fixed;top:calc(env(safe-area-inset-top) + 56px);left:50%;transform:translateX(-50%) translateY(-60px);z-index:300;background:rgba(11,15,26,.95);border:1px solid rgba(255,255,255,.1);border-radius:100px;padding:8px 18px;display:flex;align-items:center;gap:8px;font-size:12px;font-weight:700;color:#818cf8;transition:transform .25s cubic-bezier(.32,.72,0,1),opacity .25s;opacity:0;pointer-events:none;box-shadow:0 4px 20px rgba(0,0,0,.4)}
 #ptr-indicator.show{transform:translateX(-50%) translateY(0);opacity:1}
 #ptr-indicator.spin .ptr-icon{animation:ptrSpin .6s linear infinite}
 @keyframes ptrSpin{to{transform:rotate(360deg)}}
 .ptr-icon{font-size:14px;transition:transform .3s}
-
-/* ── SONSUZ SCROLL ── */
-.inf-loader{text-align:center;padding:20px;color:#64748b;font-size:12px;font-weight:700;letter-spacing:.06em;display:none}
-.inf-loader.on{display:block}
-#inf-sentinel{height:1px}
 </style>
 <link rel="prefetch" href="index.html">
 <link rel="prefetch" href="notlar.html">
@@ -290,12 +239,6 @@ a,button{-webkit-tap-highlight-color:transparent}
     <div class="splash-tagline">YÖNETİM SİSTEMİ</div>
     <div class="splash-bar"><div class="splash-fill"></div></div>
   </div>
-</div>
-  <div>
-    <div class="splash-title">YANTEKS <span>PRO</span></div>
-    <div class="splash-sub">Yükleniyor...</div>
-  </div>
-  <div class="splash-bar"><div class="splash-fill"></div></div>
 </div>
 <div id="ptr-indicator">
   <span class="ptr-icon">↻</span>
@@ -314,7 +257,6 @@ a,button{-webkit-tap-highlight-color:transparent}
   </div>
 </header>
 
-<!-- GEÇ ZİYARET BANNER'LARI -->
 <div id="alert-banners"></div>
 
 <section class="dash">
@@ -371,27 +313,52 @@ a,button{-webkit-tap-highlight-color:transparent}
   <div class="skel"><div class="sk"></div><div class="sk"></div><div class="sk"></div></div>
 </div>
 
+<!-- DRAWER — telefon kaldırıldı, bölge dropdown + yeni bölge butonu eklendi -->
 
-
-<!-- DRAWER -->
 <div class="overlay" id="ov" onclick="clDw()"></div>
 <div class="drawer" id="dw">
   <div class="dw-bar"></div>
   <h2 id="dw-t">🏢 Yeni Firma</h2>
   <input type="hidden" id="dw-id">
+
   <div class="field"><label>Firma Adı</label><input type="text" id="f-n" placeholder="Örn: ABC TEKSTİL" maxlength="150"><div class="err">Firma adı zorunlu</div></div>
+
   <div class="field-row">
-    <div class="field"><label>Bölge</label><input type="text" id="f-r" placeholder="Örn: İSTANBUL" maxlength="100" list="dl"><datalist id="dl"></datalist><div class="err">Bölge zorunlu</div></div>
-    <div class="field"><label>Son Ziyaret</label><input type="date" id="f-d"></div>
+    <!-- BÖLGE: dropdown + yeni bölge butonu -->
+    <div class="field">
+      <label>Bölge</label>
+      <div style="display:flex;gap:6px;align-items:flex-start">
+        <div style="flex:1;position:relative">
+          <input type="text" id="f-r" placeholder="Seçin veya yazın..." maxlength="100"
+                 autocomplete="off" oninput="onBolgeInput(this.value)" onfocus="onBolgeFocus()" style="width:100%">
+          <div id="bolge-dd" style="display:none;position:absolute;top:100%;left:0;right:0;z-index:9999;
+               background:var(--surface);border:1px solid var(--border2);border-radius:var(--r);
+               max-height:200px;overflow-y:auto;margin-top:4px;box-shadow:var(--shadow-lg)"></div>
+        </div>
+        <button type="button" onclick="openNewBolgeModal()"
+                style="padding:0 14px;height:48px;border-radius:var(--r);border:1px solid var(--accent);
+                       background:var(--accent-soft);color:var(--accent2);-webkit-text-fill-color:var(--accent2);
+                       font-size:20px;cursor:pointer;flex-shrink:0;font-family:inherit;font-weight:700;"
+                title="Yeni bölge ekle">+</button>
+      </div>
+      <div class="err">Bölge zorunlu</div>
+    </div>
+
+```
+<div class="field"><label>Son Ziyaret</label><input type="date" id="f-d"></div>
+```
+
   </div>
+
   <div class="field"><label>Ziyaret Durumu</label>
     <select id="f-st">
       <option value="ziyaret edilecek">⏳ Ziyaret Edilecek</option>
       <option value="ziyaret edildi">✅ Ziyaret Edildi</option>
     </select>
   </div>
-  <div class="field"><label>Telefon (İsteğe Bağlı)</label><input type="tel" id="f-tel" placeholder="0212 xxx xx xx" maxlength="20"></div>
+
   <div class="field"><label>Notlar</label><textarea id="f-no" rows="3" placeholder="İsteğe bağlı açıklama..." maxlength="1000"></textarea></div>
+
   <div class="btn-r">
     <button class="btn gho" onclick="clDw()">İptal</button>
     <button class="btn pri" id="dw-s" onclick="saveFirm()">Kaydet</button>
@@ -399,6 +366,7 @@ a,button{-webkit-tap-highlight-color:transparent}
 </div>
 
 <!-- BÖLGE YENİDEN ADLANDIR -->
+
 <div class="modal" id="m-rn">
   <div class="m-card">
     <h3><span class="mi wrn">✏️</span>Bölge Adı</h3>
@@ -408,7 +376,27 @@ a,button{-webkit-tap-highlight-color:transparent}
   </div>
 </div>
 
+<!-- YENİ BÖLGE EKLE -->
+
+<div class="modal" id="m-newbolge">
+  <div class="m-card">
+    <h3><span class="mi ok">📍</span>Yeni Bölge Ekle</h3>
+    <p>Bölge adını girin. Daha sonra firmalar bu bölgeye atanabilir.</p>
+    <div class="field">
+      <label>Bölge Adı</label>
+      <input type="text" id="new-bolge-inp" placeholder="Ör: BURSA" maxlength="100"
+             oninput="this.value=this.value.toUpperCase()"
+             onkeydown="if(event.key==='Enter'){event.preventDefault();confirmNewBolge();}">
+    </div>
+    <div class="btn-r">
+      <button class="btn gho" onclick="clM('m-newbolge')">İptal</button>
+      <button class="btn pri" onclick="confirmNewBolge()">📍 Ekle</button>
+    </div>
+  </div>
+</div>
+
 <!-- ONAY -->
+
 <div class="modal" id="m-cf">
   <div class="m-card">
     <h3><span class="mi dng">🗑️</span><span id="cf-t">Emin misiniz?</span></h3>
@@ -418,6 +406,7 @@ a,button{-webkit-tap-highlight-color:transparent}
 </div>
 
 <!-- BÖLGE SIRALAMASI MODAL -->
+
 <div class="modal" id="m-sort">
   <div class="m-card" style="max-width:440px">
     <h3><span class="mi inf">⇅</span>Bölge Sıralaması</h3>
@@ -428,6 +417,7 @@ a,button{-webkit-tap-highlight-color:transparent}
 </div>
 
 <!-- GEÇ ZİYARET DETAY MODAL -->
+
 <div class="modal" id="m-late">
   <div class="m-card" style="max-width:460px">
     <h3><span class="mi dng">⏰</span>Geç Ziyaretler</h3>
@@ -445,11 +435,10 @@ const db = supabase.createClient(SU, SK);
 
 let D=[], cF="Hepsi", cls=new Set(), aCl=false, cfCb=null;
 let numData=[], notData=[];
-let rOrd=[];           // bölge sırası
-let cSort='bolge';     // firma sıralama
+let rOrd=[];
+let cSort='bolge';
 let lateFilterOn=false;
 
-// ─── YARDIMCILAR ────────────────────────────────────────────────────────────
 const esc=s=>s==null?'':String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#039;');
 const trl=s=>(s||'').toString().replaceAll('İ','i').replaceAll('I','ı').toLowerCase();
 const tdy=()=>{const d=new Date();return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');};
@@ -462,7 +451,7 @@ function daysSince(isoDate){
   return Math.floor((now-d)/86400000);
 }
 function getLateLevel(m){
-  if(m.ziyaret_durumu!=='ziyaret edildi')return null; // bekleyenler late sayılmaz
+  if(m.ziyaret_durumu!=='ziyaret edildi')return null;
   const ds=daysSince(m.son_ziyaret);
   if(ds===null)return null;
   if(ds>=60)return'red';
@@ -501,7 +490,6 @@ function getLatestNote(firma){
   return notes.sort((a,b)=>new Date(b.updated_at||0)-new Date(a.updated_at||0))[0];
 }
 
-// ─── SYNC ────────────────────────────────────────────────────────────────────
 async function sync(){
   dot('busy');
   const[mRes,nRes,ntRes]=await Promise.all([
@@ -519,12 +507,10 @@ async function sync(){
   notData=ntRes.data||[];
   dot('ok');
 
-  // Bölge sırası: localStorage'dan al, yoksa otomatik
   const saved=localStorage.getItem('yanteks_rord');
   const allRegs=[...new Set(D.map(m=>(m.bolge||'DİĞER').toUpperCase()))];
   if(saved){
     const savedArr=JSON.parse(saved);
-    // Saved'de olmayanları sona ekle
     rOrd=savedArr.filter(r=>allRegs.includes(r));
     allRegs.forEach(r=>{if(!rOrd.includes(r))rOrd.push(r);});
   } else {
@@ -536,13 +522,11 @@ async function sync(){
   const rs=new Set(rOrd);[...cls].forEach(r=>{if(!rs.has(r))cls.delete(r);});
   if(aCl)rOrd.forEach(r=>cls.add(r));
 
-  document.getElementById('dl').innerHTML=rOrd.map(r=>'<option value="'+esc(r)+'">').join('');
   buildAlertBanners();
   buildMiniStats();
   render();
 }
 
-// ─── ALERT BANNER (geç ziyaretler) ───────────────────────────────────────────
 function buildAlertBanners(){
   const cont=document.getElementById('alert-banners');
   const redFirms=D.filter(m=>getLateLevel(m)==='red');
@@ -572,7 +556,6 @@ function showLateModal(level){
   firms.forEach(m=>{
     const ds=daysSince(m.son_ziyaret);
     const lv=getLateLevel(m);
-    const numLink='index.html?firma='+encodeURIComponent(m.firma_adi||'');
     h+=`<div style="display:flex;align-items:center;gap:10px;padding:9px 12px;border-radius:var(--r);border:1px solid var(--border);background:var(--surface2);margin-bottom:6px;">
       <div style="flex:1;min-width:0;">
         <div style="font-weight:700;font-size:13px;">${esc(m.firma_adi)}</div>
@@ -586,7 +569,6 @@ function showLateModal(level){
   document.getElementById('m-late').classList.add('on');
 }
 
-// ─── MINI STATS ───────────────────────────────────────────────────────────────
 function buildMiniStats(){
   const ms=document.getElementById('mini-stats');
   const totalNum=numData.length;
@@ -600,7 +582,6 @@ function buildMiniStats(){
   const fc={};numData.forEach(n=>{const f=(n.firma||'').toUpperCase();fc[f]=(fc[f]||0)+1;});
   const topFirma=Object.entries(fc).sort((a,b)=>b[1]-a[1])[0];
   const noVisit=D.filter(m=>!m.son_ziyaret).length;
-
   ms.innerHTML=
     '<div class="ms"><span class="ms-icon">📦</span><div class="ms-info"><span class="ms-label">Numune</span><span class="ms-val blu">'+totalNum+'</span></div></div>'+
     '<div class="ms"><span class="ms-icon">✅</span><div class="ms-info"><span class="ms-label">Onay Oranı</span><span class="ms-val grn">%'+rate+'</span></div></div>'+
@@ -613,50 +594,24 @@ function buildMiniStats(){
     '<div class="ms"><span class="ms-icon">📍</span><div class="ms-info"><span class="ms-label">Bölge</span><span class="ms-val">'+bolge+'</span></div></div>';
 }
 
-// ─── FİLTRELER VE SIRALAMA ──────────────────────────────────────────────────
-function setF(f){
-  cF=f;lateFilterOn=false;
-  document.getElementById('late-btn').classList.remove('on');
-  document.querySelectorAll('.ft').forEach(x=>x.classList.toggle('on',x.dataset.f===f));
-  document.querySelectorAll('.kpi').forEach(x=>x.classList.toggle('active',x.dataset.f===f));
-  render();
-}
-function setSort(s){
-  cSort=s;
-  document.querySelectorAll('.sort-chip').forEach(x=>x.classList.toggle('on',x.dataset.sort===s));
-  render();
-}
-function toggleLateFilter(){
-  lateFilterOn=!lateFilterOn;
-  document.getElementById('late-btn').classList.toggle('on',lateFilterOn);
-  if(lateFilterOn){cF='Hepsi';document.querySelectorAll('.ft').forEach(x=>x.classList.toggle('on',x.dataset.f==='Hepsi'));document.querySelectorAll('.kpi').forEach(x=>x.classList.toggle('active',x.dataset.f==='Hepsi'));}
-  render();
-}
+function setF(f){cF=f;lateFilterOn=false;document.getElementById('late-btn').classList.remove('on');document.querySelectorAll('.ft').forEach(x=>x.classList.toggle('on',x.dataset.f===f));document.querySelectorAll('.kpi').forEach(x=>x.classList.toggle('active',x.dataset.f===f));render();}
+function setSort(s){cSort=s;document.querySelectorAll('.sort-chip').forEach(x=>x.classList.toggle('on',x.dataset.sort===s));render();}
+function toggleLateFilter(){lateFilterOn=!lateFilterOn;document.getElementById('late-btn').classList.toggle('on',lateFilterOn);if(lateFilterOn){cF='Hepsi';document.querySelectorAll('.ft').forEach(x=>x.classList.toggle('on',x.dataset.f==='Hepsi'));document.querySelectorAll('.kpi').forEach(x=>x.classList.toggle('active',x.dataset.f==='Hepsi'));}render();}
 function onQ(){document.getElementById('qc').classList.toggle('on',document.getElementById('q').value.length>0);render();}
 function clrQ(){document.getElementById('q').value='';document.getElementById('qc').classList.remove('on');render();}
-function togAll(){
-  aCl=!aCl;
-  document.getElementById('cb').textContent=aCl?'↕ Genişlet':'↕ Daralt';
-  if(aCl)rOrd.forEach(r=>cls.add(r));else cls.clear();
-  render();
-}
+function togAll(){aCl=!aCl;document.getElementById('cb').textContent=aCl?'↕ Genişlet':'↕ Daralt';if(aCl)rOrd.forEach(r=>cls.add(r));else cls.clear();render();}
 
-// ─── RENDER ─────────────────────────────────────────────────────────────────
 function render(){
   const a=document.getElementById('list');
   const q=trl(document.getElementById('q').value.trim());
-
-  let mt=D.filter(m=>
-    trl(m.firma_adi).includes(q)||trl(m.bolge).includes(q)||trl(m.notlar).includes(q)
-  );
-
+  let mt=D.filter(m=>trl(m.firma_adi).includes(q)||trl(m.bolge).includes(q)||trl(m.notlar).includes(q));
   const tot=mt.length,dn=mt.filter(m=>m.ziyaret_durumu==='ziyaret edildi').length,wt=tot-dn;
   const nv=mt.filter(m=>!m.son_ziyaret).length;
   const nt=mt.filter(m=>getNotCount(m.firma_adi)>0).length;
   document.getElementById('k-t').textContent=tot;
   document.getElementById('k-d').textContent=dn;
   document.getElementById('k-w').textContent=wt;
-  document.getElementById('k-t-sub').textContent='%'+( tot>0?Math.round(dn/tot*100):0)+' gidildi';
+  document.getElementById('k-t-sub').textContent='%'+(tot>0?Math.round(dn/tot*100):0)+' gidildi';
   document.getElementById('k-d-sub').textContent=tot>0?'%'+Math.round(dn/tot*100):'—';
   document.getElementById('k-w-sub').textContent=tot>0?'%'+Math.round(wt/tot*100):'—';
   document.getElementById('n-a').textContent=tot;
@@ -664,25 +619,20 @@ function render(){
   document.getElementById('n-w').textContent=wt;
   document.getElementById('n-nv').textContent=nv;
   document.getElementById('n-nt').textContent=nt;
-
-  // Filtrele
   let fl=mt;
   if(cF==='ziyaret edildi')fl=mt.filter(m=>m.ziyaret_durumu==='ziyaret edildi');
   else if(cF==='ziyaret edilecek')fl=mt.filter(m=>m.ziyaret_durumu!=='ziyaret edildi');
   else if(cF==='hicZiyaret')fl=mt.filter(m=>!m.son_ziyaret);
   else if(cF==='not')fl=mt.filter(m=>getNotCount(m.firma_adi)>0);
   if(lateFilterOn)fl=fl.filter(m=>getLateLevel(m));
-
   const G={};
   fl.forEach(m=>{const b=(m.bolge||'DİĞER').toUpperCase();if(!G[b])G[b]=[];G[b].push(m);});
-
   if(!Object.keys(G).length){
     a.innerHTML=D.length===0
       ?'<div class="empty"><div class="ei">🏢</div><h3>Henüz müşteri yok</h3><p>"＋ Yeni" ile başlayın.</p></div>'
       :'<div class="empty"><div class="ei">🔍</div><h3>Sonuç yok</h3><p>'+(q?'"'+esc(q)+'" bulunamadı.':'Bu filtre için kayıt yok.')+'</p></div>';
     return;
   }
-
   let h='';
   rOrd.forEach((reg,ri)=>{
     if(!G[reg])return;
@@ -692,18 +642,14 @@ function render(){
     const pct=g.length>0?Math.round(gd/g.length*100):0;
     const lateRed=g.filter(m=>getLateLevel(m)==='red').length;
     const lateAmb=g.filter(m=>getLateLevel(m)==='amber').length;
-
-    // Bölge içi sıralama
     let sorted=[...g];
     if(cSort==='alpha')sorted.sort((x,y)=>(x.firma_adi||'').localeCompare(y.firma_adi||'','tr'));
     else if(cSort==='ziyaret')sorted.sort((x,y)=>{const a=x.son_ziyaret||'0000',b=y.son_ziyaret||'0000';return b.localeCompare(a);});
     else if(cSort==='late')sorted.sort((x,y)=>{const dx=daysSince(x.son_ziyaret)||0,dy=daysSince(y.son_ziyaret)||0;return dy-dx;});
     else if(cSort==='numune')sorted.sort((x,y)=>getNumStats(y.firma_adi).total-getNumStats(x.firma_adi).total);
     else sorted.sort((x,y)=>{const xa=x.ziyaret_durumu==='ziyaret edildi'?1:0,ya=y.ziyaret_durumu==='ziyaret edildi'?1:0;return xa!==ya?xa-ya:(x.firma_adi||'').localeCompare(y.firma_adi||'','tr');});
-
     const lateBadge=(lateRed>0?'<span style="font-size:9px;background:var(--red-soft);color:var(--red);padding:1px 5px;border-radius:5px;font-weight:800;font-family:\'JetBrains Mono\',monospace;flex-shrink:0;">🔴'+lateRed+'</span>':'')
       +(lateAmb>0?'<span style="font-size:9px;background:var(--amber-soft);color:var(--amber);padding:1px 5px;border-radius:5px;font-weight:800;font-family:\'JetBrains Mono\',monospace;flex-shrink:0;">🟡'+lateAmb+'</span>':'');
-
     h+=`<div class="region ${c?'closed':''}" data-reg="${re}" data-ri="${ri}" draggable="true" style="animation-delay:${ri*0.04}s">
       <div class="region-head" data-act="toggle" data-reg="${re}">
         <div class="region-left">
@@ -723,7 +669,6 @@ function render(){
         </div>
       </div>
       <div class="region-body">`;
-
     sorted.forEach(m=>{
       const done=m.ziyaret_durumu==='ziyaret edildi';
       const lv=getLateLevel(m);
@@ -736,7 +681,6 @@ function render(){
       const ns=getNumStats(m.firma_adi);
       const nc=getNotCount(m.firma_adi);
       const latestNote=getLatestNote(m.firma_adi);
-
       let miniHtml='';
       if(ns.total>0){
         miniHtml='<span class="num-mini">';
@@ -746,30 +690,16 @@ function render(){
         if(ns.red)miniHtml+='<span class="nm-dot r"></span><span class="nm-cnt">'+ns.red+'</span>';
         miniHtml+='</span>';
       }
-
       const notBadge=nc>0?`<a href="${notLink}" class="not-badge" title="Notları göster">📝 ${nc}</a>`:'';
-
       let lateBadgeHtml='';
       if(lv&&ds!==null)lateBadgeHtml=`<span class="late-badge ${lv}">${ds}g</span>`;
-
-      // Not önizleme
       let notePreview='';
       if(latestNote&&latestNote.icerik){
         const txt=(latestNote.icerik||'').replace(/<[^>]*>/g,' ').replace(/\s+/g,' ').trim();
-        if(txt){
-          notePreview=`<a href="${notLink}" class="firm-note-preview">
-            <span class="firm-note-preview-label">📝 Son Not</span>
-            ${esc(txt.substring(0,100))}${txt.length>100?'…':''}
-          </a>`;
-        }
+        if(txt){notePreview=`<a href="${notLink}" class="firm-note-preview"><span class="firm-note-preview-label">📝 Son Not</span>${esc(txt.substring(0,100))}${txt.length>100?'…':''}</a>`;}
       }
-
-      // Firma notu (musteriler tablosundan)
       let firmNotHtml='';
-      if(m.notlar&&!latestNote){
-        firmNotHtml=`<div style="margin-top:5px;font-size:11px;color:var(--text2);font-style:italic;border-left:2px solid var(--border2);padding-left:8px;line-height:1.4;">${esc(m.notlar)}</div>`;
-      }
-
+      if(m.notlar&&!latestNote){firmNotHtml=`<div style="margin-top:5px;font-size:11px;color:var(--text2);font-style:italic;border-left:2px solid var(--border2);padding-left:8px;line-height:1.4;">${esc(m.notlar)}</div>`;}
       h+=`<div class="${cssClass}">
         <div class="firm-info">
           <div class="firm-name"><a href="${numLink}">${fn}</a></div>
@@ -779,8 +709,7 @@ function render(){
             <a href="${numLink}" class="num-badge">📦 ${ns.total}${miniHtml}</a>
             ${notBadge}
           </div>
-          ${notePreview}
-          ${firmNotHtml}
+          ${notePreview}${firmNotHtml}
         </div>
         <div class="firm-ctrl">
           <div class="firm-ctrl-top">
@@ -797,12 +726,10 @@ function render(){
     });
     h+='</div></div>';
   });
-
   a.innerHTML=h;
   bindDragDrop();
 }
 
-// ─── LIST EVENT DELEGATION ──────────────────────────────────────────────────
 document.getElementById('list').addEventListener('click',e=>{
   const t=e.target.closest('[data-act]');if(!t)return;
   const act=t.dataset.act,reg=t.dataset.reg,id=t.dataset.id;
@@ -822,7 +749,6 @@ document.getElementById('list').addEventListener('change',e=>{
   const t=e.target.closest('[data-act="st"]');if(t)upSt(t.dataset.id,t.value);
 });
 
-// ─── BUGÜN ZİYARET ──────────────────────────────────────────────────────────
 async function visitToday(id){
   const m=D.find(x=>String(x.id)===String(id));if(!m)return;
   if(m.ziyaret_durumu==='ziyaret edildi'&&m.son_ziyaret===tdy()){toast('Zaten bugün ziyaret edildi ✓','info');return;}
@@ -834,7 +760,6 @@ async function visitToday(id){
   buildAlertBanners();buildMiniStats();render();
 }
 
-// ─── STATUS UPDATE ──────────────────────────────────────────────────────────
 async function upSt(id,st){
   dot('busy');
   const ad=st==='ziyaret edildi'?tdy():null;
@@ -846,7 +771,6 @@ async function upSt(id,st){
   buildAlertBanners();buildMiniStats();render();
 }
 
-// ─── BULK STATUS ─────────────────────────────────────────────────────────────
 async function bulkSt(r,v){
   const ids=D.filter(m=>(m.bolge||'DİĞER').toUpperCase()===r).map(m=>m.id);
   if(!ids.length)return;
@@ -860,7 +784,6 @@ async function bulkSt(r,v){
   });
 }
 
-// ─── SİL ─────────────────────────────────────────────────────────────────────
 function askDF(id){
   const m=D.find(x=>String(x.id)===String(id));if(!m)return;
   confirm2('Firma Sil','"'+(m.firma_adi||'İsimsiz')+'" silinsin mi?',async()=>{
@@ -879,14 +802,15 @@ function askDR(r){
   });
 }
 
-// ─── EKLE / DÜZENLE DRAWER ──────────────────────────────────────────────────
+// ── DRAWER OPEN/CLOSE ──
 function openAdd(){
   document.getElementById('dw-id').value='';
   document.getElementById('dw-t').textContent='🏢 Yeni Firma';
   document.getElementById('dw-s').textContent='Kaydet';
-  ['f-n','f-r','f-d','f-no','f-tel'].forEach(x=>document.getElementById(x).value='');
+  ['f-n','f-r','f-d','f-no'].forEach(x=>document.getElementById(x).value='');
   document.getElementById('f-st').value='ziyaret edilecek';
   document.querySelectorAll('.field').forEach(f=>f.classList.remove('bad'));
+  closeBolgeDd();
   document.getElementById('ov').classList.add('on');
   document.getElementById('dw').classList.add('on');
   setTimeout(()=>document.getElementById('f-n').focus(),250);
@@ -900,13 +824,17 @@ function openEd(id){
   document.getElementById('f-r').value=m.bolge||'';
   document.getElementById('f-d').value=m.son_ziyaret||'';
   document.getElementById('f-st').value=m.ziyaret_durumu||'ziyaret edilecek';
-  document.getElementById('f-tel').value=m.telefon||'';
   document.getElementById('f-no').value=m.notlar||'';
   document.querySelectorAll('.field').forEach(f=>f.classList.remove('bad'));
+  closeBolgeDd();
   document.getElementById('ov').classList.add('on');
   document.getElementById('dw').classList.add('on');
 }
-function clDw(){document.getElementById('ov').classList.remove('on');document.getElementById('dw').classList.remove('on');}
+function clDw(){
+  document.getElementById('ov').classList.remove('on');
+  document.getElementById('dw').classList.remove('on');
+  closeBolgeDd();
+}
 
 async function saveFirm(){
   document.querySelectorAll('.field').forEach(f=>f.classList.remove('bad'));
@@ -920,8 +848,7 @@ async function saveFirm(){
   const pay={
     firma_adi:n.toUpperCase(),bolge:r.toUpperCase(),
     son_ziyaret:t,notlar:document.getElementById('f-no').value.trim()||null,
-    ziyaret_durumu:document.getElementById('f-st').value,
-    telefon:document.getElementById('f-tel').value.trim()||null
+    ziyaret_durumu:document.getElementById('f-st').value
   };
   const btn=document.getElementById('dw-s');btn.disabled=true;btn.textContent='Kaydediliyor...';dot('busy');
   let error;
@@ -929,10 +856,80 @@ async function saveFirm(){
   else{({error}=await db.from('musteriler').insert([pay]));}
   btn.disabled=false;btn.textContent=id?'Güncelle':'Kaydet';
   if(error){dot('err');toast('Hata: '+error.message,'bad');return;}
+  // Eğer yeni bölge eklendiyse rOrd'a ekle
+  const newBolge=r.toUpperCase();
+  if(!rOrd.includes(newBolge)){
+    rOrd.push(newBolge);
+    localStorage.setItem('yanteks_rord',JSON.stringify(rOrd));
+  }
   dot('ok');toast(id?'Güncellendi ✓':'Eklendi ✓','ok');clDw();sync();
 }
 
-// ─── BÖLGE YENİDEN ADLANDIR ─────────────────────────────────────────────────
+// ── BÖLGE DROPDOWN (drawer) ──
+function closeBolgeDd(){
+  const dd=document.getElementById('bolge-dd');
+  if(dd)dd.style.display='none';
+}
+
+function renderBolgeDd(list){
+  const dd=document.getElementById('bolge-dd');
+  if(!list.length){dd.style.display='none';return;}
+  dd.innerHTML=list.map(r=>`
+    <div class="bolge-dd-item" onclick="selectBolge('${esc(r)}')">${r}</div>
+  `).join('');
+  dd.style.display='block';
+}
+
+function onBolgeInput(val){
+  const q=val.toUpperCase().trim();
+  if(!q){closeBolgeDd();return;}
+  const matches=rOrd.filter(r=>r.includes(q));
+  renderBolgeDd(matches);
+}
+
+function onBolgeFocus(){
+  // Odaklanınca tüm bölgeleri göster
+  renderBolgeDd(rOrd);
+  // Dışarı tıklayınca kapat
+  setTimeout(()=>{
+    document.addEventListener('click', function closeDdOnClick(e){
+      if(!e.target.closest('#bolge-dd') && e.target.id !== 'f-r'){
+        closeBolgeDd();
+        document.removeEventListener('click', closeDdOnClick);
+      }
+    });
+  }, 100);
+}
+
+function selectBolge(r){
+  document.getElementById('f-r').value=r;
+  closeBolgeDd();
+}
+
+// ── YENİ BÖLGE MODAL ──
+function openNewBolgeModal(){
+  document.getElementById('new-bolge-inp').value='';
+  document.getElementById('m-newbolge').classList.add('on');
+  setTimeout(()=>document.getElementById('new-bolge-inp').focus(),150);
+}
+
+function confirmNewBolge(){
+  const val=document.getElementById('new-bolge-inp').value.trim().toUpperCase();
+  if(!val){toast('Bölge adı boş olamaz','bad');return;}
+  if(rOrd.includes(val)){
+    toast('Bu bölge zaten var','wrn');
+    selectBolge(val);
+    clM('m-newbolge');
+    return;
+  }
+  rOrd.push(val);
+  localStorage.setItem('yanteks_rord',JSON.stringify(rOrd));
+  selectBolge(val);
+  clM('m-newbolge');
+  toast('📍 '+val+' bölgesi eklendi','ok');
+}
+
+// ── BÖLGE YENİDEN ADLANDIR ──
 function openRn(r){
   document.getElementById('o-rn').value=r;
   document.getElementById('n-rn').value=r;
@@ -947,20 +944,14 @@ async function saveReg(){
   dot('busy');
   const{error}=await db.from('musteriler').update({bolge:n}).eq('bolge',o);
   if(error){dot('err');toast('Hata','bad');return;}
-  // localStorage sırasını da güncelle
   const idx=rOrd.indexOf(o);if(idx>=0)rOrd[idx]=n;
   localStorage.setItem('yanteks_rord',JSON.stringify(rOrd));
   dot('ok');toast('Güncellendi ✓','ok');clM('m-rn');sync();
 }
 
-// ─── BÖLGE SIRA MODAL ───────────────────────────────────────────────────────
+// ── BÖLGE SIRA MODAL ──
 let sortModalDragSrc=null,sortModalList=[];
-
-function openSortModal(){
-  sortModalList=[...rOrd];
-  renderSortModal();
-  document.getElementById('m-sort').classList.add('on');
-}
+function openSortModal(){sortModalList=[...rOrd];renderSortModal();document.getElementById('m-sort').classList.add('on');}
 function renderSortModal(){
   const cnt={};D.forEach(m=>{const b=(m.bolge||'DİĞER').toUpperCase();cnt[b]=(cnt[b]||0)+1;});
   const cont=document.getElementById('sort-modal-list');
@@ -969,75 +960,30 @@ function renderSortModal(){
       <span class="smi-drag">⠿</span>
       <span class="smi-name">📍 ${esc(r)}</span>
       <span class="smi-count">${cnt[r]||0} firma</span>
-    </div>
-  `).join('');
-
-  // Drag events
+    </div>`).join('');
   cont.querySelectorAll('.sort-modal-item').forEach(el=>{
-    el.addEventListener('dragstart',e=>{
-      sortModalDragSrc=parseInt(el.dataset.smi);
-      el.classList.add('dragging-item');
-      e.dataTransfer.effectAllowed='move';
-    });
+    el.addEventListener('dragstart',e=>{sortModalDragSrc=parseInt(el.dataset.smi);el.classList.add('dragging-item');e.dataTransfer.effectAllowed='move';});
     el.addEventListener('dragend',()=>el.classList.remove('dragging-item'));
     el.addEventListener('dragover',e=>{e.preventDefault();e.dataTransfer.dropEffect='move';});
-    el.addEventListener('dragenter',()=>{
-      cont.querySelectorAll('.sort-modal-item').forEach(x=>x.classList.remove('drag-placeholder'));
-      el.classList.add('drag-placeholder');
-    });
-    el.addEventListener('drop',e=>{
-      e.preventDefault();
-      const ti=parseInt(el.dataset.smi);
-      if(sortModalDragSrc===ti)return;
-      const moved=sortModalList.splice(sortModalDragSrc,1)[0];
-      sortModalList.splice(ti,0,moved);
-      renderSortModal();
-    });
+    el.addEventListener('dragenter',()=>{cont.querySelectorAll('.sort-modal-item').forEach(x=>x.classList.remove('drag-placeholder'));el.classList.add('drag-placeholder');});
+    el.addEventListener('drop',e=>{e.preventDefault();const ti=parseInt(el.dataset.smi);if(sortModalDragSrc===ti)return;const moved=sortModalList.splice(sortModalDragSrc,1)[0];sortModalList.splice(ti,0,moved);renderSortModal();});
   });
 }
-function saveSortOrder(){
-  rOrd=[...sortModalList];
-  localStorage.setItem('yanteks_rord',JSON.stringify(rOrd));
-  clM('m-sort');
-  render();
-  toast('Sıralama kaydedildi ✓','ok');
-}
+function saveSortOrder(){rOrd=[...sortModalList];localStorage.setItem('yanteks_rord',JSON.stringify(rOrd));clM('m-sort');render();toast('Sıralama kaydedildi ✓','ok');}
 
-// ─── BÖLGE DRAG & DROP (ana liste) ──────────────────────────────────────────
+// ── BÖLGE DRAG & DROP (ana liste) ──
 let dragSrcReg=null;
 function bindDragDrop(){
   document.querySelectorAll('.region').forEach(el=>{
-    el.addEventListener('dragstart',e=>{
-      dragSrcReg=el.dataset.reg;
-      el.classList.add('dragging');
-      e.dataTransfer.effectAllowed='move';
-      e.dataTransfer.setData('text/plain',dragSrcReg);
-    });
-    el.addEventListener('dragend',()=>{
-      el.classList.remove('dragging');
-      document.querySelectorAll('.region').forEach(x=>x.classList.remove('drag-over'));
-    });
-    el.addEventListener('dragover',e=>{
-      e.preventDefault();
-      if(el.dataset.reg!==dragSrcReg)el.classList.add('drag-over');
-    });
+    el.addEventListener('dragstart',e=>{dragSrcReg=el.dataset.reg;el.classList.add('dragging');e.dataTransfer.effectAllowed='move';e.dataTransfer.setData('text/plain',dragSrcReg);});
+    el.addEventListener('dragend',()=>{el.classList.remove('dragging');document.querySelectorAll('.region').forEach(x=>x.classList.remove('drag-over'));});
+    el.addEventListener('dragover',e=>{e.preventDefault();if(el.dataset.reg!==dragSrcReg)el.classList.add('drag-over');});
     el.addEventListener('dragleave',()=>el.classList.remove('drag-over'));
-    el.addEventListener('drop',e=>{
-      e.preventDefault();
-      el.classList.remove('drag-over');
-      const tReg=el.dataset.reg;
-      if(!dragSrcReg||dragSrcReg===tReg)return;
-      const si=rOrd.indexOf(dragSrcReg),ti=rOrd.indexOf(tReg);
-      if(si<0||ti<0)return;
-      rOrd.splice(si,1);rOrd.splice(ti,0,dragSrcReg);
-      localStorage.setItem('yanteks_rord',JSON.stringify(rOrd));
-      render();
-      toast('Bölge sırası güncellendi','ok');
-    });
+    el.addEventListener('drop',e=>{e.preventDefault();el.classList.remove('drag-over');const tReg=el.dataset.reg;if(!dragSrcReg||dragSrcReg===tReg)return;const si=rOrd.indexOf(dragSrcReg),ti=rOrd.indexOf(tReg);if(si<0||ti<0)return;rOrd.splice(si,1);rOrd.splice(ti,0,dragSrcReg);localStorage.setItem('yanteks_rord',JSON.stringify(rOrd));render();toast('Bölge sırası güncellendi','ok');});
   });
 }
 
-// ─── ONAY MODAL ─────────────────────────────────────────────────────────────
+// ── ONAY MODAL ──
 function confirm2(t,b,cb){
   document.getElementById('cf-t').textContent=t;
   document.getElementById('cf-b').textContent=b;
@@ -1048,16 +994,16 @@ document.getElementById('cf-ok').addEventListener('click',()=>{const c=cfCb;clM(
 function clM(id){document.getElementById(id).classList.remove('on');if(id==='m-cf')cfCb=null;}
 document.querySelectorAll('.modal').forEach(m=>m.addEventListener('click',e=>{if(e.target===m)clM(m.id);}));
 document.getElementById('n-rn').addEventListener('keydown',e=>{if(e.key==='Enter'){e.preventDefault();saveReg();}});
-['f-n','f-r'].forEach(id=>{document.getElementById(id).addEventListener('keydown',e=>{if(e.key==='Enter'){e.preventDefault();saveFirm();}});});
+['f-n'].forEach(id=>{document.getElementById(id).addEventListener('keydown',e=>{if(e.key==='Enter'){e.preventDefault();saveFirm();}});});
 
-// ─── EXCEL EXPORT ──────────────────────────────────────────────────────────
+// ── EXCEL EXPORT ──
 async function exportExcel(){
   if(!D.length){toast('Veri yok','wrn');return;}
   const btn=document.getElementById('xb');btn.disabled=true;btn.textContent='⏳...';
   try{
     const wb=new ExcelJS.Workbook();wb.creator='Yanteks Pro';
     const sh=wb.addWorksheet('Müşteriler',{pageSetup:{paperSize:9,orientation:'landscape'}});
-    sh.mergeCells('A1:H1');
+    sh.mergeCells('A1:G1');
     const tc=sh.getCell('A1');
     const d=new Date().toLocaleDateString('tr-TR');
     tc.value='YANTEKS MÜŞTERİ LİSTESİ · '+d;
@@ -1068,15 +1014,13 @@ async function exportExcel(){
     const v=D.filter(m=>m.ziyaret_durumu==='ziyaret edildi').length;
     const redC=D.filter(m=>getLateLevel(m)==='red').length;
     const ambC=D.filter(m=>getLateLevel(m)==='amber').length;
-    sh.mergeCells('A2:H2');
+    sh.mergeCells('A2:G2');
     const sc=sh.getCell('A2');
     sc.value='Toplam: '+D.length+' · Gidilen: '+v+' · Bekleyen: '+(D.length-v)+' · 60+gün: '+redC+' · 30+gün: '+ambC+' · Numune: '+numData.length+' · Not: '+notData.length;
-    sc.font={size:11,color:{argb:'FF94A3B8'}};
-    sc.alignment={horizontal:'center'};
+    sc.font={size:11,color:{argb:'FF94A3B8'}};sc.alignment={horizontal:'center'};
     sh.addRow([]);
     const hr=sh.addRow(['FİRMA ADI','BÖLGE','SON ZİYARET','GÜN GEÇEN','DURUM','NUMUNE','NOT','NOTLAR']);
-    hr.font={bold:true,color:{argb:'FFFFFFFF'},size:11};
-    hr.height=24;
+    hr.font={bold:true,color:{argb:'FFFFFFFF'},size:11};hr.height=24;
     hr.eachCell(c=>{c.fill={type:'pattern',pattern:'solid',fgColor:{argb:'FF1A2332'}};c.alignment={horizontal:'center',vertical:'middle'};});
     sh.columns=[{width:30},{width:16},{width:14},{width:12},{width:14},{width:10},{width:8},{width:40}];
     [...D].sort((a,b)=>{const bA=(a.bolge||'').toUpperCase(),bB=(b.bolge||'').toUpperCase();return bA!==bB?bA.localeCompare(bB,'tr'):(a.firma_adi||'').localeCompare(b.firma_adi||'','tr');}).forEach(m=>{
@@ -1098,53 +1042,33 @@ async function exportExcel(){
   finally{btn.disabled=false;btn.textContent='📊 Excel';}
 }
 
-// ─── KLAVYE KISAYOLLARI ──────────────────────────────────────────────────────
+// ── KLAVYE KISAYOLLARI ──
 document.addEventListener('keydown',e=>{
   if((e.ctrlKey||e.metaKey)&&e.key==='n'){e.preventDefault();openAdd();}
   if((e.ctrlKey||e.metaKey)&&e.key==='k'){e.preventDefault();document.getElementById('q').focus();}
-  if(e.key==='Escape'){clDw();clM('m-rn');clM('m-cf');clM('m-sort');clM('m-late');}
+  if(e.key==='Escape'){clDw();clM('m-rn');clM('m-cf');clM('m-sort');clM('m-late');clM('m-newbolge');closeBolgeDd();}
 });
 
 sync();
 </script>
 
 <script>
-// ── SPLASH ──
 (function(){
   var sp=document.getElementById('splash');
   if(!sp)return;
-  setTimeout(function(){
-    sp.classList.add('hide');
-    setTimeout(function(){sp.remove();},400);
-  },600);
+  setTimeout(function(){sp.classList.add('hide');setTimeout(function(){sp.remove();},400);},600);
 })();
 
-// ── PULL TO REFRESH ──
 (function(){
   var startY=0,pulling=false,triggered=false;
   var IND=document.getElementById('ptr-indicator');
   if(!IND)return;
-  document.addEventListener('touchstart',function(e){
-    if(window.scrollY===0)startY=e.touches[0].clientY;
-  },{passive:true});
-  document.addEventListener('touchmove',function(e){
-    if(!startY)return;
-    var dy=e.touches[0].clientY-startY;
-    if(dy>10&&window.scrollY===0){pulling=true;IND.classList.add('show');}
-    if(dy>60&&!triggered){triggered=true;IND.querySelector('.ptr-text').textContent='Bırakın...';}
-  },{passive:true});
-  document.addEventListener('touchend',function(){
-    if(!pulling)return;
-    if(triggered){
-      IND.classList.add('spin');
-      IND.querySelector('.ptr-text').textContent='Yenileniyor...';
-      var done=function(){IND.classList.remove('show','spin');IND.querySelector('.ptr-text').textContent='Yenilemek için çekin';};
-      if(typeof sync==='function')sync().finally(done);else setTimeout(done,1000);
-    }else{IND.classList.remove('show');}
-    startY=0;pulling=false;triggered=false;
-  },{passive:true});
+  document.addEventListener('touchstart',function(e){if(window.scrollY===0)startY=e.touches[0].clientY;},{passive:true});
+  document.addEventListener('touchmove',function(e){if(!startY)return;var dy=e.touches[0].clientY-startY;if(dy>10&&window.scrollY===0){pulling=true;IND.classList.add('show');}if(dy>60&&!triggered){triggered=true;IND.querySelector('.ptr-text').textContent='Bırakın...';}},{passive:true});
+  document.addEventListener('touchend',function(){if(!pulling)return;if(triggered){IND.classList.add('spin');IND.querySelector('.ptr-text').textContent='Yenileniyor...';var done=function(){IND.classList.remove('show','spin');IND.querySelector('.ptr-text').textContent='Yenilemek için çekin';};if(typeof sync==='function')sync().finally(done);else setTimeout(done,1000);}else{IND.classList.remove('show');}startY=0;pulling=false;triggered=false;},{passive:true});
 })();
 </script>
+
 <link rel="manifest" href="manifest.json">
 <script>
   if ('serviceWorker' in navigator) {
