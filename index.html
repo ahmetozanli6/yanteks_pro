@@ -150,12 +150,13 @@ body{background:var(--bg);font-family:'Inter',sans-serif;color:var(--text);font-
 .tb.photo.has-photo .photo-dot{display:block}
 
 /* Thumbnail satırı */
-.photo-strip{display:flex;gap:6px;padding:6px 14px 8px;overflow-x:auto;scrollbar-width:none;background:var(–surface2);border-top:1px solid var(–border)}
+.photo-strip{display:flex;gap:6px;padding:6px 14px 10px;overflow-x:auto;scrollbar-width:none;background:var(–surface2);border-top:1px solid var(–border);min-height:0}
 .photo-strip::-webkit-scrollbar{display:none}
-.photo-strip:empty{display:none}
+.photo-strip:empty{display:none;padding:0;border-top:none}
+.photo-strip:not(:has(.photo-wrap)){display:none}
 .photo-thumb{width:56px;height:56px;border-radius:8px;object-fit:cover;cursor:pointer;border:1.5px solid var(–border2);transition:var(–t);flex-shrink:0}
 .photo-thumb:hover{border-color:var(–accent3);transform:scale(1.05)}
-.photo-add-btn{width:56px;height:56px;border-radius:8px;border:1.5px dashed var(–accent3);background:var(–accent-soft);display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:22px;color:var(–accent2);flex-shrink:0;transition:var(–t)}
+.photo-add-btn{height:56px;padding:0 14px;border-radius:8px;border:1.5px dashed var(–accent3);background:var(–accent-soft);display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:12px;font-weight:700;color:var(–accent2);flex-shrink:0;transition:var(–t);gap:5px;white-space:nowrap}
 .photo-add-btn:hover{background:rgba(20,83,45,.14)}
 .photo-del{position:absolute;top:-6px;right:-6px;width:18px;height:18px;border-radius:50%;background:var(–red);color:#fff;border:1.5px solid #fff;font-size:9px;cursor:pointer;display:flex;align-items:center;justify-content:center;font-family:inherit;z-index:2}
 .photo-wrap{position:relative;flex-shrink:0}
@@ -734,18 +735,18 @@ function render(){
         +'<button class="tb dng" data-id="'+id+'" data-act="delete" title="Sil">🗑️</button>'
         +'</div>';
 
-      // Fotoğraf şeridi
+      // Fotoğraf şeridi — her zaman render et, :empty ile gizlenir
+      h+='<div class="photo-strip" data-id="'+id+'">';
+      photos.forEach((p,pi)=>{
+        h+='<div class="photo-wrap">'
+          +'<img class="photo-thumb" src="'+esc(p.url)+'" loading="lazy" onclick="openPV(\''+id+'\','+pi+')">'
+          +'<button class="photo-del" onclick="deletePhoto(\''+id+'\','+pi+')">✕</button>'
+          +'</div>';
+      });
       if(hasPhoto){
-        h+='<div class="photo-strip" data-id="'+id+'">';
-        photos.forEach((p,pi)=>{
-          h+='<div class="photo-wrap">'
-            +'<img class="photo-thumb" src="'+esc(p.url)+'" loading="lazy" onclick="openPV(\''+id+'\','+pi+')">'
-            +'<button class="photo-del" onclick="deletePhoto(\''+id+'\','+pi+')">✕</button>'
-            +'</div>';
-        });
-        h+='<div class="photo-add-btn" onclick="openPhotoInput(\''+id+'\')">📷</div>';
-        h+='</div>';
+        h+='<div class="photo-add-btn" onclick="openPhotoInput(\''+id+'\')">📷 Ekle</div>';
       }
+      h+='</div>';
 
       h+='</div>';
     });
