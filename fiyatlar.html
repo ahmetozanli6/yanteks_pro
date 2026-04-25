@@ -6,8 +6,8 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black">
 <meta name="apple-mobile-web-app-title" content="Yanteks Pro">
-<meta name="theme-color" content="#14532D">
-<link rel="apple-touch-icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' rx='22' fill='%2314532D'/><text y='.9em' font-size='72' x='50%' text-anchor='middle'>Y</text></svg>">
+<meta name="theme-color" content="#0F4C6E">
+<link rel="apple-touch-icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' rx='22' fill='%230F4C6E'/><text y='.9em' font-size='72' x='50%' text-anchor='middle'>Y</text></svg>">
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
 <title>Yanteks Pro | Fiyatlar</title>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
@@ -16,33 +16,34 @@
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
 <style>
 :root {
-  --bg:          #F0F7F2;
+  --bg:          #F0F9FF;
   --surface:     #FFFFFF;
-  --surface2:    #F4FAF6;
-  --surface3:    #E8F5EC;
-  --text:        #0A1F0F;
-  --text2:       #2D5A3A;
-  --text3:       #6B9478;
-  --accent:      #14532D;
-  --accent2:     #166534;
-  --accent3:     #15803D;
-  --accent-soft: rgba(20,83,45,.09);
-  --accent-glow: rgba(20,83,45,.2);
-  --gold:        #B45309;
-  --gold-soft:   rgba(180,83,9,.1);
-  --gold-light:  #D97706;
+  --surface2:    #E8F6FF;
+  --surface3:    #D0EDFF;
+  --surface4:    #BAE6FD;
+  --text:        #0A2A3F;
+  --text2:       #1E5A7A;
+  --text3:       #5B8FA8;
+  --accent:      #0F4C6E;
+  --accent2:     #0E4265;
+  --accent3:     #156089;
+  --accent-soft: rgba(15,76,110,.09);
+  --accent-glow: rgba(15,76,110,.2);
+  --gold:        #EA580C;
+  --gold-soft:   rgba(234,88,12,.1);
+  --gold-light:  #F97316;
   --green:       #15803D;
   --green-soft:  rgba(21,128,61,.1);
-  --amber:       #B45309;
-  --amber-soft:  rgba(180,83,9,.1);
+  --amber:       #EA580C;
+  --amber-soft:  rgba(234,88,12,.1);
   --red:         #991B1B;
   --red-soft:    rgba(153,27,27,.1);
   --purple:      #5B21B6;
   --purple-soft: rgba(91,33,182,.1);
-  --border:      rgba(20,83,45,.1);
-  --border2:     rgba(20,83,45,.18);
-  --shadow:      0 2px 12px rgba(10,31,15,.08);
-  --shadow-lg:   0 8px 32px rgba(10,31,15,.15);
+  --border:      rgba(15,76,110,.1);
+  --border2:     rgba(15,76,110,.18);
+  --shadow:      0 2px 12px rgba(10,40,60,.08);
+  --shadow-lg:   0 8px 32px rgba(10,40,60,.15);
   --r:  10px;
   --r2: 14px;
   --r3: 18px;
@@ -66,8 +67,8 @@ body {
 /* ── Topbar ── */
 .topbar {
 position: sticky; top: 0; z-index: 100;
-background: #14532D;
-border-bottom: 3px solid #B45309;
+background: #0F4C6E;
+border-bottom: 3px solid #EA580C;
 padding: calc(14px + env(safe-area-inset-top)) 20px 14px;
 display: flex; justify-content: space-between; align-items: center;
 box-shadow: 0 2px 20px rgba(10,31,15,.3);
@@ -85,7 +86,7 @@ box-shadow: 0 2px 8px rgba(0,0,0,.25);
 font-size: 13px; font-weight: 800; color: rgba(255,255,255,.95);
 letter-spacing: .1em; text-transform: uppercase;
 }
-.topbar-title span { color: #86EFAC; }
+.topbar-title span { color: #7DD3FC; }
 .topbar-actions { display: flex; align-items: center; gap: 8px; }
 .sync-dot {
 width: 7px; height: 7px; border-radius: 50%;
@@ -178,7 +179,7 @@ transition: background var(–t);
 background: #14532D !important;
 border-bottom: 2px solid #B45309 !important;
 }
-.cat-head:hover { background: #166534 !important; }
+.cat-head:hover { background: #0E4265 !important; }
 .cat-left { display: flex; align-items: center; gap: 8px; flex: 1; min-width: 0; }
 .cat-chev { font-size: 10px; color: rgba(255,255,255,.7); transition: transform .25s; }
 .cat.closed .cat-chev { transform: rotate(-90deg); }
@@ -394,7 +395,7 @@ text-transform: uppercase;
 cursor: pointer; border: none; background: none;
 font-family: inherit; padding: 0;
 }
-.bnav-item.on { color: #86EFAC; }
+.bnav-item.on { color: #7DD3FC; }
 .bnav-item .ni { font-size: 20px; line-height: 1; }
 .bnav-item .nl { font-size: 8.5px; }
 .bnav-mid {
