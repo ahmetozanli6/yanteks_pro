@@ -205,6 +205,26 @@ select option{background:#fff;color:var(--text);}
 .firma-clear-btn{background:none;border:none;color:#5B8FA8;cursor:pointer;font-size:14px;padding:0 2px;flex-shrink:0;line-height:1;}
 .firma-clear-btn:hover{color:#991B1B}
 
+/* ── Kalite Satırları ── */
+.kalite-header{display:grid;grid-template-columns:1fr 88px 32px;gap:6px;margin-bottom:5px;padding:0 2px}
+.kalite-header span{font-size:9px;font-weight:800;color:var(–text3);text-transform:uppercase;letter-spacing:.06em}
+.kalite-row{display:grid;grid-template-columns:1fr 88px 32px;gap:6px;margin-bottom:6px;align-items:center}
+.kalite-row input,.kalite-row select{padding:10px 10px;border-radius:10px;border:1.5px solid rgba(15,76,110,.18);background:#F0F9FF;font-family:inherit;font-size:13px;color:#0A2A3F;width:100%;transition:var(–t)}
+.kalite-row input:focus,.kalite-row select:focus{border-color:#156089;outline:none;box-shadow:0 0 0 3px rgba(15,76,110,.09)}
+.kalite-row input::placeholder{color:var(–text3);font-size:12px}
+/* Ürün alanı tam genişlikte (span 2 col) */
+.kalite-row .kr-urun{grid-column:1 / -1}
+.kalite-row-inner{display:grid;grid-template-columns:1fr 88px 32px;gap:6px;align-items:center;margin-top:4px}
+.kalite-wrap{background:rgba(15,76,110,.03);border:1.5px solid var(–border);border-radius:12px;padding:10px 10px 8px;margin-bottom:8px}
+.kalite-wrap:last-child{margin-bottom:0}
+.kalite-del{width:32px;height:32px;border-radius:8px;border:1.5px solid rgba(153,27,27,.2);background:rgba(153,27,27,.06);color:#991B1B;cursor:pointer;font-size:13px;display:flex;align-items:center;justify-content:center;flex-shrink:0;font-family:inherit}
+.kalite-del:active{background:rgba(153,27,27,.15)}
+.kalite-durum-sel{-webkit-appearance:none;appearance:none;background-image:url(“data:image/svg+xml,%3Csvg xmlns=‘http://www.w3.org/2000/svg’ width=‘8’ height=‘5’ viewBox=‘0 0 8 5’%3E%3Cpath fill=’%235B8FA8’ d=‘M0 0l4 5 4-5z’/%3E%3C/svg%3E”);background-repeat:no-repeat;background-position:right 8px center;padding-right:24px !important;font-size:11px !important;}
+.add-kalite-btn{width:100%;padding:10px;border-radius:10px;border:2px dashed rgba(15,76,110,.25);background:rgba(15,76,110,.03);color:#0F4C6E;font-weight:700;font-size:13px;cursor:pointer;font-family:inherit;transition:var(–t);margin-top:4px}
+.add-kalite-btn:hover{background:rgba(15,76,110,.07);border-color:rgba(15,76,110,.4)}
+.add-kalite-btn:active{transform:scale(.98)}
+.kalite-count-badge{display:inline-flex;align-items:center;gap:4px;font-size:10px;font-weight:700;color:#0F4C6E;background:rgba(15,76,110,.09);padding:2px 8px;border-radius:20px;margin-left:8px;vertical-align:middle}
+
 /* Modal */
 .modal{position:fixed;inset:0;z-index:300;display:none;align-items:center;justify-content:center;padding:20px;background:rgba(10,40,60,.5);backdrop-filter:blur(4px)}
 .modal.on{display:flex}
@@ -346,9 +366,10 @@ a,button{-webkit-tap-highlight-color:transparent}
   <div class="dw-bar"></div>
   <h2 id="dw-t">📤 Yeni Teklif</h2>
   <input type="hidden" id="eid">
-  <!-- Firma seçici -->
   <input type="hidden" id="f-firma-id">
   <input type="hidden" id="f-firma-bolge">
+
+  <!-- Firma seçici -->
 
   <div class="field" id="field-firma">
     <label>Firma Adı *</label>
@@ -368,29 +389,16 @@ a,button{-webkit-tap-highlight-color:transparent}
     <div class="err">Firma seçimi zorunlu</div>
   </div>
 
-  <div class="field">
-    <label>Ürün / Konu *</label>
-    <input type="text" id="f-urun" placeholder="75D Polyester İplik" maxlength="200">
-    <div class="err">Ürün adı zorunlu</div>
+  <!-- Kaliteler & Fiyatlar -->
+
+  <div class="field" id="field-kaliteler">
+    <label>Kaliteler & Fiyatlar * <span class="kalite-count-badge" id="kalite-count">0 kalite</span></label>
+    <div id="kalite-rows-container"></div>
+    <button type="button" class="add-kalite-btn" onclick="addKaliteRow()">＋ Kalite Ekle</button>
+    <div class="err" id="kalite-err" style="display:none">En az bir ürün/kalite adı girin</div>
   </div>
 
-  <div class="field-row">
-    <div class="field">
-      <label>Teklif Fiyatı ($)</label>
-      <input type="number" id="f-fiyat" step="0.01" min="0" placeholder="0.00">
-    </div>
-    <div class="field">
-      <label>Durum</label>
-      <select id="f-durum">
-        <option value="Beklemede">⏳ Beklemede</option>
-        <option value="Teklif Verildi">📤 Teklif Verildi</option>
-        <option value="Müzakerede">🤝 Müzakerede</option>
-        <option value="Revize İstendi">🔄 Revize İstendi</option>
-        <option value="Onaylandı">✅ Onaylandı</option>
-        <option value="Onaylanmadı">❌ Onaylanmadı</option>
-      </select>
-    </div>
-  </div>
+  <!-- Ortak tarih/not alanları -->
 
   <div class="field-row">
     <div class="field">
@@ -432,77 +440,64 @@ a,button{-webkit-tap-highlight-color:transparent}
 <script>
 const SU="https://zmlbdpjcergcvcurihuy.supabase.co";
 const SK="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InptbGJkcGpjZXJnY3ZjdXJpaHV5Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzU1MTA2MzIsImV4cCI6MjA5MTA4NjYzMn0.Jh4e_UXSL7CH7EzLBhhXtQYM0-iQwrFU3GHnoe-njBM";
-const db=supabase.createClient(SU,SK);
+const db = supabase.createClient(SU, SK);
 
-// D = teklifler, M = müşteriler
-let D=[], M=[], curF='Hepsi', cfCb=null;
-const esc=s=>s==null?'':String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#039;');
-const trl=s=>(s||'').toString().replaceAll('İ','i').replaceAll('I','ı').toLowerCase();
-const fmt=d=>{if(!d)return'';const p=d.split('-');return p.length===3?p[2]+'.'+p[1]+'.'+p[0]:d;};
-const fmtPara=v=>{if(!v&&v!==0)return'—';return parseFloat(v).toLocaleString('tr-TR',{minimumFractionDigits:2,maximumFractionDigits:2})+' $';};
+let D = [], M = [], curF = 'Hepsi', cfCb = null;
+const esc = s => s == null ? '' : String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#039;');
+const trl = s => (s||'').toString().replaceAll('İ','i').replaceAll('I','ı').toLowerCase();
+const fmt = d => { if(!d) return ''; const p=d.split('-'); return p.length===3 ? p[2]+'.'+p[1]+'.'+p[0] : d; };
+const fmtPara = v => { if(!v && v!==0) return '—'; return parseFloat(v).toLocaleString('tr-TR',{minimumFractionDigits:2,maximumFractionDigits:2})+' $'; };
 
-// Müşteri listesinden firma adına göre bölge bul
-function getBolge(firmaAdi){
-  if(!firmaAdi)return'';
-  const m=M.find(x=>(x.firma_adi||'').toUpperCase()===(firmaAdi||'').toUpperCase());
-  return m?m.bolge||'':'';
+function getBolge(firmaAdi) {
+  if(!firmaAdi) return '';
+  const m = M.find(x => (x.firma_adi||'').toUpperCase() === (firmaAdi||'').toUpperCase());
+  return m ? m.bolge||'' : '';
 }
 
-function dot(s){const e=document.getElementById('sd');e.classList.remove('ok','busy','err');if(s)e.classList.add(s);}
-function toast(m,t='info'){const c=document.getElementById('toasts'),el=document.createElement('div');el.className='toast '+t;el.textContent=m;c.appendChild(el);setTimeout(()=>{el.style.animation='tOut .25s forwards';setTimeout(()=>el.remove(),250)},2600);}
+function dot(s) { const e=document.getElementById('sd'); e.classList.remove('ok','busy','err'); if(s) e.classList.add(s); }
+function toast(m, t='info') {
+  const c=document.getElementById('toasts'), el=document.createElement('div');
+  el.className='toast '+t; el.textContent=m; c.appendChild(el);
+  setTimeout(()=>{ el.style.animation='tOut .25s forwards'; setTimeout(()=>el.remove(),250); }, 2600);
+}
 
-function statusClass(st){
+function statusClass(st) {
   const map={'Beklemede':'beklemede','Teklif Verildi':'teklif','Müzakerede':'muzakere','Revize İstendi':'revize','Onaylandı':'onaylandi','Onaylanmadı':'onaylanmadi'};
   return map[st]||'beklemede';
 }
-function statusBadgeClass(st){
+function statusBadgeClass(st) {
   const map={'Beklemede':'st-badge-beklemede','Teklif Verildi':'st-badge-teklif','Müzakerede':'st-badge-muzakere','Revize İstendi':'st-badge-revize','Onaylandı':'st-badge-onaylandi','Onaylanmadı':'st-badge-onaylanmadi'};
   return map[st]||'st-badge-beklemede';
 }
-function statusEmoji(st){
+function statusEmoji(st) {
   const map={'Beklemede':'⏳','Teklif Verildi':'📤','Müzakerede':'🤝','Revize İstendi':'🔄','Onaylandı':'✅','Onaylanmadı':'❌'};
   return map[st]||'⏳';
 }
 
-// ── MÜŞTERİ YÜKLE (bağımsız, sayfa açılışında) ──
-async function loadMusteriler(){
-  const {data,error}=await db.from('musteriler').select('id,firma_adi,bolge').order('firma_adi',{ascending:true});
-  if(!error && data) M=data;
+async function loadMusteriler() {
+  const {data,error} = await db.from('musteriler').select('id,firma_adi,bolge').order('firma_adi',{ascending:true});
+  if(!error && data) M = data;
 }
 
-// ── SYNC ──
-async function sync(){
+async function sync() {
   dot('busy');
   const [tRes, mRes] = await Promise.all([
     db.from('fiyat_teklifleri').select('*').order('created_at',{ascending:false}),
     db.from('musteriler').select('id,firma_adi,bolge').order('firma_adi',{ascending:true})
   ]);
-
-  if(tRes.error){
-    if(tRes.error.code==='42P01'){
-      await createTable();
-      D=[];
-    } else {
-      dot('err');
-      document.getElementById('list').innerHTML='<div class="empty"><div class="ei">⚠️</div><h3>Bağlantı hatası</h3><p>'+esc(tRes.error.message)+'</p></div>';
-      return;
-    }
-  } else {
-    D=tRes.data||[];
-  }
-
-  if(!mRes.error && mRes.data) M=mRes.data;
-  dot('ok');
-  buildStats();
-  render();
+  if(tRes.error) {
+    if(tRes.error.code==='42P01') { await createTable(); D=[]; }
+    else { dot('err'); document.getElementById('list').innerHTML='<div class="empty"><div class="ei">⚠️</div><h3>Bağlantı hatası</h3><p>'+esc(tRes.error.message)+'</p></div>'; return; }
+  } else { D = tRes.data||[]; }
+  if(!mRes.error && mRes.data) M = mRes.data;
+  dot('ok'); buildStats(); render();
 }
 
-async function createTable(){
+async function createTable() {
   document.getElementById('list').innerHTML='<div class="empty"><div class="ei">⚙️</div><h3>Tablo oluşturulması gerekiyor</h3><p>Supabase SQL Editor\'da şu komutu çalıştırın:</p><code style="display:block;background:#E8F6FF;padding:12px;border-radius:8px;font-size:11px;margin-top:10px;text-align:left;line-height:1.6;color:#0A2A3F">CREATE TABLE fiyat_teklifleri (<br>&nbsp;&nbsp;id bigserial primary key,<br>&nbsp;&nbsp;firma_adi text not null,<br>&nbsp;&nbsp;urun text not null,<br>&nbsp;&nbsp;fiyat numeric,<br>&nbsp;&nbsp;durum text default \'Beklemede\',<br>&nbsp;&nbsp;teklif_tarihi date,<br>&nbsp;&nbsp;gecerlilik_tarihi date,<br>&nbsp;&nbsp;notlar text,<br>&nbsp;&nbsp;created_at timestamptz default now(),<br>&nbsp;&nbsp;updated_at timestamptz default now()<br>);</code></div>';
 }
 
-// ── STATS ──
-function buildStats(){
+function buildStats() {
   const all=D.length;
   const bekle=D.filter(d=>d.durum==='Beklemede').length;
   const teklif=D.filter(d=>d.durum==='Teklif Verildi').length;
@@ -534,24 +529,23 @@ function buildStats(){
     '<div class="ms"><span class="ms-icon">🏢</span><div class="ms-info"><span class="ms-label">Firma Sayısı</span><span class="ms-val">'+(new Set(D.map(d=>d.firma_adi)).size)+'</span></div></div>';
 }
 
-// ── RENDER ──
-function setF(f){
+function setF(f) {
   curF=f;
   document.querySelectorAll('.ft').forEach(x=>x.classList.toggle('on',x.dataset.f===f));
   document.querySelectorAll('.kpi').forEach(x=>x.classList.toggle('active',x.dataset.f===f));
   render();
 }
-function onQ(){document.getElementById('qc').classList.toggle('on',document.getElementById('q').value.length>0);render();}
-function clrQ(){document.getElementById('q').value='';document.getElementById('qc').classList.remove('on');render();}
+function onQ() { document.getElementById('qc').classList.toggle('on',document.getElementById('q').value.length>0); render(); }
+function clrQ() { document.getElementById('q').value=''; document.getElementById('qc').classList.remove('on'); render(); }
 
-function render(){
+function render() {
   const area=document.getElementById('list');
   const q=trl(document.getElementById('q').value.trim());
   let fil=[...D];
-  if(curF!=='Hepsi')fil=fil.filter(d=>d.durum===curF);
-  if(q)fil=fil.filter(d=>trl(d.firma_adi).includes(q)||trl(d.urun).includes(q)||trl(d.notlar||'').includes(q));
+  if(curF!=='Hepsi') fil=fil.filter(d=>d.durum===curF);
+  if(q) fil=fil.filter(d=>trl(d.firma_adi).includes(q)||trl(d.urun).includes(q)||trl(d.notlar||'').includes(q));
 
-  if(!fil.length){
+  if(!fil.length) {
     area.innerHTML=D.length===0
       ?'<div class="empty"><div class="ei">📤</div><h3>Henüz teklif yok</h3><p>"＋ Yeni" ile ilk teklifinizi ekleyin.</p></div>'
       :'<div class="empty"><div class="ei">🔍</div><h3>Sonuç yok</h3><p>'+(q?'"'+esc(q)+'" bulunamadı.':'Bu filtre için kayıt yok.')+'</p></div>';
@@ -569,8 +563,8 @@ function render(){
     let gecerliFlag='';
     if(d.gecerlilik_tarihi&&['Teklif Verildi','Müzakerede'].includes(d.durum)){
       const diff=Math.floor((new Date(d.gecerlilik_tarihi)-new Date())/(1000*60*60*24));
-      if(diff<0)gecerliFlag='<span style="font-size:9px;background:rgba(153,27,27,.12);color:#991B1B;padding:2px 6px;border-radius:4px;font-weight:700;margin-left:6px">Süresi Doldu</span>';
-      else if(diff<=3)gecerliFlag='<span style="font-size:9px;background:rgba(234,88,12,.12);color:#EA580C;padding:2px 6px;border-radius:4px;font-weight:700;margin-left:6px">'+diff+'g kaldı</span>';
+      if(diff<0) gecerliFlag='<span style="font-size:9px;background:rgba(153,27,27,.12);color:#991B1B;padding:2px 6px;border-radius:4px;font-weight:700;margin-left:6px">Süresi Doldu</span>';
+      else if(diff<=3) gecerliFlag='<span style="font-size:9px;background:rgba(234,88,12,.12);color:#EA580C;padding:2px 6px;border-radius:4px;font-weight:700;margin-left:6px">'+diff+'g kaldı</span>';
     }
 
     h+=`<div class="teklif-card st-${sc}" style="animation-delay:${i*0.03}s">
@@ -613,45 +607,36 @@ function render(){
   area.innerHTML=h;
 }
 
-// ── STATUS QUICK CHANGE ──
-async function updateStatus(sel){
+async function updateStatus(sel) {
   const id=sel.dataset.id, st=sel.value;
   dot('busy');
-  const{error}=await db.from('fiyat_teklifleri').update({durum:st,updated_at:new Date().toISOString()}).eq('id',id);
+  const {error}=await db.from('fiyat_teklifleri').update({durum:st,updated_at:new Date().toISOString()}).eq('id',id);
   if(error){dot('err');toast('Hata','bad');return;}
   const it=D.find(x=>String(x.id)===String(id));
-  if(it)it.durum=st;
-  dot('ok');toast('Durum güncellendi','ok');
-  buildStats();render();
+  if(it) it.durum=st;
+  dot('ok'); toast('Durum güncellendi','ok'); buildStats(); render();
 }
 
-// ── FİRMA ARAMA DROPDOWN ──
-let firmaSelected=null; // {firma_adi, bolge}
+// ── FİRMA DROPDOWN ──
+let firmaSelected = null;
 
-let firmaDdOpen=false;
-
-function onFirmaInput(val){
+function onFirmaInput(val) {
   firmaSelected=null;
   document.getElementById('f-firma-id').value='';
   document.getElementById('f-firma-bolge').value='';
   renderFirmaDd(val);
 }
-function onFirmaFocus(){
-  // M henüz boşsa tekrar yükle
-  if(!M.length){
-    loadMusteriler().then(()=>renderFirmaDd(document.getElementById('f-firma-q').value));
-  } else {
-    renderFirmaDd(document.getElementById('f-firma-q').value);
-  }
+function onFirmaFocus() {
+  if(!M.length) { loadMusteriler().then(()=>renderFirmaDd(document.getElementById('f-firma-q').value)); }
+  else { renderFirmaDd(document.getElementById('f-firma-q').value); }
 }
-function renderFirmaDd(val){
+function renderFirmaDd(val) {
   const dd=document.getElementById('firma-dd');
   const q=trl(val||'');
   const filtered=q?M.filter(m=>trl(m.firma_adi).includes(q)):M;
-  if(!filtered.length){
+  if(!filtered.length) {
     dd.innerHTML='<div class="firma-dd-empty">'+(M.length===0?'Müşteri yükleniyor...':'Eşleşen firma yok')+'</div>';
-    dd.classList.add('on');
-    return;
+    dd.classList.add('on'); return;
   }
   const items=filtered.slice(0,40);
   dd.innerHTML=items.map((m,i)=>`
@@ -667,7 +652,7 @@ function renderFirmaDd(val){
   });
   dd.classList.add('on');
 }
-function selectFirma(firmaAdi, bolge){
+function selectFirma(firmaAdi, bolge) {
   firmaSelected={firma_adi:firmaAdi,bolge:bolge};
   document.getElementById('f-firma-bolge').value=bolge;
   document.getElementById('f-firma-q').style.display='none';
@@ -677,7 +662,7 @@ function selectFirma(firmaAdi, bolge){
   document.getElementById('field-firma').classList.remove('bad');
   closeFirmaDd();
 }
-function clearFirma(){
+function clearFirma() {
   firmaSelected=null;
   document.getElementById('f-firma-id').value='';
   document.getElementById('f-firma-bolge').value='';
@@ -686,20 +671,85 @@ function clearFirma(){
   document.getElementById('firma-selected').style.display='none';
   setTimeout(()=>document.getElementById('f-firma-q').focus(),50);
 }
-function closeFirmaDd(){
-  document.getElementById('firma-dd').classList.remove('on');
-}
-// Dropdown dışı tıklamada kapat
+function closeFirmaDd() { document.getElementById('firma-dd').classList.remove('on'); }
 document.addEventListener('mousedown',function(e){
   const dd=document.getElementById('firma-dd');
   const inp=document.getElementById('f-firma-q');
-  if(dd&&inp&&!dd.contains(e.target)&&e.target!==inp){
-    closeFirmaDd();
-  }
+  if(dd&&inp&&!dd.contains(e.target)&&e.target!==inp) closeFirmaDd();
 });
 
+// ── KALİTE SATIRLARI ──
+let kaliteRows = [];
+let kaliteRowId = 0;
+
+const DURUM_OPTS = ['Beklemede','Teklif Verildi','Müzakerede','Revize İstendi','Onaylandı','Onaylanmadı'];
+
+function addKaliteRow(urun='', fiyat='', durum='Teklif Verildi') {
+  const rid = ++kaliteRowId;
+  kaliteRows.push(rid);
+
+  const statOpts = DURUM_OPTS.map(s=>`<option value="${s}"${s===durum?' selected':''}>${statusEmoji(s)} ${s}</option>`).join('');
+
+  const wrap = document.createElement('div');
+  wrap.className = 'kalite-wrap';
+  wrap.id = 'krw-' + rid;
+  wrap.innerHTML = `
+    <div style="display:grid;grid-template-columns:1fr 32px;gap:6px;align-items:center;margin-bottom:6px">
+      <input type="text" placeholder="Ürün / Kalite adı..." value="${esc(urun)}"
+        data-rid="${rid}" data-field="urun"
+        style="padding:10px 12px;border-radius:10px;border:1.5px solid rgba(15,76,110,.18);background:#F0F9FF;font-family:inherit;font-size:13px;color:#0A2A3F;width:100%">
+      <button class="kalite-del" onclick="removeKaliteRow(${rid})" title="Kaldır">✕</button>
+    </div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px">
+      <input type="number" placeholder="Fiyat ($)" step="0.01" min="0" value="${esc(fiyat)}"
+        data-rid="${rid}" data-field="fiyat"
+        style="padding:10px 12px;border-radius:10px;border:1.5px solid rgba(15,76,110,.18);background:#F0F9FF;font-family:inherit;font-size:13px;color:#0A2A3F;width:100%">
+      <select data-rid="${rid}" data-field="durum" class="kalite-durum-sel"
+        style="padding:10px 12px;border-radius:10px;border:1.5px solid rgba(15,76,110,.18);background:#F0F9FF;font-family:inherit;font-size:11px;color:#0A2A3F;width:100%">
+        ${statOpts}
+      </select>
+    </div>`;
+
+  document.getElementById('kalite-rows-container').appendChild(wrap);
+  updateKaliteCount();
+
+  // Focus ürün alanı
+  setTimeout(()=> wrap.querySelector('input[data-field="urun"]').focus(), 80);
+}
+
+function removeKaliteRow(rid) {
+  const idx = kaliteRows.indexOf(rid);
+  if(idx > -1) kaliteRows.splice(idx, 1);
+  document.getElementById('krw-' + rid)?.remove();
+  updateKaliteCount();
+}
+
+function updateKaliteCount() {
+  const el = document.getElementById('kalite-count');
+  if(el) el.textContent = kaliteRows.length + ' kalite';
+}
+
+function getKaliteData() {
+  return kaliteRows.map(rid => {
+    const wrap = document.getElementById('krw-' + rid);
+    if(!wrap) return null;
+    return {
+      urun: wrap.querySelector('[data-field="urun"]').value.trim(),
+      fiyat: parseFloat(wrap.querySelector('[data-field="fiyat"]').value) || null,
+      durum: wrap.querySelector('[data-field="durum"]').value
+    };
+  }).filter(Boolean);
+}
+
+function clearKaliteRows() {
+  kaliteRows = [];
+  kaliteRowId = 0;
+  document.getElementById('kalite-rows-container').innerHTML = '';
+  updateKaliteCount();
+}
+
 // ── DRAWER ──
-function resetFirmaField(){
+function resetFirmaField() {
   firmaSelected=null;
   document.getElementById('f-firma-id').value='';
   document.getElementById('f-firma-bolge').value='';
@@ -709,110 +759,139 @@ function resetFirmaField(){
   closeFirmaDd();
 }
 
-function openDw(){
+function openDw() {
   document.getElementById('eid').value='';
   document.getElementById('dw-t').textContent='📤 Yeni Teklif';
   document.getElementById('sv-btn').textContent='Kaydet';
   resetFirmaField();
-  ['f-urun','f-fiyat','f-not','f-tarih','f-gecerlilik'].forEach(x=>document.getElementById(x).value='');
-  document.getElementById('f-durum').value='Teklif Verildi';
+  clearKaliteRows();
+  addKaliteRow(); // 1 boş satırla başla
   document.getElementById('f-tarih').value=new Date().toISOString().split('T')[0];
+  document.getElementById('f-gecerlilik').value='';
+  document.getElementById('f-not').value='';
+  document.getElementById('kalite-err').style.display='none';
   document.querySelectorAll('.field').forEach(f=>f.classList.remove('bad'));
   document.getElementById('ov').classList.add('on');
   document.getElementById('dw').classList.add('on');
   setTimeout(()=>document.getElementById('f-firma-q').focus(),250);
 }
 
-function editRow(id){
-  const d=D.find(x=>String(x.id)===String(id));if(!d)return;
+function editRow(id) {
+  const d=D.find(x=>String(x.id)===String(id)); if(!d) return;
   document.getElementById('eid').value=d.id;
   document.getElementById('dw-t').textContent='✏️ Teklif Düzenle';
   document.getElementById('sv-btn').textContent='Güncelle';
 
-  // Firma alanını dolu göster
   const bolge=getBolge(d.firma_adi);
-  firmaSelected={firma_adi:d.firma_adi, bolge:bolge};
+  firmaSelected={firma_adi:d.firma_adi,bolge};
   document.getElementById('f-firma-q').style.display='none';
   document.getElementById('firma-selected').style.display='block';
   document.getElementById('firma-selected-name').textContent=d.firma_adi||'';
   document.getElementById('firma-selected-bolge').textContent=bolge?'📍 '+bolge:'';
   closeFirmaDd();
 
-  document.getElementById('f-urun').value=d.urun||'';
-  document.getElementById('f-fiyat').value=d.fiyat||'';
-  document.getElementById('f-durum').value=d.durum||'Beklemede';
+  clearKaliteRows();
+  addKaliteRow(d.urun, d.fiyat, d.durum);
+
   document.getElementById('f-tarih').value=d.teklif_tarihi||'';
   document.getElementById('f-gecerlilik').value=d.gecerlilik_tarihi||'';
   document.getElementById('f-not').value=d.notlar||'';
+  document.getElementById('kalite-err').style.display='none';
   document.querySelectorAll('.field').forEach(f=>f.classList.remove('bad'));
   document.getElementById('ov').classList.add('on');
   document.getElementById('dw').classList.add('on');
 }
 
-function closeDw(){
+function closeDw() {
   document.getElementById('ov').classList.remove('on');
   document.getElementById('dw').classList.remove('on');
   closeFirmaDd();
 }
 
-async function save(){
+async function save() {
   document.querySelectorAll('.field').forEach(f=>f.classList.remove('bad'));
-  const urun=document.getElementById('f-urun').value.trim();
+  document.getElementById('kalite-err').style.display='none';
+
   let bad=false;
-  if(!firmaSelected){document.getElementById('field-firma').classList.add('bad');bad=true;}
-  if(!urun){document.getElementById('f-urun').closest('.field').classList.add('bad');bad=true;}
-  if(bad)return;
+  if(!firmaSelected) { document.getElementById('field-firma').classList.add('bad'); bad=true; }
+
+  const kaliteler = getKaliteData();
+  const gecerli = kaliteler.filter(k=>k.urun);
+  if(!gecerli.length) {
+    document.getElementById('kalite-err').style.display='block';
+    bad=true;
+  }
+  if(bad) return;
 
   const id=document.getElementById('eid').value;
-  const pay={
-    firma_adi:firmaSelected.firma_adi,
-    urun:urun,
-    fiyat:parseFloat(document.getElementById('f-fiyat').value)||null,
-    durum:document.getElementById('f-durum').value,
-    teklif_tarihi:document.getElementById('f-tarih').value||null,
-    gecerlilik_tarihi:document.getElementById('f-gecerlilik').value||null,
-    notlar:document.getElementById('f-not').value.trim()||null,
-    updated_at:new Date().toISOString()
-  };
-  const btn=document.getElementById('sv-btn');btn.disabled=true;btn.textContent='Kaydediliyor...';dot('busy');
+  const tarih=document.getElementById('f-tarih').value||null;
+  const gecerlilik=document.getElementById('f-gecerlilik').value||null;
+  const notlar=document.getElementById('f-not').value.trim()||null;
+  const now=new Date().toISOString();
+
+  const btn=document.getElementById('sv-btn');
+  btn.disabled=true; btn.textContent='Kaydediliyor...'; dot('busy');
+
   let error;
-  if(id){({error}=await db.from('fiyat_teklifleri').update(pay).eq('id',id));}
-  else{({error}=await db.from('fiyat_teklifleri').insert([pay]));}
-  btn.disabled=false;btn.textContent=id?'Güncelle':'Kaydet';
-  if(error){dot('err');toast('Hata: '+error.message,'bad');return;}
-  dot('ok');toast(id?'Güncellendi ✓':'Teklif eklendi ✓','ok');closeDw();sync();
+  if(id) {
+    // Düzenleme: tek satır güncelle
+    const k=gecerli[0];
+    ({error}=await db.from('fiyat_teklifleri').update({
+      firma_adi:firmaSelected.firma_adi,
+      urun:k.urun, fiyat:k.fiyat, durum:k.durum,
+      teklif_tarihi:tarih, gecerlilik_tarihi:gecerlilik,
+      notlar, updated_at:now
+    }).eq('id',id));
+  } else {
+    // Yeni: toplu insert (tüm kaliteler)
+    const payload=gecerli.map(k=>({
+      firma_adi:firmaSelected.firma_adi,
+      urun:k.urun, fiyat:k.fiyat, durum:k.durum,
+      teklif_tarihi:tarih, gecerlilik_tarihi:gecerlilik,
+      notlar, updated_at:now
+    }));
+    ({error}=await db.from('fiyat_teklifleri').insert(payload));
+  }
+
+  btn.disabled=false; btn.textContent=id?'Güncelle':'Kaydet';
+  if(error) { dot('err'); toast('Hata: '+error.message,'bad'); return; }
+  dot('ok');
+  toast(id?'Güncellendi ✓':`${gecerli.length} teklif eklendi ✓`,'ok');
+  closeDw(); sync();
 }
 
 // ── SİL ──
-function askDel(id){
-  const d=D.find(x=>String(x.id)===String(id));if(!d)return;
+function askDel(id) {
+  const d=D.find(x=>String(x.id)===String(id)); if(!d) return;
   document.getElementById('cf-t').textContent='Teklifi Sil';
   document.getElementById('cf-b').textContent='"'+d.firma_adi+'" — '+d.urun+' teklifi silinsin mi?';
   cfCb=async()=>{
     dot('busy');
-    const{error}=await db.from('fiyat_teklifleri').delete().eq('id',id);
+    const {error}=await db.from('fiyat_teklifleri').delete().eq('id',id);
     if(error){dot('err');toast('Silinemedi','bad');return;}
-    dot('ok');toast('Silindi','ok');sync();
+    dot('ok'); toast('Silindi','ok'); sync();
   };
   document.getElementById('mod-cf').classList.add('on');
 }
-function clM(){document.getElementById('mod-cf').classList.remove('on');cfCb=null;}
-document.getElementById('cf-ok').addEventListener('click',()=>{const c=cfCb;clM();if(c)c();});
-document.getElementById('mod-cf').addEventListener('click',e=>{if(e.target===e.currentTarget)clM();});
+function clM() { document.getElementById('mod-cf').classList.remove('on'); cfCb=null; }
+document.getElementById('cf-ok').addEventListener('click',()=>{ const c=cfCb; clM(); if(c) c(); });
+document.getElementById('mod-cf').addEventListener('click',e=>{ if(e.target===e.currentTarget) clM(); });
 
 // ── EXCEL ──
-async function exportXL(){
+async function exportXL() {
   if(!D.length){toast('Veri yok','wrn');return;}
-  const btn=document.getElementById('xbtn');btn.disabled=true;btn.textContent='⏳';
-  try{
-    const wb=new ExcelJS.Workbook();wb.creator='Yanteks Pro';
+  const btn=document.getElementById('xbtn'); btn.disabled=true; btn.textContent='⏳';
+  try {
+    const wb=new ExcelJS.Workbook(); wb.creator='Yanteks Pro';
     const sh=wb.addWorksheet('Teklifler');
     const dt=new Date().toLocaleDateString('tr-TR');
-    sh.mergeCells('A1:G1');
-    const tc=sh.getCell('A1');tc.value='YANTEKS FİYAT TEKLİFLERİ · '+dt;
-    tc.font={bold:true,size:14,color:{argb:'FFFFFFFF'}};tc.fill={type:'pattern',pattern:'solid',fgColor:{argb:'FF0F4C6E'}};tc.alignment={horizontal:'center',vertical:'middle'};sh.getRow(1).height=30;
+    sh.mergeCells('A1:H1');
+    const tc=sh.getCell('A1'); tc.value='YANTEKS FİYAT TEKLİFLERİ · '+dt;
+    tc.font={bold:true,size:14,color:{argb:'FFFFFFFF'}};
+    tc.fill={type:'pattern',pattern:'solid',fgColor:{argb:'FF0F4C6E'}};
+    tc.alignment={horizontal:'center',vertical:'middle'}; sh.getRow(1).height=30;
     const hr=sh.addRow(['FİRMA','BÖLGE','ÜRÜN','FİYAT ($)','DURUM','TEKLİF TARİHİ','GEÇERLİLİK','NOTLAR']);
-    hr.font={bold:true,color:{argb:'FFFFFFFF'}};hr.height=22;
+    hr.font={bold:true,color:{argb:'FFFFFFFF'}}; hr.height=22;
     hr.eachCell(c=>{c.fill={type:'pattern',pattern:'solid',fgColor:{argb:'FF1E5A7A'}};c.alignment={horizontal:'center'};});
     sh.columns=[{width:28},{width:16},{width:30},{width:14},{width:18},{width:16},{width:16},{width:35}];
     const stColor={'Onaylandı':'FF15803D','Onaylanmadı':'FF991B1B','Teklif Verildi':'FFEA580C','Müzakerede':'FF1D4ED8','Revize İstendi':'FF5B21B6','Beklemede':'FF5B8FA8'};
@@ -827,10 +906,11 @@ async function exportXL(){
     sh.autoFilter={from:'A2',to:'H2'};
     const buf=await wb.xlsx.writeBuffer();
     const blob=new Blob([buf],{type:'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'});
-    const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='Yanteks_Teklifler_'+dt.replace(/\./g,'-')+'.xlsx';a.click();URL.revokeObjectURL(a.href);
+    const a=document.createElement('a'); a.href=URL.createObjectURL(blob);
+    a.download='Yanteks_Teklifler_'+dt.replace(/\./g,'-')+'.xlsx'; a.click(); URL.revokeObjectURL(a.href);
     toast('Excel indirildi ✓','ok');
-  }catch(e){toast('Excel hatası','bad');}
-  finally{btn.disabled=false;btn.textContent='📊';}
+  } catch(e) { toast('Excel hatası','bad'); }
+  finally { btn.disabled=false; btn.textContent='📊'; }
 }
 
 document.addEventListener('keydown',e=>{
@@ -838,6 +918,7 @@ document.addEventListener('keydown',e=>{
   if((e.ctrlKey||e.metaKey)&&e.key==='k'){e.preventDefault();document.getElementById('q').focus();}
   if(e.key==='Escape'){closeDw();clM();}
 });
+
 loadMusteriler().then(()=>sync());
 </script>
 
