@@ -274,7 +274,6 @@ select option{background:var(--surface2);color:var(--text);}
 .empty{text-align:center;padding:60px 20px;color:var(--text3)}.empty .ei{font-size:48px;opacity:.2;margin-bottom:14px}.empty h3{font-size:16px;font-weight:800;color:var(--text2);margin-bottom:4px}.empty p{font-size:12px;max-width:260px;margin:0 auto}
 .toasts{position:fixed;bottom:80px;left:50%;transform:translateX(-50%);z-index:500;display:flex;flex-direction:column;gap:8px;pointer-events:none}
 .toast{padding:11px 18px;border-radius:var(--r);font-size:12px;font-weight:700;box-shadow:var(--shadow-lg);animation:tIn .25s;max-width:92vw;display:flex;align-items:center;gap:7px}
-
 @keyframes tIn{from{opacity:0;transform:translateY(8px)}}@keyframes tOut{to{opacity:0;transform:translateY(8px)}}
 .bolge-dd-item{padding:11px 14px;cursor:pointer;font-size:13px;font-weight:600;border-bottom:1px solid var(--border);transition:background var(--t);color:var(--text)}
 .bolge-dd-item:last-child{border-bottom:none}.bolge-dd-item:hover{background:var(--surface3)}
@@ -300,8 +299,6 @@ select option{background:var(--surface2);color:var(--text);}
 #ptr-indicator.spin .ptr-icon { animation: ptrSpin .6s linear infinite; }
 @keyframes ptrSpin { to { transform: rotate(360deg); } }
 .ptr-icon { font-size: 14px; transition: transform .3s; }
-@keyframes ptrSpin{to{transform:rotate(360deg)}}
-.ptr-icon{font-size:14px;transition:transform .3s}
 @media(max-width:480px){.topbar{padding-left:14px;padding-right:14px}.dash{padding:12px 12px 4px}.kpi{padding:11px 7px}.kpi-val{font-size:22px}.list{padding:0 8px 8px}.firm{padding:10px 11px}.search-sec{padding:0 12px 8px}.firm-ctrl{flex-direction:column;align-items:flex-end}.field-row{grid-template-columns:1fr}}
 *{-webkit-overflow-scrolling:touch}
 a,button{-webkit-tap-highlight-color:transparent}
@@ -311,7 +308,6 @@ a,button{-webkit-tap-highlight-color:transparent}
 .toast.bad  { background: #991B1B; color: #fff; }
 .toast.wrn  { background: #EA580C; color: #fff; }
 .toast.info { background: #0F4C6E; color: #fff; }
-
 
 /* ── Bölüm / Firma başlıkları ── */
 .region-head, .client-head {
@@ -564,6 +560,8 @@ async function bulkSt(r,v){const ids=D.filter(m=>(m.bolge||'DİĞER').toUpperCas
 async function askDF(id){const m=D.find(x=>String(x.id)===String(id));if(!m)return;confirm2('Firma Sil','"'+(m.firma_adi||'İsimsiz')+'" silinsin mi?',async()=>{dot('busy');const{error}=await db.from('musteriler').delete().eq('id',id);if(error){dot('err');toast('Silinemedi','bad');return;}dot('ok');toast('Silindi','ok');sync();});}
 async function askDR(r){const c=D.filter(m=>(m.bolge||'DİĞER').toUpperCase()===r).length;confirm2(r+' Sil',c+' firmanın TAMAMI silinecek!',async()=>{dot('busy');await db.from('musteriler').delete().eq('bolge',r);cls.delete(r);dot('ok');toast(c+' firma silindi','ok');sync();});}
 function openAdd(){document.getElementById('dw-id').value='';document.getElementById('dw-t').textContent='🏢 Yeni Firma';document.getElementById('dw-s').textContent='Kaydet';['f-n','f-r','f-d','f-no'].forEach(x=>document.getElementById(x).value='');document.getElementById('f-st').value='ziyaret edilecek';document.querySelectorAll('.field').forEach(f=>f.classList.remove('bad'));closeBolgeDd();document.getElementById('ov').classList.add('on');document.getElementById('dw').classList.add('on');setTimeout(()=>document.getElementById('f-n').focus(),250);}
+// ── DÜZELTME: Nav bar "＋ Yeni" butonu için alias ──
+function openDwNew(){openAdd();}
 function openEd(id){const m=D.find(x=>String(x.id)===String(id));if(!m)return;document.getElementById('dw-id').value=m.id;document.getElementById('dw-t').textContent='✏️ Düzenle: '+esc(m.firma_adi||'');document.getElementById('dw-s').textContent='Güncelle';document.getElementById('f-n').value=m.firma_adi||'';document.getElementById('f-r').value=m.bolge||'';document.getElementById('f-d').value=m.son_ziyaret||'';document.getElementById('f-st').value=m.ziyaret_durumu||'ziyaret edilecek';document.getElementById('f-no').value=m.notlar||'';document.querySelectorAll('.field').forEach(f=>f.classList.remove('bad'));closeBolgeDd();document.getElementById('ov').classList.add('on');document.getElementById('dw').classList.add('on');}
 function clDw(){document.getElementById('ov').classList.remove('on');document.getElementById('dw').classList.remove('on');closeBolgeDd();}
 async function saveFirm(){document.querySelectorAll('.field').forEach(f=>f.classList.remove('bad'));const n=document.getElementById('f-n').value.trim(),r=document.getElementById('f-r').value.trim();let bad=false;if(!n){document.getElementById('f-n').closest('.field').classList.add('bad');bad=true;}if(!r){document.getElementById('f-r').closest('.field').classList.add('bad');bad=true;}if(bad)return;const id=document.getElementById('dw-id').value;const pay={firma_adi:n.toUpperCase(),bolge:r.toUpperCase(),son_ziyaret:document.getElementById('f-d').value||null,notlar:document.getElementById('f-no').value.trim()||null,ziyaret_durumu:document.getElementById('f-st').value};const btn=document.getElementById('dw-s');btn.disabled=true;btn.textContent='Kaydediliyor...';dot('busy');let error;if(id){({error}=await db.from('musteriler').update(pay).eq('id',id));}else{({error}=await db.from('musteriler').insert([pay]));}btn.disabled=false;btn.textContent=id?'Güncelle':'Kaydet';if(error){dot('err');toast('Hata: '+error.message,'bad');return;}const nb=r.toUpperCase();if(!rOrd.includes(nb)){rOrd.push(nb);localStorage.setItem('yanteks_rord',JSON.stringify(rOrd));}dot('ok');toast(id?'Güncellendi ✓':'Eklendi ✓','ok');clDw();sync();}
