@@ -110,18 +110,18 @@ select option{background:#fff;color:var(--text);}
 .ft.on .n{background:rgba(255,255,255,.25);color:#fff}
 .ft:not(.on) .n{background:var(–surface3);color:var(–text3)}
 
-/* List — compact table */
+/* ── TABLO — mobil uyumlu, firma+ürün tam gözüksün ── */
 .list{padding:0 8px 8px}
 
 @keyframes fadeUp{from{opacity:0;transform:translateY(3px)}to{opacity:1;transform:translateY(0)}}
 
-/* Tablo wrapper */
 .tbl-wrap{background:var(–surface);border-radius:var(–r2);border:1.5px solid var(–border);box-shadow:var(–shadow);overflow:hidden}
-.tbl-head{display:grid;grid-template-columns:minmax(0,2.2fr) minmax(0,1.6fr) 72px 80px 70px 56px;gap:0;background:#0F4C6E;padding:0}
+
+/* Masaüstü: 5 kolon (bölge kaldırıldı) */
+.tbl-head{display:grid;grid-template-columns:minmax(0,2.4fr) minmax(0,2fr) 80px 76px 96px;gap:0;background:#0F4C6E;padding:0}
 .tbl-head span{font-size:8px;font-weight:800;color:rgba(255,255,255,.7);text-transform:uppercase;letter-spacing:.07em;padding:7px 8px;white-space:nowrap;overflow:hidden}
 
-/* Satır */
-.tr{display:grid;grid-template-columns:minmax(0,2.2fr) minmax(0,1.6fr) 72px 80px 70px 56px;gap:0;border-bottom:1px solid var(–border);animation:fadeUp .2s both;transition:background var(–t);align-items:center}
+.tr{display:grid;grid-template-columns:minmax(0,2.4fr) minmax(0,2fr) 80px 76px 96px;gap:0;border-bottom:1px solid var(–border);animation:fadeUp .2s both;transition:background var(–t);align-items:center}
 .tr:last-child{border-bottom:none}
 .tr:hover{background:var(–surface2)}
 .tr.st-teklif{border-left:3px solid #EA580C}
@@ -131,25 +131,45 @@ select option{background:#fff;color:var(--text);}
 .tr.st-revize{border-left:3px solid #5B21B6}
 .tr.st-beklemede{border-left:3px solid #5B8FA8}
 
-.td{padding:6px 8px;font-size:11px;overflow:hidden;min-width:0}
-.td-firma{display:flex;flex-direction:column;gap:1px}
-.td-firma-name{font-size:11px;font-weight:700;color:var(–text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.td-firma-sub{font-size:9px;color:var(–text3);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.td-urun{font-size:11px;color:var(–text2);font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.td{padding:7px 8px;font-size:11px;overflow:hidden;min-width:0}
+
+/* Firma adı — tam gözüksün, wrap olsun */
+.td-firma-name{font-size:12px;font-weight:700;color:var(–text);word-break:break-word;white-space:normal;line-height:1.35}
+
+/* Ürün adı — tam gözüksün, wrap olsun */
+.td-urun{font-size:11px;color:var(–text2);font-weight:600;word-break:break-word;white-space:normal;line-height:1.35}
+
 .td-price{font-size:11px;font-weight:800;color:#15803D;font-family:‘JetBrains Mono’,monospace;white-space:nowrap}
 .td-price.empty{color:var(–text3);font-weight:400;font-size:10px;font-family:‘Inter’,sans-serif}
 .td-date{font-size:10px;color:var(–text2);font-family:‘JetBrains Mono’,monospace;white-space:nowrap}
 .td-date.empty{color:var(–text3)}
 
-/* Status badge küçük */
-.st-dot{display:inline-block;width:6px;height:6px;border-radius:50%;flex-shrink:0;margin-right:4px}
-.st-mini{display:inline-flex;align-items:center;padding:2px 6px;border-radius:10px;font-size:9px;font-weight:800;white-space:nowrap}
-.st-mini.beklemede{background:rgba(91,143,168,.12);color:#3A7A9C}
-.st-mini.teklif{background:rgba(234,88,12,.12);color:#EA580C}
-.st-mini.muzakere{background:rgba(29,78,216,.1);color:#1D4ED8}
-.st-mini.onaylandi{background:rgba(21,128,61,.1);color:#15803D}
-.st-mini.onaylanmadi{background:rgba(153,27,27,.1);color:#991B1B}
-.st-mini.revize{background:rgba(91,33,182,.1);color:#5B21B6}
+/* Durum select — inline, tüm satırda direkt değiştir */
+.td-durum{padding:5px 6px;display:flex;align-items:center}
+.st-select{
+width:100%;
+padding:5px 22px 5px 8px;
+border-radius:20px;
+border:1.5px solid var(–border);
+font-size:10px;font-weight:700;font-family:inherit;
+cursor:pointer;
+background:var(–surface);
+color:var(–text2);
+transition:var(–t);
+-webkit-appearance:none;appearance:none;
+background-image:url(“data:image/svg+xml,%3Csvg xmlns=‘http://www.w3.org/2000/svg’ width=‘8’ height=‘5’ viewBox=‘0 0 8 5’%3E%3Cpath fill=’%235B8FA8’ d=‘M0 0l4 5 4-5z’/%3E%3C/svg%3E”);
+background-repeat:no-repeat;
+background-position:right 6px center;
+min-width:0;
+}
+.st-select:focus{border-color:var(–accent3);outline:none;box-shadow:0 0 0 2px var(–accent-soft)}
+/* Durum renkli border */
+.st-select.s-beklemede{border-color:#5B8FA8;color:#3A7A9C}
+.st-select.s-teklif{border-color:#EA580C;color:#EA580C}
+.st-select.s-muzakere{border-color:#1D4ED8;color:#1D4ED8}
+.st-select.s-revize{border-color:#5B21B6;color:#5B21B6}
+.st-select.s-onaylandi{border-color:#15803D;color:#15803D}
+.st-select.s-onaylanmadi{border-color:#991B1B;color:#991B1B}
 
 /* Aksiyon butonları */
 .td-acts{display:flex;gap:3px;align-items:center;justify-content:flex-end;padding-right:6px}
@@ -158,8 +178,28 @@ select option{background:#fff;color:var(--text);}
 .tb.dng:active{background:var(–red-soft);color:var(–red)}
 .tb.edt:active{background:var(–accent-soft);color:var(–accent)}
 
-/* Status select inline (satır içi) */
-.st-select{padding:2px 16px 2px 4px;border-radius:8px;border:1px solid var(–border);font-size:9px;font-weight:700;font-family:inherit;cursor:pointer;background:var(–surface);color:var(–text2);-webkit-appearance:none;appearance:none;background-image:url(“data:image/svg+xml,%3Csvg xmlns=‘http://www.w3.org/2000/svg’ width=‘6’ height=‘4’ viewBox=‘0 0 6 4’%3E%3Cpath fill=’%235B8FA8’ d=‘M0 0l3 4 3-4z’/%3E%3C/svg%3E”);background-repeat:no-repeat;background-position:right 4px center;max-width:64px}
+/* Mobil: 2 kolon layout */
+@media(max-width:540px){
+.tbl-head{grid-template-columns:1fr 1fr}
+.tbl-head span:nth-child(3),
+.tbl-head span:nth-child(4){display:none}
+.tbl-head span:nth-child(5){font-size:7px}
+
+.tr{grid-template-columns:1fr 1fr;row-gap:0}
+/* Firma: tam satır genişliği */
+.tr .td:nth-child(1){grid-column:1/3;padding-bottom:2px;border-bottom:1px dashed var(–border)}
+/* Ürün: tam satır genişliği */
+.tr .td:nth-child(2){grid-column:1/3;padding-top:4px;padding-bottom:2px}
+/* Fiyat */
+.tr .td:nth-child(3){grid-column:1/2;padding-top:2px}
+/* Tarih — gizle */
+.tr .td:nth-child(4){display:none}
+/* Durum select */
+.tr .td-durum{grid-column:2/3;padding-top:2px;justify-content:flex-end}
+.st-select{font-size:9px;padding:4px 18px 4px 6px}
+/* Aksiyon butonları gizle */
+.td-acts{display:none}
+}
 
 /* Firma arama dropdown */
 .firma-wrap{position:relative}
@@ -171,17 +211,40 @@ select option{background:#fff;color:var(--text);}
 .firma-dd-item .dd-bolge{font-size:10px;color:#5B8FA8;font-weight:500;margin-top:2px}
 .firma-dd-empty{padding:14px;font-size:12px;color:#5B8FA8;text-align:center;background:#ffffff}
 
-/* Status select inline */
-.st-select{padding:4px 8px;border-radius:20px;border:1.5px solid var(–border);font-size:10px;font-weight:700;font-family:inherit;cursor:pointer;background:var(–surface);color:var(–text2);transition:var(–t);-webkit-appearance:none;appearance:none;padding-right:20px;background-image:url(“data:image/svg+xml,%3Csvg xmlns=‘http://www.w3.org/2000/svg’ width=‘8’ height=‘5’ viewBox=‘0 0 8 5’%3E%3Cpath fill=’%235B8FA8’ d=‘M0 0l4 5 4-5z’/%3E%3C/svg%3E”);background-repeat:no-repeat;background-position:right 6px center}
+/* Seçili firma göstergesi */
+.firma-selected-badge{display:inline-flex;align-items:center;gap:6px;padding:10px 14px;border-radius:10px;background:#E8F6FF;border:2px solid #0F4C6E;font-size:13px;font-weight:700;color:#0F4C6E;margin-top:6px;width:100%;box-sizing:border-box;}
+.firma-selected-badge .bolge-tag{font-size:10px;color:#5B8FA8;font-weight:600;margin-left:auto;white-space:nowrap;}
+.firma-clear-btn{background:none;border:none;color:#5B8FA8;cursor:pointer;font-size:14px;padding:0 2px;flex-shrink:0;line-height:1;}
+.firma-clear-btn:hover{color:#991B1B}
 
-/* Empty / Skel */
-.empty{text-align:center;padding:60px 20px;color:var(–text3)}
-.empty .ei{font-size:44px;opacity:.25;margin-bottom:14px}
-.empty h3{font-size:16px;font-weight:700;color:var(–text2);margin-bottom:4px}
-.empty p{font-size:12px;max-width:260px;margin:0 auto}
-.skel{padding:16px}
-.sk{height:100px;border-radius:var(–r);background:linear-gradient(90deg,var(–surface) 25%,var(–surface3) 50%,var(–surface) 75%);background-size:200% 100%;animation:shimmer 1.5s infinite;margin-bottom:10px}
-@keyframes shimmer{0%{background-position:200% 0}100%{background-position:-200% 0}}
+/* ── Kalite Satırları ── */
+.kalite-header{display:grid;grid-template-columns:1fr 88px 32px;gap:6px;margin-bottom:5px;padding:0 2px}
+.kalite-header span{font-size:9px;font-weight:800;color:var(–text3);text-transform:uppercase;letter-spacing:.06em}
+.kalite-row{display:grid;grid-template-columns:1fr 88px 32px;gap:6px;margin-bottom:6px;align-items:center}
+.kalite-row input,.kalite-row select{padding:10px 10px;border-radius:10px;border:1.5px solid rgba(15,76,110,.18);background:#F0F9FF;font-family:inherit;font-size:13px;color:#0A2A3F;width:100%;transition:var(–t)}
+.kalite-row input:focus,.kalite-row select:focus{border-color:#156089;outline:none;box-shadow:0 0 0 3px rgba(15,76,110,.09)}
+.kalite-row input::placeholder{color:var(–text3);font-size:12px}
+.kalite-row .kr-urun{grid-column:1 / -1}
+.kalite-row-inner{display:grid;grid-template-columns:1fr 88px 32px;gap:6px;align-items:center;margin-top:4px}
+.kalite-wrap{background:rgba(15,76,110,.03);border:1.5px solid var(–border);border-radius:12px;padding:10px 10px 8px;margin-bottom:8px}
+.kalite-wrap:last-child{margin-bottom:0}
+.kalite-del{width:32px;height:32px;border-radius:8px;border:1.5px solid rgba(153,27,27,.2);background:rgba(153,27,27,.06);color:#991B1B;cursor:pointer;font-size:13px;display:flex;align-items:center;justify-content:center;flex-shrink:0;font-family:inherit}
+.kalite-del:active{background:rgba(153,27,27,.15)}
+.kalite-durum-sel{-webkit-appearance:none;appearance:none;background-image:url(“data:image/svg+xml,%3Csvg xmlns=‘http://www.w3.org/2000/svg’ width=‘8’ height=‘5’ viewBox=‘0 0 8 5’%3E%3Cpath fill=’%235B8FA8’ d=‘M0 0l4 5 4-5z’/%3E%3C/svg%3E”);background-repeat:no-repeat;background-position:right 8px center;padding-right:24px !important;font-size:11px !important;}
+.add-kalite-btn{width:100%;padding:10px;border-radius:10px;border:2px dashed rgba(15,76,110,.25);background:rgba(15,76,110,.03);color:#0F4C6E;font-weight:700;font-size:13px;cursor:pointer;font-family:inherit;transition:var(–t);margin-top:4px}
+.add-kalite-btn:hover{background:rgba(15,76,110,.07);border-color:rgba(15,76,110,.4)}
+.add-kalite-btn:active{transform:scale(.98)}
+.kalite-count-badge{display:inline-flex;align-items:center;gap:4px;font-size:10px;font-weight:700;color:#0F4C6E;background:rgba(15,76,110,.09);padding:2px 8px;border-radius:20px;margin-left:8px;vertical-align:middle}
+
+/* Modal */
+.modal{position:fixed;inset:0;z-index:300;display:none;align-items:center;justify-content:center;padding:20px;background:rgba(10,40,60,.5);backdrop-filter:blur(4px)}
+.modal.on{display:flex}
+.m-card{background:var(–surface);border:1.5px solid var(–border2);border-radius:var(–r3);max-width:400px;width:100%;padding:24px;box-shadow:var(–shadow-lg);animation:pop .22s;border-top:3px solid #0F4C6E}
+@keyframes pop{from{opacity:0;transform:scale(.93)}to{opacity:1;transform:scale(1)}}
+.m-card h3{font-size:16px;font-weight:800;margin-bottom:8px;display:flex;align-items:center;gap:8px;color:var(–text)}
+.m-card p{font-size:13px;color:var(–text2);margin-bottom:18px;line-height:1.5}
+.mi{width:32px;height:32px;border-radius:8px;display:inline-flex;align-items:center;justify-content:center;font-size:16px}
+.mi.dng{background:var(–red-soft)}
 
 /* Overlay / Drawer */
 .overlay{position:fixed;inset:0;background:rgba(10,40,60,.45);backdrop-filter:blur(4px);z-index:201;opacity:0;pointer-events:none;transition:opacity .22s}
@@ -207,42 +270,6 @@ select option{background:#fff;color:var(--text);}
 .btn.gho{background:var(–surface2);color:var(–text2);border:1.5px solid var(–border2)}
 .btn.gho:hover{background:var(–surface3)}
 
-/* Seçili firma göstergesi */
-.firma-selected-badge{display:inline-flex;align-items:center;gap:6px;padding:10px 14px;border-radius:10px;background:#E8F6FF;border:2px solid #0F4C6E;font-size:13px;font-weight:700;color:#0F4C6E;margin-top:6px;width:100%;box-sizing:border-box;}
-.firma-selected-badge .bolge-tag{font-size:10px;color:#5B8FA8;font-weight:600;margin-left:auto;white-space:nowrap;}
-.firma-clear-btn{background:none;border:none;color:#5B8FA8;cursor:pointer;font-size:14px;padding:0 2px;flex-shrink:0;line-height:1;}
-.firma-clear-btn:hover{color:#991B1B}
-
-/* ── Kalite Satırları ── */
-.kalite-header{display:grid;grid-template-columns:1fr 88px 32px;gap:6px;margin-bottom:5px;padding:0 2px}
-.kalite-header span{font-size:9px;font-weight:800;color:var(–text3);text-transform:uppercase;letter-spacing:.06em}
-.kalite-row{display:grid;grid-template-columns:1fr 88px 32px;gap:6px;margin-bottom:6px;align-items:center}
-.kalite-row input,.kalite-row select{padding:10px 10px;border-radius:10px;border:1.5px solid rgba(15,76,110,.18);background:#F0F9FF;font-family:inherit;font-size:13px;color:#0A2A3F;width:100%;transition:var(–t)}
-.kalite-row input:focus,.kalite-row select:focus{border-color:#156089;outline:none;box-shadow:0 0 0 3px rgba(15,76,110,.09)}
-.kalite-row input::placeholder{color:var(–text3);font-size:12px}
-/* Ürün alanı tam genişlikte (span 2 col) */
-.kalite-row .kr-urun{grid-column:1 / -1}
-.kalite-row-inner{display:grid;grid-template-columns:1fr 88px 32px;gap:6px;align-items:center;margin-top:4px}
-.kalite-wrap{background:rgba(15,76,110,.03);border:1.5px solid var(–border);border-radius:12px;padding:10px 10px 8px;margin-bottom:8px}
-.kalite-wrap:last-child{margin-bottom:0}
-.kalite-del{width:32px;height:32px;border-radius:8px;border:1.5px solid rgba(153,27,27,.2);background:rgba(153,27,27,.06);color:#991B1B;cursor:pointer;font-size:13px;display:flex;align-items:center;justify-content:center;flex-shrink:0;font-family:inherit}
-.kalite-del:active{background:rgba(153,27,27,.15)}
-.kalite-durum-sel{-webkit-appearance:none;appearance:none;background-image:url(“data:image/svg+xml,%3Csvg xmlns=‘http://www.w3.org/2000/svg’ width=‘8’ height=‘5’ viewBox=‘0 0 8 5’%3E%3Cpath fill=’%235B8FA8’ d=‘M0 0l4 5 4-5z’/%3E%3C/svg%3E”);background-repeat:no-repeat;background-position:right 8px center;padding-right:24px !important;font-size:11px !important;}
-.add-kalite-btn{width:100%;padding:10px;border-radius:10px;border:2px dashed rgba(15,76,110,.25);background:rgba(15,76,110,.03);color:#0F4C6E;font-weight:700;font-size:13px;cursor:pointer;font-family:inherit;transition:var(–t);margin-top:4px}
-.add-kalite-btn:hover{background:rgba(15,76,110,.07);border-color:rgba(15,76,110,.4)}
-.add-kalite-btn:active{transform:scale(.98)}
-.kalite-count-badge{display:inline-flex;align-items:center;gap:4px;font-size:10px;font-weight:700;color:#0F4C6E;background:rgba(15,76,110,.09);padding:2px 8px;border-radius:20px;margin-left:8px;vertical-align:middle}
-
-/* Modal */
-.modal{position:fixed;inset:0;z-index:300;display:none;align-items:center;justify-content:center;padding:20px;background:rgba(10,40,60,.5);backdrop-filter:blur(4px)}
-.modal.on{display:flex}
-.m-card{background:var(–surface);border:1.5px solid var(–border2);border-radius:var(–r3);max-width:400px;width:100%;padding:24px;box-shadow:var(–shadow-lg);animation:pop .22s;border-top:3px solid #0F4C6E}
-@keyframes pop{from{opacity:0;transform:scale(.93)}to{opacity:1;transform:scale(1)}}
-.m-card h3{font-size:16px;font-weight:800;margin-bottom:8px;display:flex;align-items:center;gap:8px;color:var(–text)}
-.m-card p{font-size:13px;color:var(–text2);margin-bottom:18px;line-height:1.5}
-.mi{width:32px;height:32px;border-radius:8px;display:inline-flex;align-items:center;justify-content:center;font-size:16px}
-.mi.dng{background:var(–red-soft)}
-
 /* Toasts */
 .toasts{position:fixed;bottom:calc(64px + env(safe-area-inset-bottom) + 8px);left:50%;transform:translateX(-50%);z-index:400;display:flex;flex-direction:column;gap:8px;pointer-events:none}
 .toast{padding:10px 18px;border-radius:var(–r);font-size:12px;font-weight:600;box-shadow:var(–shadow-lg);animation:tIn .25s;max-width:90vw;white-space:nowrap}
@@ -252,6 +279,15 @@ select option{background:#fff;color:var(--text);}
 .toast.info{background:#0F4C6E;color:#fff}
 @keyframes tIn{from{opacity:0;transform:translateY(8px)}}
 @keyframes tOut{to{opacity:0;transform:translateY(8px)}}
+
+/* Empty / Skel */
+.empty{text-align:center;padding:60px 20px;color:var(–text3)}
+.empty .ei{font-size:44px;opacity:.25;margin-bottom:14px}
+.empty h3{font-size:16px;font-weight:700;color:var(–text2);margin-bottom:4px}
+.empty p{font-size:12px;max-width:260px;margin:0 auto}
+.skel{padding:16px}
+.sk{height:100px;border-radius:var(–r);background:linear-gradient(90deg,var(–surface) 25%,var(–surface3) 50%,var(–surface) 75%);background-size:200% 100%;animation:shimmer 1.5s infinite;margin-bottom:10px}
+@keyframes shimmer{0%{background-position:200% 0}100%{background-position:-200% 0}}
 
 /* Nav */
 .bnav{position:fixed;bottom:0;left:0;right:0;height:calc(56px + env(safe-area-inset-bottom));background:#0F4C6E;border-top:2px solid #EA580C;display:flex;align-items:stretch;z-index:200;padding-bottom:env(safe-area-inset-bottom);box-shadow:0 -2px 16px rgba(10,40,60,.25)}
@@ -283,8 +319,7 @@ select option{background:#fff;color:var(--text);}
 @media(max-width:480px){
 .topbar{padding-left:14px;padding-right:14px}
 .kpi-val{font-size:18px}
-.list{padding:0 8px 8px}
-.teklif-body{grid-template-columns:1fr}
+.list{padding:0 6px 8px}
 .field-row{grid-template-columns:1fr}
 }
 *{-webkit-overflow-scrolling:touch}
@@ -315,7 +350,7 @@ a,button{-webkit-tap-highlight-color:transparent}
   <div class="topbar-actions">
     <span class="sync-dot" id="sd"></span>
     <button class="chip pri" onclick="openDw()" id="newbtn">＋ Yeni</button>
-    <button class="chip" onclick="exportXL()" id="xbtn">📊</button>
+    <button class="chip" onclick="exportXL()" id="xbtn" title="Görünen kayıtları Excel'e aktar">📊</button>
   </div>
 </header>
 
@@ -377,8 +412,6 @@ a,button{-webkit-tap-highlight-color:transparent}
   <input type="hidden" id="f-firma-id">
   <input type="hidden" id="f-firma-bolge">
 
-  <!-- Firma seçici -->
-
   <div class="field" id="field-firma">
     <label>Firma Adı *</label>
     <div class="firma-wrap">
@@ -397,16 +430,12 @@ a,button{-webkit-tap-highlight-color:transparent}
     <div class="err">Firma seçimi zorunlu</div>
   </div>
 
-  <!-- Kaliteler & Fiyatlar -->
-
   <div class="field" id="field-kaliteler">
     <label>Kaliteler & Fiyatlar * <span class="kalite-count-badge" id="kalite-count">0 kalite</span></label>
     <div id="kalite-rows-container"></div>
     <button type="button" class="add-kalite-btn" onclick="addKaliteRow()">＋ Kalite Ekle</button>
     <div class="err" id="kalite-err" style="display:none">En az bir ürün/kalite adı girin</div>
   </div>
-
-  <!-- Ortak tarih/not alanları -->
 
   <div class="field-row">
     <div class="field">
@@ -451,6 +480,9 @@ const SK="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6I
 const db = supabase.createClient(SU, SK);
 
 let D = [], M = [], curF = 'Hepsi', cfCb = null;
+// Aktif filtre sonuçlarını tutan dizi (Excel için)
+let currentFiltered = [];
+
 const esc = s => s == null ? '' : String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#039;');
 const trl = s => (s||'').toString().replaceAll('İ','i').replaceAll('I','ı').toLowerCase();
 const fmt = d => { if(!d) return ''; const p=d.split('-'); return p.length===3 ? p[2]+'.'+p[1]+'.'+p[0] : d; };
@@ -473,9 +505,10 @@ function statusClass(st) {
   const map={'Beklemede':'beklemede','Teklif Verildi':'teklif','Müzakerede':'muzakere','Revize İstendi':'revize','Onaylandı':'onaylandi','Onaylanmadı':'onaylanmadi'};
   return map[st]||'beklemede';
 }
-function statusBadgeClass(st) {
-  const map={'Beklemede':'st-badge-beklemede','Teklif Verildi':'st-badge-teklif','Müzakerede':'st-badge-muzakere','Revize İstendi':'st-badge-revize','Onaylandı':'st-badge-onaylandi','Onaylanmadı':'st-badge-onaylanmadi'};
-  return map[st]||'st-badge-beklemede';
+// Durum select için renk sınıfı
+function statusSelectClass(st) {
+  const map={'Beklemede':'s-beklemede','Teklif Verildi':'s-teklif','Müzakerede':'s-muzakere','Revize İstendi':'s-revize','Onaylandı':'s-onaylandi','Onaylanmadı':'s-onaylanmadi'};
+  return map[st]||'s-beklemede';
 }
 function statusEmoji(st) {
   const map={'Beklemede':'⏳','Teklif Verildi':'📤','Müzakerede':'🤝','Revize İstendi':'🔄','Onaylandı':'✅','Onaylanmadı':'❌'};
@@ -526,13 +559,12 @@ function buildStats() {
   document.getElementById('n-onay').textContent=onay;
   document.getElementById('n-ret').textContent=ret;
 
+  // ── Değişiklik 2: Bekleyen Tutar kaldırıldı ──
   const onayTutar=D.filter(d=>d.durum==='Onaylandı'&&d.fiyat).reduce((s,d)=>s+parseFloat(d.fiyat||0),0);
-  const bekTutar=D.filter(d=>['Teklif Verildi','Müzakerede','Revize İstendi'].includes(d.durum)&&d.fiyat).reduce((s,d)=>s+parseFloat(d.fiyat||0),0);
   const onayRate=all>0?Math.round(onay/all*100):0;
 
   document.getElementById('mini-stats').innerHTML=
     '<div class="ms"><span class="ms-icon">✅</span><div class="ms-info"><span class="ms-label">Onaylı Tutar</span><span class="ms-val grn">'+onayTutar.toLocaleString('tr-TR',{minimumFractionDigits:2})+'$</span></div></div>'+
-    '<div class="ms"><span class="ms-icon">📤</span><div class="ms-info"><span class="ms-label">Bekleyen Tutar</span><span class="ms-val amb">'+bekTutar.toLocaleString('tr-TR',{minimumFractionDigits:2})+'$</span></div></div>'+
     '<div class="ms"><span class="ms-icon">📊</span><div class="ms-info"><span class="ms-label">Onay Oranı</span><span class="ms-val blu">%'+onayRate+'</span></div></div>'+
     '<div class="ms"><span class="ms-icon">🏢</span><div class="ms-info"><span class="ms-label">Firma Sayısı</span><span class="ms-val">'+(new Set(D.map(d=>d.firma_adi)).size)+'</span></div></div>';
 }
@@ -553,6 +585,9 @@ function render() {
   if(curF!=='Hepsi') fil=fil.filter(d=>d.durum===curF);
   if(q) fil=fil.filter(d=>trl(d.firma_adi).includes(q)||trl(d.urun).includes(q)||trl(d.notlar||'').includes(q));
 
+  // ── Değişiklik 3: Aktif filtreyi kaydet (Excel için) ──
+  currentFiltered = fil;
+
   if(!fil.length){
     area.innerHTML=D.length===0
       ?'<div class="empty"><div class="ei">📤</div><h3>Henüz teklif yok</h3><p>"＋ Yeni" ile ilk teklifinizi ekleyin.</p></div>'
@@ -563,8 +598,8 @@ function render() {
   let rows='';
   fil.forEach((d,i)=>{
     const sc=statusClass(d.durum);
+    const ssc=statusSelectClass(d.durum);
     const id=esc(String(d.id));
-    const bolge=getBolge(d.firma_adi);
 
     // Geçerlilik uyarısı
     let gecWarn='';
@@ -574,29 +609,31 @@ function render() {
       else if(diff<=3) gecWarn=' 🟠';
     }
 
+    // ── Değişiklik 1: Durum select direkt satırda, renkli ──
     const statOpts=['Beklemede','Teklif Verildi','Müzakerede','Revize İstendi','Onaylandı','Onaylanmadı']
-      .map(s=>`<option value="${s}"${s===d.durum?' selected':''}>${s}</option>`).join('');
+      .map(s=>`<option value="${s}"${s===d.durum?' selected':''}>${statusEmoji(s)} ${s}</option>`).join('');
 
     rows+=`<div class="tr st-${sc}" style="animation-delay:${i*0.02}s">
-      <div class="td td-firma">
-        <div class="td-firma-name" title="${esc(d.firma_adi)}">${esc(d.firma_adi)}</div>
-        ${bolge?`<div class="td-firma-sub">📍${esc(bolge)}</div>`:''}
+      <div class="td">
+        <div class="td-firma-name">${esc(d.firma_adi)}</div>
       </div>
-      <div class="td td-urun" title="${esc(d.urun)}">${esc(d.urun)}</div>
+      <div class="td td-urun">${esc(d.urun)}</div>
       <div class="td"><span class="td-price${d.fiyat?'':' empty'}">${d.fiyat?fmtPara(d.fiyat):'—'}</span></div>
       <div class="td"><span class="td-date${d.teklif_tarihi?'':' empty'}">${d.teklif_tarihi?fmt(d.teklif_tarihi):'—'}</span></div>
-      <div class="td"><span class="td-date${d.gecerlilik_tarihi?'':' empty'}">${d.gecerlilik_tarihi?fmt(d.gecerlilik_tarihi)+gecWarn:'—'}</span></div>
+      <div class="td td-durum">
+        <select class="st-select ${ssc}" data-id="${id}" onchange="updateStatus(this)">${statOpts}</select>
+      </div>
       <div class="td td-acts">
-        <select class="st-select" data-id="${id}" onchange="updateStatus(this)">${statOpts}</select>
         <button class="tb edt" onclick="editRow('${id}')" title="Düzenle">✏️</button>
         <button class="tb dng" onclick="askDel('${id}')" title="Sil">🗑️</button>
       </div>
     </div>`;
   });
 
+  // ── Değişiklik 4: Bölge kolonu kaldırıldı, tablo başlığı güncellendi ──
   area.innerHTML=`<div class="tbl-wrap">
     <div class="tbl-head">
-      <span>Firma</span><span>Ürün / Kalite</span><span>Fiyat</span><span>Teklif Tar.</span><span>Geçerlilik</span><span></span>
+      <span>Firma</span><span>Ürün / Kalite</span><span>Fiyat</span><span>Teklif Tar.</span><span>Durum</span>
     </div>
     ${rows}
   </div>`;
@@ -604,12 +641,21 @@ function render() {
 
 async function updateStatus(sel) {
   const id=sel.dataset.id, st=sel.value;
+  // Renk sınıfını anında güncelle
+  sel.className='st-select '+statusSelectClass(st);
   dot('busy');
   const {error}=await db.from('fiyat_teklifleri').update({durum:st,updated_at:new Date().toISOString()}).eq('id',id);
   if(error){dot('err');toast('Hata','bad');return;}
   const it=D.find(x=>String(x.id)===String(id));
-  if(it) it.durum=st;
-  dot('ok'); toast('Durum güncellendi','ok'); buildStats(); render();
+  if(it){
+    it.durum=st;
+    // Satır border rengini güncelle
+    const tr=sel.closest('.tr');
+    if(tr){
+      tr.className='tr st-'+statusClass(st);
+    }
+  }
+  dot('ok'); toast('Durum güncellendi','ok'); buildStats();
 }
 
 // ── FİRMA DROPDOWN ──
@@ -707,8 +753,6 @@ function addKaliteRow(urun='', fiyat='', durum='Teklif Verildi') {
 
   document.getElementById('kalite-rows-container').appendChild(wrap);
   updateKaliteCount();
-
-  // Focus ürün alanı
   setTimeout(()=> wrap.querySelector('input[data-field="urun"]').focus(), 80);
 }
 
@@ -760,7 +804,7 @@ function openDw() {
   document.getElementById('sv-btn').textContent='Kaydet';
   resetFirmaField();
   clearKaliteRows();
-  addKaliteRow(); // 1 boş satırla başla
+  addKaliteRow();
   document.getElementById('f-tarih').value=new Date().toISOString().split('T')[0];
   document.getElementById('f-gecerlilik').value='';
   document.getElementById('f-not').value='';
@@ -829,7 +873,6 @@ async function save() {
 
   let error;
   if(id) {
-    // Düzenleme: tek satır güncelle
     const k=gecerli[0];
     ({error}=await db.from('fiyat_teklifleri').update({
       firma_adi:firmaSelected.firma_adi,
@@ -838,7 +881,6 @@ async function save() {
       notlar, updated_at:now
     }).eq('id',id));
   } else {
-    // Yeni: toplu insert (tüm kaliteler)
     const payload=gecerli.map(k=>({
       firma_adi:firmaSelected.firma_adi,
       urun:k.urun, fiyat:k.fiyat, durum:k.durum,
@@ -872,39 +914,48 @@ function clM() { document.getElementById('mod-cf').classList.remove('on'); cfCb=
 document.getElementById('cf-ok').addEventListener('click',()=>{ const c=cfCb; clM(); if(c) c(); });
 document.getElementById('mod-cf').addEventListener('click',e=>{ if(e.target===e.currentTarget) clM(); });
 
-// ── EXCEL ──
+// ── EXCEL — Değişiklik 3: Sadece görünen (filtrelenmiş) kayıtları export et ──
 async function exportXL() {
-  if(!D.length){toast('Veri yok','wrn');return;}
+  const exportData = currentFiltered.length ? currentFiltered : D;
+  if(!exportData.length){toast('Veri yok','wrn');return;}
+
+  const q = document.getElementById('q').value.trim();
+  const filterLabel = q ? `"${q}" araması` : (curF !== 'Hepsi' ? curF : 'Tüm Teklifler');
+
   const btn=document.getElementById('xbtn'); btn.disabled=true; btn.textContent='⏳';
   try {
     const wb=new ExcelJS.Workbook(); wb.creator='Yanteks Pro';
     const sh=wb.addWorksheet('Teklifler');
     const dt=new Date().toLocaleDateString('tr-TR');
-    sh.mergeCells('A1:H1');
-    const tc=sh.getCell('A1'); tc.value='YANTEKS FİYAT TEKLİFLERİ · '+dt;
+
+    sh.mergeCells('A1:G1');
+    const tc=sh.getCell('A1'); tc.value='YANTEKS FİYAT TEKLİFLERİ · '+filterLabel+' · '+dt;
     tc.font={bold:true,size:14,color:{argb:'FFFFFFFF'}};
     tc.fill={type:'pattern',pattern:'solid',fgColor:{argb:'FF0F4C6E'}};
     tc.alignment={horizontal:'center',vertical:'middle'}; sh.getRow(1).height=30;
-    const hr=sh.addRow(['FİRMA','BÖLGE','ÜRÜN','FİYAT ($)','DURUM','TEKLİF TARİHİ','GEÇERLİLİK','NOTLAR']);
+
+    const hr=sh.addRow(['FİRMA','ÜRÜN','FİYAT ($)','DURUM','TEKLİF TARİHİ','GEÇERLİLİK','NOTLAR']);
     hr.font={bold:true,color:{argb:'FFFFFFFF'}}; hr.height=22;
     hr.eachCell(c=>{c.fill={type:'pattern',pattern:'solid',fgColor:{argb:'FF1E5A7A'}};c.alignment={horizontal:'center'};});
-    sh.columns=[{width:28},{width:16},{width:30},{width:14},{width:18},{width:16},{width:16},{width:35}];
+    sh.columns=[{width:30},{width:30},{width:14},{width:18},{width:16},{width:16},{width:35}];
+
     const stColor={'Onaylandı':'FF15803D','Onaylanmadı':'FF991B1B','Teklif Verildi':'FFEA580C','Müzakerede':'FF1D4ED8','Revize İstendi':'FF5B21B6','Beklemede':'FF5B8FA8'};
-    D.forEach(d=>{
-      const bolge=getBolge(d.firma_adi);
-      const row=sh.addRow([d.firma_adi,bolge,d.urun,d.fiyat||'',d.durum,fmt(d.teklif_tarihi||''),fmt(d.gecerlilik_tarihi||''),d.notlar||'']);
+    exportData.forEach(d=>{
+      const row=sh.addRow([d.firma_adi,d.urun,d.fiyat||'',d.durum,fmt(d.teklif_tarihi||''),fmt(d.gecerlilik_tarihi||''),d.notlar||'']);
       const col=stColor[d.durum]||'FF5B8FA8';
-      row.getCell(5).font={color:{argb:col},bold:true};
-      row.getCell(4).font={color:{argb:'FF15803D'},bold:true};
-      [4,5].forEach(ci=>row.getCell(ci).alignment={horizontal:'center'});
+      row.getCell(4).font={color:{argb:col},bold:true};
+      row.getCell(3).font={color:{argb:'FF15803D'},bold:true};
+      [3,4].forEach(ci=>row.getCell(ci).alignment={horizontal:'center'});
     });
-    sh.autoFilter={from:'A2',to:'H2'};
+    sh.autoFilter={from:'A2',to:'G2'};
+
     const buf=await wb.xlsx.writeBuffer();
     const blob=new Blob([buf],{type:'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'});
+    const safeLabel=filterLabel.replace(/[^a-zA-Z0-9ğüşıöçĞÜŞİÖÇ_\- ]/g,'').replace(/ /g,'_');
     const a=document.createElement('a'); a.href=URL.createObjectURL(blob);
-    a.download='Yanteks_Teklifler_'+dt.replace(/\./g,'-')+'.xlsx'; a.click(); URL.revokeObjectURL(a.href);
-    toast('Excel indirildi ✓','ok');
-  } catch(e) { toast('Excel hatası','bad'); }
+    a.download='Yanteks_'+safeLabel+'_'+dt.replace(/\./g,'-')+'.xlsx'; a.click(); URL.revokeObjectURL(a.href);
+    toast(`Excel: ${exportData.length} kayıt indirildi ✓`,'ok');
+  } catch(e) { toast('Excel hatası','bad'); console.error(e); }
   finally { btn.disabled=false; btn.textContent='📊'; }
 }
 
