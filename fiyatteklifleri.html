@@ -382,7 +382,7 @@ a,button{-webkit-tap-highlight-color:transparent}
   <div class="m-card" style="max-width:420px">
     <h3>📥 Excel'den Toplu Aktar</h3>
     <p style="margin-bottom:12px">Firma seç, ardından Excel dosyasını yükle.<br>
-    <span style="font-size:11px;color:var(--text3)">Format: <b>A=Ürün Adı</b>, <b>B=Denye (not)</b>, <b>C=Fiyat ($)</b> — 3. satırdan başlar</span></p>
+    <span style="font-size:11px;color:var(--text3)">Format: <b>A=Ürün Adı</b>, <b>B=Fiyat ($)</b> — 3. satırdan başlar (ilk 2 satır başlık)</span></p>
 
 ```
 <div class="field" id="imp-field-firma">
@@ -507,14 +507,7 @@ function clrQ(){document.getElementById('q').value='';document.getElementById('q
 function toggleFirma(firmaAdi){
   if(openFirmalar.has(firmaAdi))openFirmalar.delete(firmaAdi);
   else openFirmalar.add(firmaAdi);
-  const isOpen=openFirmalar.has(firmaAdi);
-  document.querySelectorAll('.firma-card').forEach(card=>{
-    if(card._firmaKey===firmaAdi){
-      card.querySelector('.firma-card-head').classList.toggle('open',isOpen);
-      card.querySelector('.firma-chevron').classList.toggle('open',isOpen);
-      card.querySelector('.firma-teklifler').classList.toggle('open',isOpen);
-    }
-  });
+  render();
 }
 
 function render(){
@@ -639,11 +632,6 @@ function render(){
   });
 
   area.innerHTML=html;
-  // Set JS property for firma key (avoids CSS.escape issues)
-  const allCards=area.querySelectorAll('.firma-card');
-  sorted.forEach(([firmaAdi],fi)=>{
-    if(allCards[fi])allCards[fi]._firmaKey=firmaAdi;
-  });
 }
 
 async function updateStatus(sel){
@@ -952,18 +940,14 @@ async function previewImport(input){
     sh.eachRow((row,rn)=>{
       if(rn<=2)return; // ilk 2 satır başlık
       const urun=String(row.getCell(1).value||'').trim();
-      const denyeRaw=row.getCell(2).value;
-      const fiyatRaw=row.getCell(3).value;
+      const fiyatRaw=row.getCell(2).value;
       if(!urun)return;
-      const denye=denyeRaw!=null?String(denyeRaw).trim():'';
       let fiyat=null;
       if(fiyatRaw!=null){
         const n=parseFloat(String(fiyatRaw).replace(',','.').replace(/[^0-9.]/g,''));
         if(!isNaN(n))fiyat=n;
       }
-      // Denye notlara ekle
-      const notlar=denye?'Denye: '+denye:null;
-      impRows.push({urun,fiyat,notlar});
+      impRows.push({urun,fiyat});
     });
 
     if(!impRows.length){errEl.textContent='Okunan satır yok. A sütununda ürün adı olduğundan emin olun.';errEl.style.display='block';document.getElementById('imp-preview').style.display='none';return}
@@ -974,7 +958,6 @@ async function previewImport(input){
       <div style="display:flex;justify-content:space-between;align-items:center;padding:7px 12px;border-bottom:1px solid var(--border);font-size:11px">
         <span style="font-weight:600;flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(r.urun)}</span>
         <span style="font-weight:800;color:#15803D;font-family:'JetBrains Mono',monospace;margin-left:8px;flex-shrink:0">${r.fiyat!=null?r.fiyat.toFixed(2)+' $':'—'}</span>
-        ${r.notlar?`<span style="font-size:9px;color:var(--text3);margin-left:6px;flex-shrink:0">${esc(r.notlar)}</span>`:''}
       </div>`).join('');
     document.getElementById('imp-preview').style.display='block';
   }catch(e){
@@ -998,7 +981,7 @@ async function doImport(){
   const payload=impRows.map(r=>({
     firma_adi:impFirmaSelected.firma_adi,
     urun:r.urun,fiyat:r.fiyat,durum,
-    teklif_tarihi:tarih,notlar:r.notlar,updated_at:now
+    teklif_tarihi:tarih,updated_at:now
   }));
 
   const {error}=await db.from('fiyat_teklifleri').insert(payload);
