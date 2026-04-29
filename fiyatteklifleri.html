@@ -7,319 +7,237 @@
 <meta name="apple-mobile-web-app-status-bar-style" content="black">
 <meta name="apple-mobile-web-app-title" content="Yanteks Pro">
 <meta name="theme-color" content="#0F4C6E">
-<link rel="apple-touch-icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' rx='22' fill='%230F4C6E'/><text y='.9em' font-size='72' x='50%' text-anchor='middle'>Y</text></svg>">
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
 <title>Yanteks Pro | Fiyat Teklifleri</title>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/exceljs/4.3.0/exceljs.min.js"></script>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
 <style>
-:root {
-  --bg:#F0F9FF;--surface:#FFFFFF;--surface2:#E8F6FF;--surface3:#D0EDFF;--surface4:#BAE6FD;
+:root{
+  --bg:#F0F9FF;--surface:#FFFFFF;--surface2:#E8F6FF;--surface3:#D0EDFF;
   --text:#0A2A3F;--text2:#1E5A7A;--text3:#5B8FA8;
-  --accent:#0F4C6E;--accent2:#0E4265;--accent3:#156089;
-  --accent-soft:rgba(15,76,110,.09);--accent-glow:rgba(15,76,110,.2);
-  --gold:#EA580C;--gold-soft:rgba(234,88,12,.1);--gold-light:#F97316;
-  --green:#15803D;--green-soft:rgba(21,128,61,.1);
-  --amber:#EA580C;--amber-soft:rgba(234,88,12,.1);
-  --red:#991B1B;--red-soft:rgba(153,27,27,.1);
-  --blue:#1D4ED8;--blue-soft:rgba(29,78,216,.1);
-  --purple:#5B21B6;--purple-soft:rgba(91,33,182,.1);
+  --accent:#0F4C6E;--accent3:#156089;--accent-soft:rgba(15,76,110,.09);
   --border:rgba(15,76,110,.1);--border2:rgba(15,76,110,.18);
   --shadow:0 2px 12px rgba(10,40,60,.08);--shadow-lg:0 8px 32px rgba(10,40,60,.15);
   --r:12px;--r2:16px;--r3:20px;
   --t:.18s cubic-bezier(.4,0,.2,1);--t2:.32s cubic-bezier(.32,.72,0,1);
 }
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
-html{scroll-behavior:smooth}
-body{background:var(--bg);font-family:'Inter',sans-serif;color:var(--text);font-size:14px;-webkit-font-smoothing:antialiased;line-height:1.5;background-image:radial-gradient(ellipse at 80% -10%,rgba(15,76,110,.07) 0%,transparent 55%),radial-gradient(ellipse at 10% 100%,rgba(234,88,12,.05) 0%,transparent 50%);}
-input,textarea,select,button{color:var(--text);font-family:'Inter',sans-serif;-webkit-appearance:none;appearance:none;}
-input::placeholder,textarea::placeholder{color:var(--text3);}
-select option{background:#fff;color:var(--text);}
+body{background:var(--bg);font-family:'Inter',sans-serif;color:var(--text);font-size:14px;-webkit-font-smoothing:antialiased;line-height:1.5}
+input,textarea,select,button{font-family:'Inter',sans-serif;color:var(--text);-webkit-appearance:none;appearance:none}
+select option{background:#fff;color:var(--text)}
 
-/* Topbar */
-.topbar{position:sticky;top:0;z-index:100;background:#0F4C6E;border-bottom:3px solid #EA580C;padding:calc(14px + env(safe-area-inset-top)) 20px 14px;display:flex;justify-content:space-between;align-items:center;box-shadow:0 2px 20px rgba(10,40,60,.3);}
-.topbar-brand{display:flex;align-items:center;gap:11px}
-.topbar-logo{width:34px;height:34px;border-radius:8px;background:#EA580C;color:#fff;display:flex;align-items:center;justify-content:center;font-weight:800;font-size:16px;box-shadow:0 2px 8px rgba(0,0,0,.25)}
-.topbar-title{font-size:13px;font-weight:800;color:rgba(255,255,255,.95);letter-spacing:.1em;text-transform:uppercase}
+.topbar{position:sticky;top:0;z-index:100;background:#0F4C6E;border-bottom:3px solid #EA580C;padding:calc(14px + env(safe-area-inset-top)) 16px 14px;display:flex;justify-content:space-between;align-items:center;box-shadow:0 2px 20px rgba(10,40,60,.3)}
+.topbar-brand{display:flex;align-items:center;gap:10px}
+.topbar-logo{width:32px;height:32px;border-radius:8px;background:#EA580C;color:#fff;display:flex;align-items:center;justify-content:center;font-weight:800;font-size:15px}
+.topbar-title{font-size:13px;font-weight:800;color:#fff;letter-spacing:.1em;text-transform:uppercase}
 .topbar-title span{color:#7DD3FC}
-.topbar-actions{display:flex;align-items:center;gap:8px}
-.sync-dot{width:7px;height:7px;border-radius:50%;background:rgba(255,255,255,.3);transition:var(–t)}
+.topbar-actions{display:flex;align-items:center;gap:7px}
+.sync-dot{width:7px;height:7px;border-radius:50%;background:rgba(255,255,255,.3);transition:var(–t);flex-shrink:0}
 .sync-dot.ok{background:#7DD3FC;box-shadow:0 0 6px rgba(125,211,252,.5)}
 .sync-dot.busy{background:#FCD34D;animation:pulse 1.2s infinite}
 .sync-dot.err{background:#FCA5A5}
 @keyframes pulse{0%,100%{opacity:1}50%{opacity:.3}}
-.chip{display:inline-flex;align-items:center;gap:5px;padding:7px 14px;border-radius:8px;border:1px solid rgba(255,255,255,.2);background:rgba(255,255,255,.1);font-size:11px;font-weight:700;color:#fff;cursor:pointer;transition:var(–t);font-family:inherit;white-space:nowrap}
-.chip:hover{background:rgba(255,255,255,.2)}
+.chip{display:inline-flex;align-items:center;gap:5px;padding:7px 13px;border-radius:8px;border:1px solid rgba(255,255,255,.2);background:rgba(255,255,255,.1);font-size:11px;font-weight:700;color:#fff;cursor:pointer;font-family:inherit;white-space:nowrap;transition:var(–t)}
 .chip:active{transform:scale(.96)}
-.chip.pri{background:#EA580C;border-color:transparent;box-shadow:0 2px 10px rgba(234,88,12,.35)}
-.chip.pri:hover{background:#F97316}
+.chip.pri{background:#EA580C;border-color:transparent}
 .chip:disabled{opacity:.4;pointer-events:none}
 
-/* Dashboard */
-.dash{padding:14px 16px 6px}
-.kpi-row{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-bottom:10px}
-.kpi{background:var(–surface);border:1.5px solid var(–border);border-radius:var(–r2);padding:12px 8px;display:flex;flex-direction:column;align-items:center;cursor:pointer;transition:var(–t);box-shadow:var(–shadow)}
-.kpi:hover{transform:translateY(-2px);box-shadow:var(–shadow-lg)}
+.dash{padding:12px 14px 6px}
+.kpi-row{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:10px}
+.kpi{background:var(–surface);border:1.5px solid var(–border);border-radius:var(–r2);padding:11px 8px;display:flex;flex-direction:column;align-items:center;cursor:pointer;transition:var(–t);box-shadow:var(–shadow)}
 .kpi.active{border-width:2px}
 .kpi.k-all.active{border-color:#0F4C6E;box-shadow:0 0 0 2px #0F4C6E}
-.kpi.k-teklif.active{border-color:#EA580C;box-shadow:0 0 0 2px #EA580C}
 .kpi.k-onay.active{border-color:#15803D;box-shadow:0 0 0 2px #15803D}
 .kpi.k-red.active{border-color:#991B1B;box-shadow:0 0 0 2px #991B1B}
-.kpi-label{font-size:8px;font-weight:800;color:var(–text3);text-transform:uppercase;letter-spacing:.08em;margin-bottom:4px;text-align:center}
+.kpi-label{font-size:8px;font-weight:800;color:var(–text3);text-transform:uppercase;letter-spacing:.08em;margin-bottom:3px;text-align:center}
 .kpi-val{font-size:22px;font-weight:900;font-family:‘JetBrains Mono’,monospace;line-height:1}
 .kpi.k-all .kpi-val{color:#0F4C6E}
-.kpi.k-teklif .kpi-val{color:#EA580C}
 .kpi.k-onay .kpi-val{color:#15803D}
 .kpi.k-red .kpi-val{color:#991B1B}
-.kpi-sub{font-size:8px;color:var(–text3);margin-top:3px;font-weight:600;text-align:center}
+.kpi-sub{font-size:8px;color:var(–text3);margin-top:2px;font-weight:600}
 
-/* Mini stats */
 .mini-stats{display:flex;gap:7px;overflow-x:auto;padding-bottom:8px;scrollbar-width:none}
 .mini-stats::-webkit-scrollbar{display:none}
-.ms{padding:8px 12px;border-radius:var(–r);background:var(–surface);border:1.5px solid var(–border);display:flex;align-items:center;gap:8px;flex-shrink:0;box-shadow:var(–shadow)}
-.ms-icon{font-size:15px;flex-shrink:0}
-.ms-info{display:flex;flex-direction:column;min-width:0}
-.ms-label{font-size:8px;font-weight:800;color:var(–text3);text-transform:uppercase;letter-spacing:.08em;white-space:nowrap}
-.ms-val{font-size:13px;font-weight:900;font-family:‘JetBrains Mono’,monospace;color:var(–text);white-space:nowrap}
-.ms-val.grn{color:#15803D}.ms-val.amb{color:#EA580C}.ms-val.red{color:#991B1B}.ms-val.blu{color:#0F4C6E}
+.ms{padding:8px 12px;border-radius:var(–r);background:var(–surface);border:1.5px solid var(–border);display:flex;align-items:center;gap:8px;flex-shrink:0}
+.ms-icon{font-size:14px}
+.ms-info{display:flex;flex-direction:column}
+.ms-label{font-size:8px;font-weight:800;color:var(–text3);text-transform:uppercase;letter-spacing:.07em;white-space:nowrap}
+.ms-val{font-size:13px;font-weight:900;font-family:‘JetBrains Mono’,monospace;white-space:nowrap}
+.ms-val.grn{color:#15803D}.ms-val.blu{color:#0F4C6E}
 
-/* Search */
-.search-sec{padding:0 16px 8px;display:flex;gap:8px}
-.search-box{flex:1;position:relative}
-.search-box input{width:100%;padding:11px 14px 11px 40px;border-radius:var(–r);border:1.5px solid var(–border);font-size:13px;font-family:inherit;background:var(–surface);color:var(–text);transition:var(–t);box-shadow:var(–shadow)}
+.search-sec{padding:0 14px 8px}
+.search-box{position:relative}
+.search-box input{width:100%;padding:11px 36px 11px 40px;border-radius:var(–r);border:1.5px solid var(–border);font-size:13px;background:var(–surface);color:var(–text);transition:var(–t);box-shadow:var(–shadow)}
 .search-box input:focus{border-color:var(–accent3);box-shadow:0 0 0 3px var(–accent-soft);outline:none}
 .search-box input::placeholder{color:var(–text3)}
 .search-box .ico{position:absolute;left:13px;top:50%;transform:translateY(-50%);color:var(–text3);font-size:14px;pointer-events:none}
 .s-clr{position:absolute;right:10px;top:50%;transform:translateY(-50%);width:20px;height:20px;border-radius:50%;background:var(–surface2);border:1px solid var(–border2);color:var(–text3);font-size:10px;cursor:pointer;display:none;align-items:center;justify-content:center}
 .s-clr.on{display:flex}
 
-/* Filters */
-.filters{display:flex;gap:6px;overflow-x:auto;padding:0 16px 10px;scrollbar-width:none}
+.filters{display:flex;gap:6px;overflow-x:auto;padding:0 14px 10px;scrollbar-width:none}
 .filters::-webkit-scrollbar{display:none}
-.ft{padding:6px 14px;border-radius:100px;border:1.5px solid var(–border);background:var(–surface);font-size:11px;font-weight:700;color:var(–text2);cursor:pointer;transition:var(–t);white-space:nowrap;font-family:inherit;display:flex;align-items:center;gap:5px;flex-shrink:0;box-shadow:var(–shadow)}
-.ft:hover{border-color:var(–accent3);color:var(–text)}
-.ft.on{background:#0F4C6E;color:#fff;border-color:#0F4C6E;box-shadow:0 2px 8px rgba(15,76,110,.3)}
+.ft{padding:6px 14px;border-radius:100px;border:1.5px solid var(–border);background:var(–surface);font-size:11px;font-weight:700;color:var(–text2);cursor:pointer;transition:var(–t);white-space:nowrap;font-family:inherit;display:flex;align-items:center;gap:5px;flex-shrink:0}
+.ft.on{background:#0F4C6E;color:#fff;border-color:#0F4C6E}
 .ft[data-f=“Teklif Verildi”].on{background:#EA580C;border-color:#EA580C}
-.ft[data-f=“Müzakerede”].on{background:#1D4ED8;border-color:#1D4ED8}
 .ft[data-f=“Onaylandı”].on{background:#15803D;border-color:#15803D}
 .ft[data-f=“Onaylanmadı”].on{background:#991B1B;border-color:#991B1B}
-.ft[data-f=“Revize İstendi”].on{background:#5B21B6;border-color:#5B21B6}
-.ft[data-f=“Beklemede”].on{background:#5B8FA8;border-color:#5B8FA8}
-.ft .n{font-size:9px;font-weight:800;padding:2px 7px;border-radius:10px;font-family:‘JetBrains Mono’,monospace}
+.ft .n{font-size:9px;font-weight:800;padding:2px 6px;border-radius:10px;font-family:‘JetBrains Mono’,monospace}
 .ft.on .n{background:rgba(255,255,255,.25);color:#fff}
 .ft:not(.on) .n{background:var(–surface3);color:var(–text3)}
 
-/* ── TABLO — mobil uyumlu, firma+ürün tam gözüksün ── */
-.list{padding:0 8px 8px}
+/* FİRMA KARTI */
+.firma-list{padding:0 10px 8px}
+@keyframes fadeUp{from{opacity:0;transform:translateY(4px)}to{opacity:1;transform:translateY(0)}}
 
-@keyframes fadeUp{from{opacity:0;transform:translateY(3px)}to{opacity:1;transform:translateY(0)}}
+.firma-card{background:var(–surface);border:1.5px solid var(–border);border-radius:var(–r2);margin-bottom:8px;box-shadow:var(–shadow);overflow:hidden;animation:fadeUp .2s both}
+.firma-card-head{display:flex;align-items:center;gap:10px;padding:12px 14px;cursor:pointer;transition:background var(–t);user-select:none}
+.firma-card-head:active{background:var(–surface2)}
+.firma-card-head.open{background:var(–surface2)}
+.firma-avatar{width:38px;height:38px;border-radius:10px;background:#0F4C6E;color:#fff;display:flex;align-items:center;justify-content:center;font-size:15px;font-weight:800;flex-shrink:0;text-transform:uppercase}
+.firma-info{flex:1;min-width:0}
+.firma-name{font-size:13px;font-weight:800;color:var(–text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.firma-meta{display:flex;align-items:center;gap:6px;margin-top:2px;flex-wrap:wrap}
+.firma-teklif-count{font-size:10px;font-weight:600;color:var(–text3)}
+.firma-last-date{font-size:10px;color:var(–text3);font-family:‘JetBrains Mono’,monospace}
+.firma-badges{display:flex;gap:4px}
+.fbadge{display:inline-flex;align-items:center;padding:2px 7px;border-radius:10px;font-size:9px;font-weight:800;white-space:nowrap}
+.fbadge.t{background:rgba(234,88,12,.1);color:#EA580C}
+.fbadge.o{background:rgba(21,128,61,.1);color:#15803D}
+.fbadge.r{background:rgba(153,27,27,.1);color:#991B1B}
+.firma-chevron{font-size:11px;color:var(–text3);transition:transform var(–t);flex-shrink:0}
+.firma-chevron.open{transform:rotate(180deg)}
 
-.tbl-wrap{background:var(–surface);border-radius:var(–r2);border:1.5px solid var(–border);box-shadow:var(–shadow);overflow:hidden}
+/* Teklif satırları */
+.firma-teklifler{display:none;border-top:1px solid var(–border)}
+.firma-teklifler.open{display:block}
 
-/* Masaüstü: 5 kolon (bölge kaldırıldı) */
-.tbl-head{display:grid;grid-template-columns:minmax(0,2.4fr) minmax(0,2fr) 80px 76px 96px;gap:0;background:#0F4C6E;padding:0}
-.tbl-head span{font-size:8px;font-weight:800;color:rgba(255,255,255,.7);text-transform:uppercase;letter-spacing:.07em;padding:7px 8px;white-space:nowrap;overflow:hidden}
+.teklif-row{display:flex;align-items:flex-start;gap:10px;padding:10px 14px;border-bottom:1px solid var(–border);transition:background var(–t)}
+.teklif-row:last-of-type{border-bottom:none}
+.teklif-row:hover{background:var(–surface2)}
 
-.tr{display:grid;grid-template-columns:minmax(0,2.4fr) minmax(0,2fr) 80px 76px 96px;gap:0;border-bottom:1px solid var(–border);animation:fadeUp .2s both;transition:background var(–t);align-items:center}
-.tr:last-child{border-bottom:none}
-.tr:hover{background:var(–surface2)}
-.tr.st-teklif{border-left:3px solid #EA580C}
-.tr.st-muzakere{border-left:3px solid #1D4ED8}
-.tr.st-onaylandi{border-left:3px solid #15803D}
-.tr.st-onaylanmadi{border-left:3px solid #991B1B}
-.tr.st-revize{border-left:3px solid #5B21B6}
-.tr.st-beklemede{border-left:3px solid #5B8FA8}
+/* Tarih sol kolon */
+.tr-date-col{display:flex;flex-direction:column;align-items:center;flex-shrink:0;width:38px;padding-top:2px}
+.tr-date-day{font-size:16px;font-weight:900;font-family:‘JetBrains Mono’,monospace;color:var(–accent);line-height:1}
+.tr-date-mon{font-size:8px;font-weight:800;color:var(–text3);text-transform:uppercase;letter-spacing:.05em;margin-top:1px}
+.tr-date-yr{font-size:8px;font-weight:600;color:var(–text3);font-family:‘JetBrains Mono’,monospace}
 
-.td{padding:7px 8px;font-size:11px;overflow:hidden;min-width:0}
+.tr-body{flex:1;min-width:0}
+.tr-urun{font-size:12px;font-weight:700;color:var(–text);word-break:break-word;line-height:1.3;margin-bottom:4px}
+.tr-fiyat{font-size:13px;font-weight:900;color:#15803D;font-family:‘JetBrains Mono’,monospace}
+.tr-fiyat.empty{color:var(–text3);font-weight:400;font-size:11px;font-family:‘Inter’,sans-serif}
+.tr-note{font-size:10px;color:var(–text3);font-style:italic;margin-top:3px}
 
-/* Firma adı — tam gözüksün, wrap olsun */
-.td-firma-name{font-size:12px;font-weight:700;color:var(–text);word-break:break-word;white-space:normal;line-height:1.35}
-
-/* Ürün adı — tam gözüksün, wrap olsun */
-.td-urun{font-size:11px;color:var(–text2);font-weight:600;word-break:break-word;white-space:normal;line-height:1.35}
-
-.td-price{font-size:11px;font-weight:800;color:#15803D;font-family:‘JetBrains Mono’,monospace;white-space:nowrap}
-.td-price.empty{color:var(–text3);font-weight:400;font-size:10px;font-family:‘Inter’,sans-serif}
-.td-date{font-size:10px;color:var(–text2);font-family:‘JetBrains Mono’,monospace;white-space:nowrap}
-.td-date.empty{color:var(–text3)}
-
-/* Durum select — inline, tüm satırda direkt değiştir */
-.td-durum{padding:5px 6px;display:flex;align-items:center}
+.tr-right{display:flex;flex-direction:column;align-items:flex-end;gap:5px;flex-shrink:0}
 .st-select{
-width:100%;
-padding:5px 22px 5px 8px;
-border-radius:20px;
-border:1.5px solid var(–border);
-font-size:10px;font-weight:700;font-family:inherit;
-cursor:pointer;
-background:var(–surface);
-color:var(–text2);
-transition:var(–t);
+padding:4px 20px 4px 8px;border-radius:20px;
+border:1.5px solid var(–border);font-size:9px;font-weight:700;font-family:inherit;
+cursor:pointer;background:var(–surface);color:var(–text2);
 -webkit-appearance:none;appearance:none;
-background-image:url(“data:image/svg+xml,%3Csvg xmlns=‘http://www.w3.org/2000/svg’ width=‘8’ height=‘5’ viewBox=‘0 0 8 5’%3E%3Cpath fill=’%235B8FA8’ d=‘M0 0l4 5 4-5z’/%3E%3C/svg%3E”);
-background-repeat:no-repeat;
-background-position:right 6px center;
-min-width:0;
+background-image:url(“data:image/svg+xml,%3Csvg xmlns=‘http://www.w3.org/2000/svg’ width=‘7’ height=‘4’ viewBox=‘0 0 7 4’%3E%3Cpath fill=’%235B8FA8’ d=‘M0 0l3.5 4L7 0z’/%3E%3C/svg%3E”);
+background-repeat:no-repeat;background-position:right 5px center;transition:var(–t);
 }
-.st-select:focus{border-color:var(–accent3);outline:none;box-shadow:0 0 0 2px var(–accent-soft)}
-/* Durum renkli border */
-.st-select.s-beklemede{border-color:#5B8FA8;color:#3A7A9C}
+.st-select:focus{outline:none;box-shadow:0 0 0 2px var(–accent-soft)}
 .st-select.s-teklif{border-color:#EA580C;color:#EA580C}
-.st-select.s-muzakere{border-color:#1D4ED8;color:#1D4ED8}
-.st-select.s-revize{border-color:#5B21B6;color:#5B21B6}
 .st-select.s-onaylandi{border-color:#15803D;color:#15803D}
 .st-select.s-onaylanmadi{border-color:#991B1B;color:#991B1B}
 
-/* Aksiyon butonları */
-.td-acts{display:flex;gap:3px;align-items:center;justify-content:flex-end;padding-right:6px}
-.tb{width:24px;height:24px;border-radius:6px;border:1px solid var(–border);display:flex;align-items:center;justify-content:center;background:var(–surface);cursor:pointer;font-size:11px;transition:var(–t);color:var(–text3);flex-shrink:0}
+.tr-acts{display:flex;gap:3px}
+.tb{width:26px;height:26px;border-radius:7px;border:1px solid var(–border);display:flex;align-items:center;justify-content:center;background:var(–surface);cursor:pointer;font-size:11px;transition:var(–t);color:var(–text3)}
 .tb:active{background:var(–surface3)}
-.tb.dng:active{background:var(–red-soft);color:var(–red)}
-.tb.edt:active{background:var(–accent-soft);color:var(–accent)}
+.tb.dng:active{background:rgba(153,27,27,.1);color:#991B1B}
 
-/* Mobil: 2 kolon layout */
-@media(max-width:540px){
-.tbl-head{grid-template-columns:1fr 1fr}
-.tbl-head span:nth-child(3),
-.tbl-head span:nth-child(4){display:none}
-.tbl-head span:nth-child(5){font-size:7px}
+.firma-add-btn{display:flex;align-items:center;justify-content:center;gap:6px;margin:8px 14px 12px;padding:9px 14px;border-radius:var(–r);border:2px dashed rgba(15,76,110,.2);background:rgba(15,76,110,.03);color:#0F4C6E;font-size:12px;font-weight:700;cursor:pointer;font-family:inherit;transition:var(–t);width:calc(100% - 28px)}
+.firma-add-btn:active{transform:scale(.98)}
 
-.tr{grid-template-columns:1fr 1fr;row-gap:0}
-/* Firma: tam satır genişliği */
-.tr .td:nth-child(1){grid-column:1/3;padding-bottom:2px;border-bottom:1px dashed var(–border)}
-/* Ürün: tam satır genişliği */
-.tr .td:nth-child(2){grid-column:1/3;padding-top:4px;padding-bottom:2px}
-/* Fiyat */
-.tr .td:nth-child(3){grid-column:1/2;padding-top:2px}
-/* Tarih — gizle */
-.tr .td:nth-child(4){display:none}
-/* Durum select */
-.tr .td-durum{grid-column:2/3;padding-top:2px;justify-content:flex-end}
-.st-select{font-size:9px;padding:4px 18px 4px 6px}
-/* Aksiyon butonları gizle */
-.td-acts{display:none}
-}
+.empty{text-align:center;padding:60px 20px;color:var(–text3)}
+.empty .ei{font-size:44px;opacity:.25;margin-bottom:14px}
+.empty h3{font-size:16px;font-weight:700;color:var(–text2);margin-bottom:4px}
+.empty p{font-size:12px;max-width:260px;margin:0 auto}
+.skel{padding:12px 10px}
+.sk{height:72px;border-radius:var(–r2);background:linear-gradient(90deg,var(–surface) 25%,var(–surface3) 50%,var(–surface) 75%);background-size:200%;animation:shimmer 1.5s infinite;margin-bottom:8px}
+@keyframes shimmer{0%{background-position:200% 0}100%{background-position:-200% 0}}
 
-/* Firma arama dropdown */
-.firma-wrap{position:relative}
-.firma-dd{display:none;position:absolute;top:100%;left:0;right:0;z-index:99999;background:#ffffff !important;border:2px solid #0F4C6E;border-radius:12px;max-height:240px;overflow-y:auto;margin-top:4px;box-shadow:0 12px 40px rgba(10,40,60,.28);-webkit-overflow-scrolling:touch;}
-.firma-dd.on{display:block}
-.firma-dd-item{padding:13px 14px;cursor:pointer;font-size:13px;font-weight:600;border-bottom:1px solid rgba(15,76,110,.1);color:#0A2A3F;background:#ffffff;-webkit-tap-highlight-color:transparent;user-select:none;}
-.firma-dd-item:last-child{border-bottom:none}
-.firma-dd-item:active{background:#D0EDFF}
-.firma-dd-item .dd-bolge{font-size:10px;color:#5B8FA8;font-weight:500;margin-top:2px}
-.firma-dd-empty{padding:14px;font-size:12px;color:#5B8FA8;text-align:center;background:#ffffff}
-
-/* Seçili firma göstergesi */
-.firma-selected-badge{display:inline-flex;align-items:center;gap:6px;padding:10px 14px;border-radius:10px;background:#E8F6FF;border:2px solid #0F4C6E;font-size:13px;font-weight:700;color:#0F4C6E;margin-top:6px;width:100%;box-sizing:border-box;}
-.firma-selected-badge .bolge-tag{font-size:10px;color:#5B8FA8;font-weight:600;margin-left:auto;white-space:nowrap;}
-.firma-clear-btn{background:none;border:none;color:#5B8FA8;cursor:pointer;font-size:14px;padding:0 2px;flex-shrink:0;line-height:1;}
-.firma-clear-btn:hover{color:#991B1B}
-
-/* ── Kalite Satırları ── */
-.kalite-header{display:grid;grid-template-columns:1fr 88px 32px;gap:6px;margin-bottom:5px;padding:0 2px}
-.kalite-header span{font-size:9px;font-weight:800;color:var(–text3);text-transform:uppercase;letter-spacing:.06em}
-.kalite-row{display:grid;grid-template-columns:1fr 88px 32px;gap:6px;margin-bottom:6px;align-items:center}
-.kalite-row input,.kalite-row select{padding:10px 10px;border-radius:10px;border:1.5px solid rgba(15,76,110,.18);background:#F0F9FF;font-family:inherit;font-size:13px;color:#0A2A3F;width:100%;transition:var(–t)}
-.kalite-row input:focus,.kalite-row select:focus{border-color:#156089;outline:none;box-shadow:0 0 0 3px rgba(15,76,110,.09)}
-.kalite-row input::placeholder{color:var(–text3);font-size:12px}
-.kalite-row .kr-urun{grid-column:1 / -1}
-.kalite-row-inner{display:grid;grid-template-columns:1fr 88px 32px;gap:6px;align-items:center;margin-top:4px}
-.kalite-wrap{background:rgba(15,76,110,.03);border:1.5px solid var(–border);border-radius:12px;padding:10px 10px 8px;margin-bottom:8px}
-.kalite-wrap:last-child{margin-bottom:0}
-.kalite-del{width:32px;height:32px;border-radius:8px;border:1.5px solid rgba(153,27,27,.2);background:rgba(153,27,27,.06);color:#991B1B;cursor:pointer;font-size:13px;display:flex;align-items:center;justify-content:center;flex-shrink:0;font-family:inherit}
-.kalite-del:active{background:rgba(153,27,27,.15)}
-.kalite-durum-sel{-webkit-appearance:none;appearance:none;background-image:url(“data:image/svg+xml,%3Csvg xmlns=‘http://www.w3.org/2000/svg’ width=‘8’ height=‘5’ viewBox=‘0 0 8 5’%3E%3Cpath fill=’%235B8FA8’ d=‘M0 0l4 5 4-5z’/%3E%3C/svg%3E”);background-repeat:no-repeat;background-position:right 8px center;padding-right:24px !important;font-size:11px !important;}
-.add-kalite-btn{width:100%;padding:10px;border-radius:10px;border:2px dashed rgba(15,76,110,.25);background:rgba(15,76,110,.03);color:#0F4C6E;font-weight:700;font-size:13px;cursor:pointer;font-family:inherit;transition:var(–t);margin-top:4px}
-.add-kalite-btn:hover{background:rgba(15,76,110,.07);border-color:rgba(15,76,110,.4)}
-.add-kalite-btn:active{transform:scale(.98)}
-.kalite-count-badge{display:inline-flex;align-items:center;gap:4px;font-size:10px;font-weight:700;color:#0F4C6E;background:rgba(15,76,110,.09);padding:2px 8px;border-radius:20px;margin-left:8px;vertical-align:middle}
-
-/* Modal */
-.modal{position:fixed;inset:0;z-index:300;display:none;align-items:center;justify-content:center;padding:20px;background:rgba(10,40,60,.5);backdrop-filter:blur(4px)}
-.modal.on{display:flex}
-.m-card{background:var(–surface);border:1.5px solid var(–border2);border-radius:var(–r3);max-width:400px;width:100%;padding:24px;box-shadow:var(–shadow-lg);animation:pop .22s;border-top:3px solid #0F4C6E}
-@keyframes pop{from{opacity:0;transform:scale(.93)}to{opacity:1;transform:scale(1)}}
-.m-card h3{font-size:16px;font-weight:800;margin-bottom:8px;display:flex;align-items:center;gap:8px;color:var(–text)}
-.m-card p{font-size:13px;color:var(–text2);margin-bottom:18px;line-height:1.5}
-.mi{width:32px;height:32px;border-radius:8px;display:inline-flex;align-items:center;justify-content:center;font-size:16px}
-.mi.dng{background:var(–red-soft)}
-
-/* Overlay / Drawer */
 .overlay{position:fixed;inset:0;background:rgba(10,40,60,.45);backdrop-filter:blur(4px);z-index:201;opacity:0;pointer-events:none;transition:opacity .22s}
 .overlay.on{opacity:1;pointer-events:auto}
-.drawer{position:fixed;bottom:0;left:0;width:100%;background:#ffffff;border-radius:20px 20px 0 0;padding:22px 24px calc(36px + env(safe-area-inset-bottom));transform:translateY(100%);transition:transform var(–t2);z-index:202;max-height:92vh;overflow-y:auto;box-shadow:var(–shadow-lg);border-top:3px solid #0F4C6E}
+.drawer{position:fixed;bottom:0;left:0;width:100%;background:#fff;border-radius:20px 20px 0 0;padding:22px 20px calc(36px + env(safe-area-inset-bottom));transform:translateY(100%);transition:transform var(–t2);z-index:202;max-height:92vh;overflow-y:auto;box-shadow:var(–shadow-lg);border-top:3px solid #0F4C6E}
 .drawer.on{transform:translateY(0)}
 .dw-bar{width:36px;height:4px;background:var(–surface3);border-radius:2px;margin:-6px auto 18px}
 .drawer h2{font-size:17px;font-weight:800;margin-bottom:18px;color:var(–text)}
 .field{margin-bottom:14px}
 .field label{display:block;font-size:10px;font-weight:800;color:var(–text3);margin-bottom:5px;letter-spacing:.08em;text-transform:uppercase}
-.field input,.field select,.field textarea{width:100%;padding:12px 14px;border-radius:var(–r);border:1.5px solid rgba(15,76,110,.18);background:#F0F9FF;font-family:inherit;font-size:14px;color:#0A2A3F;transition:var(–t)}
+.field input,.field select,.field textarea{width:100%;padding:12px 14px;border-radius:var(–r);border:1.5px solid var(–border2);background:#F0F9FF;font-family:inherit;font-size:14px;color:#0A2A3F;transition:var(–t)}
 .field input:focus,.field select:focus,.field textarea:focus{border-color:var(–accent3);background:var(–surface3);box-shadow:0 0 0 3px var(–accent-soft);outline:none}
 .field textarea{resize:vertical;min-height:72px}
-.field .err{font-size:10px;color:var(–red);margin-top:3px;display:none}
-.field.bad input,.field.bad select{border-color:var(–red);background:var(–red-soft)}
+.field .err{font-size:10px;color:#991B1B;margin-top:3px;display:none}
+.field.bad input,.field.bad select{border-color:#991B1B;background:rgba(153,27,27,.05)}
 .field.bad .err{display:block}
 .field-row{display:grid;grid-template-columns:1fr 1fr;gap:10px}
 .btn-r{display:flex;gap:8px;margin-top:18px}
 .btn{flex:1;padding:13px;border-radius:var(–r);font-weight:800;font-size:13px;cursor:pointer;border:none;font-family:inherit;transition:var(–t)}
-.btn.pri{background:#0F4C6E;color:#fff;box-shadow:0 2px 10px rgba(15,76,110,.3)}
-.btn.pri:hover{background:#0E4265}
+.btn.pri{background:#0F4C6E;color:#fff}
 .btn.pri:disabled{opacity:.4;cursor:not-allowed}
 .btn.gho{background:var(–surface2);color:var(–text2);border:1.5px solid var(–border2)}
-.btn.gho:hover{background:var(–surface3)}
 
-/* Toasts */
+.firma-wrap{position:relative}
+.firma-dd{display:none;position:absolute;top:100%;left:0;right:0;z-index:9999;background:#fff;border:2px solid #0F4C6E;border-radius:12px;max-height:220px;overflow-y:auto;margin-top:4px;box-shadow:0 12px 40px rgba(10,40,60,.25)}
+.firma-dd.on{display:block}
+.firma-dd-item{padding:12px 14px;cursor:pointer;font-size:13px;font-weight:600;border-bottom:1px solid rgba(15,76,110,.08);color:#0A2A3F;-webkit-tap-highlight-color:transparent;user-select:none}
+.firma-dd-item:last-child{border-bottom:none}
+.firma-dd-item:active{background:#D0EDFF}
+.firma-dd-empty{padding:14px;font-size:12px;color:var(–text3);text-align:center}
+.firma-selected-badge{display:flex;align-items:center;gap:8px;padding:10px 14px;border-radius:10px;background:#E8F6FF;border:2px solid #0F4C6E;font-size:13px;font-weight:700;color:#0F4C6E;margin-top:6px}
+.firma-clear-btn{background:none;border:none;color:var(–text3);cursor:pointer;font-size:14px;padding:0 2px;margin-left:auto;flex-shrink:0;line-height:1}
+.firma-clear-btn:hover{color:#991B1B}
+
+.kalite-wrap{background:rgba(15,76,110,.03);border:1.5px solid var(–border);border-radius:12px;padding:10px;margin-bottom:8px}
+.kalite-count-badge{display:inline-flex;align-items:center;font-size:10px;font-weight:700;color:#0F4C6E;background:rgba(15,76,110,.09);padding:2px 8px;border-radius:20px;margin-left:8px;vertical-align:middle}
+.kalite-del{width:32px;height:32px;border-radius:8px;border:1.5px solid rgba(153,27,27,.2);background:rgba(153,27,27,.06);color:#991B1B;cursor:pointer;font-size:13px;display:flex;align-items:center;justify-content:center;flex-shrink:0;font-family:inherit}
+.kalite-del:active{background:rgba(153,27,27,.15)}
+.kalite-durum-sel{-webkit-appearance:none;appearance:none;background-image:url(“data:image/svg+xml,%3Csvg xmlns=‘http://www.w3.org/2000/svg’ width=‘8’ height=‘5’ viewBox=‘0 0 8 5’%3E%3Cpath fill=’%235B8FA8’ d=‘M0 0l4 5 4-5z’/%3E%3C/svg%3E”);background-repeat:no-repeat;background-position:right 8px center;padding-right:24px !important;font-size:11px !important}
+.add-kalite-btn{width:100%;padding:10px;border-radius:10px;border:2px dashed rgba(15,76,110,.25);background:rgba(15,76,110,.03);color:#0F4C6E;font-weight:700;font-size:13px;cursor:pointer;font-family:inherit;margin-top:4px}
+.add-kalite-btn:active{transform:scale(.98)}
+
+.modal{position:fixed;inset:0;z-index:300;display:none;align-items:center;justify-content:center;padding:20px;background:rgba(10,40,60,.5);backdrop-filter:blur(4px)}
+.modal.on{display:flex}
+.m-card{background:var(–surface);border:1.5px solid var(–border2);border-radius:var(–r3);max-width:380px;width:100%;padding:24px;box-shadow:var(–shadow-lg);animation:pop .2s;border-top:3px solid #0F4C6E}
+@keyframes pop{from{opacity:0;transform:scale(.94)}to{opacity:1;transform:scale(1)}}
+.m-card h3{font-size:16px;font-weight:800;margin-bottom:8px;display:flex;align-items:center;gap:8px}
+.m-card p{font-size:13px;color:var(–text2);margin-bottom:18px;line-height:1.5}
+
 .toasts{position:fixed;bottom:calc(64px + env(safe-area-inset-bottom) + 8px);left:50%;transform:translateX(-50%);z-index:400;display:flex;flex-direction:column;gap:8px;pointer-events:none}
 .toast{padding:10px 18px;border-radius:var(–r);font-size:12px;font-weight:600;box-shadow:var(–shadow-lg);animation:tIn .25s;max-width:90vw;white-space:nowrap}
 .toast.ok{background:#0F4C6E;color:#fff}
 .toast.bad{background:#991B1B;color:#fff}
 .toast.wrn{background:#EA580C;color:#fff}
-.toast.info{background:#0F4C6E;color:#fff}
 @keyframes tIn{from{opacity:0;transform:translateY(8px)}}
 @keyframes tOut{to{opacity:0;transform:translateY(8px)}}
 
-/* Empty / Skel */
-.empty{text-align:center;padding:60px 20px;color:var(–text3)}
-.empty .ei{font-size:44px;opacity:.25;margin-bottom:14px}
-.empty h3{font-size:16px;font-weight:700;color:var(–text2);margin-bottom:4px}
-.empty p{font-size:12px;max-width:260px;margin:0 auto}
-.skel{padding:16px}
-.sk{height:100px;border-radius:var(–r);background:linear-gradient(90deg,var(–surface) 25%,var(–surface3) 50%,var(–surface) 75%);background-size:200% 100%;animation:shimmer 1.5s infinite;margin-bottom:10px}
-@keyframes shimmer{0%{background-position:200% 0}100%{background-position:-200% 0}}
-
-/* Nav */
-.bnav{position:fixed;bottom:0;left:0;right:0;height:calc(56px + env(safe-area-inset-bottom));background:#0F4C6E;border-top:2px solid #EA580C;display:flex;align-items:stretch;z-index:200;padding-bottom:env(safe-area-inset-bottom);box-shadow:0 -2px 16px rgba(10,40,60,.25)}
+.bnav{position:fixed;bottom:0;left:0;right:0;height:calc(56px + env(safe-area-inset-bottom));background:#0F4C6E;border-top:2px solid #EA580C;display:flex;align-items:stretch;z-index:200;padding-bottom:env(safe-area-inset-bottom)}
 .bnav-item{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;text-decoration:none;color:rgba(255,255,255,.4);font-size:9px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;-webkit-tap-highlight-color:transparent;cursor:pointer;border:none;background:none;font-family:inherit;padding:0}
 .bnav-item.on{color:#7DD3FC}
 .bnav-item .ni{font-size:18px;line-height:1}
-.bnav-item .nl{font-size:7px}
 .bnav-mid{color:#0F4C6E !important;background:#EA580C;border-radius:10px;margin:6px 1px;padding:2px 8px;flex:1.2;font-weight:800}
-.bnav-spacer{height:calc(58px + env(safe-area-inset-bottom));flex-shrink:0;display:block}
+.bnav-spacer{height:calc(58px + env(safe-area-inset-bottom));display:block}
 
-/* Splash */
-#splash{position:fixed;inset:0;background:#0F4C6E;z-index:99999;display:flex;align-items:center;justify-content:center;transition:opacity .35s ease,transform .35s ease}
+#splash{position:fixed;inset:0;background:#0F4C6E;z-index:99999;display:flex;align-items:center;justify-content:center;transition:opacity .35s,transform .35s}
 #splash.hide{opacity:0;transform:scale(1.04);pointer-events:none}
 .splash-inner{display:flex;flex-direction:column;align-items:center;gap:18px;animation:splashIn .55s cubic-bezier(.32,.72,0,1) both}
-.splash-svg{width:280px;height:auto;filter:drop-shadow(0 4px 20px rgba(0,0,0,.2))}
+.splash-svg{width:260px;height:auto}
 .splash-tagline{font-size:10px;font-weight:700;color:rgba(255,255,255,.5);letter-spacing:.3em;text-transform:uppercase}
 .splash-bar{width:120px;height:2px;background:rgba(255,255,255,.15);border-radius:2px;overflow:hidden}
-.splash-fill{height:100%;background:#EA580C;border-radius:2px;animation:splashSlide .55s ease forwards}
+.splash-fill{height:100%;background:#EA580C;animation:splashSlide .55s ease forwards}
 @keyframes splashIn{from{opacity:0;transform:translateY(14px)}to{opacity:1;transform:translateY(0)}}
 @keyframes splashSlide{from{width:0}to{width:100%}}
 
-/* PTR */
-#ptr-indicator{position:fixed;top:calc(env(safe-area-inset-top) + 58px);left:50%;transform:translateX(-50%) translateY(-60px);z-index:300;background:#0F4C6E;border:1px solid rgba(255,255,255,.15);border-radius:100px;padding:7px 16px;display:flex;align-items:center;gap:8px;font-size:12px;font-weight:600;color:#fff;transition:transform .22s cubic-bezier(.32,.72,0,1),opacity .22s;opacity:0;pointer-events:none;box-shadow:var(–shadow-lg)}
+#ptr-indicator{position:fixed;top:calc(env(safe-area-inset-top) + 58px);left:50%;transform:translateX(-50%) translateY(-60px);z-index:300;background:#0F4C6E;border-radius:100px;padding:7px 16px;display:flex;align-items:center;gap:8px;font-size:12px;font-weight:600;color:#fff;transition:transform .22s,opacity .22s;opacity:0;pointer-events:none}
 #ptr-indicator.show{transform:translateX(-50%) translateY(0);opacity:1}
 #ptr-indicator.spin .ptr-icon{animation:ptrSpin .6s linear infinite}
 @keyframes ptrSpin{to{transform:rotate(360deg)}}
-.ptr-icon{font-size:14px;transition:transform .3s}
+.ptr-icon{font-size:14px}
 
 @media(max-width:480px){
-.topbar{padding-left:14px;padding-right:14px}
-.kpi-val{font-size:18px}
-.list{padding:0 6px 8px}
+.topbar{padding-left:12px;padding-right:12px}
 .field-row{grid-template-columns:1fr}
 }
 *{-webkit-overflow-scrolling:touch}
@@ -332,7 +250,7 @@ a,button{-webkit-tap-highlight-color:transparent}
 <div id="splash">
   <div class="splash-inner">
     <svg class="splash-svg" viewBox="0 0 340 110" xmlns="http://www.w3.org/2000/svg">
-      <text x="170" y="78" font-family="'Inter',Georgia,serif" font-weight="800" font-size="72" text-anchor="middle" fill="white" letter-spacing="-2" opacity="0.95">Yanteks</text>
+      <text x="170" y="78" font-family="'Inter',sans-serif" font-weight="800" font-size="72" text-anchor="middle" fill="white" letter-spacing="-2" opacity="0.95">Yanteks</text>
       <line x1="30" y1="92" x2="310" y2="92" stroke="#EA580C" stroke-width="3" stroke-linecap="round"/>
     </svg>
     <div class="splash-tagline">YÖNETİM SİSTEMİ</div>
@@ -349,21 +267,16 @@ a,button{-webkit-tap-highlight-color:transparent}
   </div>
   <div class="topbar-actions">
     <span class="sync-dot" id="sd"></span>
-    <button class="chip pri" onclick="openDw()" id="newbtn">＋ Yeni</button>
-    <button class="chip" onclick="exportXL()" id="xbtn" title="Görünen kayıtları Excel'e aktar">📊</button>
+    <button class="chip pri" onclick="openDw()">＋ Yeni</button>
+    <button class="chip" onclick="exportXL()" id="xbtn">📊</button>
   </div>
 </header>
 
-<section class="dash" id="dash">
+<section class="dash">
   <div class="kpi-row">
     <div class="kpi k-all active" onclick="setF('Hepsi')" data-f="Hepsi">
       <div class="kpi-label">Toplam</div>
       <div class="kpi-val" id="k-all">0</div>
-      <div class="kpi-sub">teklif</div>
-    </div>
-    <div class="kpi k-teklif" onclick="setF('Teklif Verildi')" data-f="Teklif Verildi">
-      <div class="kpi-label">Verildi</div>
-      <div class="kpi-val" id="k-teklif">0</div>
       <div class="kpi-sub">teklif</div>
     </div>
     <div class="kpi k-onay" onclick="setF('Onaylandı')" data-f="Onaylandı">
@@ -383,34 +296,27 @@ a,button{-webkit-tap-highlight-color:transparent}
 <div class="search-sec">
   <div class="search-box">
     <span class="ico">🔍</span>
-    <input type="text" id="q" placeholder="Firma, ürün veya not ara..." oninput="onQ()">
+    <input type="text" id="q" placeholder="Firma veya ürün ara..." oninput="onQ()">
     <button class="s-clr" id="qc" onclick="clrQ()">✕</button>
   </div>
 </div>
 
 <div class="filters">
   <div class="ft on" data-f="Hepsi" onclick="setF('Hepsi')">Tümü <span class="n" id="n-all">0</span></div>
-  <div class="ft" data-f="Beklemede" onclick="setF('Beklemede')">⏳ Beklemede <span class="n" id="n-bekle">0</span></div>
   <div class="ft" data-f="Teklif Verildi" onclick="setF('Teklif Verildi')">📤 Teklif Verildi <span class="n" id="n-teklif">0</span></div>
-  <div class="ft" data-f="Müzakerede" onclick="setF('Müzakerede')">🤝 Müzakerede <span class="n" id="n-muz">0</span></div>
-  <div class="ft" data-f="Revize İstendi" onclick="setF('Revize İstendi')">🔄 Revize <span class="n" id="n-rev">0</span></div>
   <div class="ft" data-f="Onaylandı" onclick="setF('Onaylandı')">✅ Onaylandı <span class="n" id="n-onay">0</span></div>
   <div class="ft" data-f="Onaylanmadı" onclick="setF('Onaylanmadı')">❌ Onaylanmadı <span class="n" id="n-ret">0</span></div>
 </div>
 
-<div id="list" class="list">
+<div id="list" class="firma-list">
   <div class="skel"><div class="sk"></div><div class="sk"></div><div class="sk"></div></div>
 </div>
-
-<!-- Yeni/Düzenle Drawer -->
 
 <div class="overlay" id="ov" onclick="closeDw()"></div>
 <div class="drawer" id="dw">
   <div class="dw-bar"></div>
   <h2 id="dw-t">📤 Yeni Teklif</h2>
   <input type="hidden" id="eid">
-  <input type="hidden" id="f-firma-id">
-  <input type="hidden" id="f-firma-bolge">
 
   <div class="field" id="field-firma">
     <label>Firma Adı *</label>
@@ -423,8 +329,7 @@ a,button{-webkit-tap-highlight-color:transparent}
       <div class="firma-selected-badge">
         <span>🏢</span>
         <span id="firma-selected-name"></span>
-        <span class="bolge-tag" id="firma-selected-bolge"></span>
-        <button class="firma-clear-btn" onclick="clearFirma()" title="Firmayı değiştir">✕</button>
+        <button class="firma-clear-btn" onclick="clearFirma()">✕</button>
       </div>
     </div>
     <div class="err">Firma seçimi zorunlu</div>
@@ -459,11 +364,9 @@ a,button{-webkit-tap-highlight-color:transparent}
   </div>
 </div>
 
-<!-- Onay Modal -->
-
 <div class="modal" id="mod-cf">
   <div class="m-card">
-    <h3><span class="mi dng">🗑️</span><span id="cf-t">Sil?</span></h3>
+    <h3>🗑️ <span id="cf-t">Sil?</span></h3>
     <p id="cf-b">Bu teklif kalıcı olarak silinecek.</p>
     <div class="btn-r">
       <button class="btn gho" onclick="clM()">İptal</button>
@@ -477,116 +380,85 @@ a,button{-webkit-tap-highlight-color:transparent}
 <script>
 const SU="https://zmlbdpjcergcvcurihuy.supabase.co";
 const SK="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InptbGJkcGpjZXJnY3ZjdXJpaHV5Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzU1MTA2MzIsImV4cCI6MjA5MTA4NjYzMn0.Jh4e_UXSL7CH7EzLBhhXtQYM0-iQwrFU3GHnoe-njBM";
-const db = supabase.createClient(SU, SK);
+const db=supabase.createClient(SU,SK);
 
-let D = [], M = [], curF = 'Hepsi', cfCb = null;
-// Aktif filtre sonuçlarını tutan dizi (Excel için)
-let currentFiltered = [];
+let D=[],M=[],curF='Hepsi',cfCb=null,currentFiltered=[];
+let openFirmalar=new Set();
 
-const esc = s => s == null ? '' : String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#039;');
-const trl = s => (s||'').toString().replaceAll('İ','i').replaceAll('I','ı').toLowerCase();
-const fmt = d => { if(!d) return ''; const p=d.split('-'); return p.length===3 ? p[2]+'.'+p[1]+'.'+p[0] : d; };
-const fmtPara = v => { if(!v && v!==0) return '—'; return parseFloat(v).toLocaleString('tr-TR',{minimumFractionDigits:2,maximumFractionDigits:2})+' $'; };
+const esc=s=>s==null?'':String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#039;');
+const trl=s=>(s||'').toString().replaceAll('İ','i').replaceAll('I','ı').toLowerCase();
+const fmt=d=>{if(!d)return'';const p=d.split('-');return p.length===3?p[2]+'.'+p[1]+'.'+p[0]:d};
+const fmtPara=v=>{if(!v&&v!==0)return'—';return parseFloat(v).toLocaleString('tr-TR',{minimumFractionDigits:2,maximumFractionDigits:2})+' $'};
 
-function getBolge(firmaAdi) {
-  if(!firmaAdi) return '';
-  const m = M.find(x => (x.firma_adi||'').toUpperCase() === (firmaAdi||'').toUpperCase());
-  return m ? m.bolge||'' : '';
+function dot(s){const e=document.getElementById('sd');e.classList.remove('ok','busy','err');if(s)e.classList.add(s)}
+function toast(m,t='info'){
+  const c=document.getElementById('toasts'),el=document.createElement('div');
+  el.className='toast '+t;el.textContent=m;c.appendChild(el);
+  setTimeout(()=>{el.style.animation='tOut .25s forwards';setTimeout(()=>el.remove(),250)},2600);
 }
+function statusEmoji(st){return{'Teklif Verildi':'📤','Onaylandı':'✅','Onaylanmadı':'❌'}[st]||'📤'}
+function statusSelectClass(st){return{'Teklif Verildi':'s-teklif','Onaylandı':'s-onaylandi','Onaylanmadı':'s-onaylanmadi'}[st]||'s-teklif'}
 
-function dot(s) { const e=document.getElementById('sd'); e.classList.remove('ok','busy','err'); if(s) e.classList.add(s); }
-function toast(m, t='info') {
-  const c=document.getElementById('toasts'), el=document.createElement('div');
-  el.className='toast '+t; el.textContent=m; c.appendChild(el);
-  setTimeout(()=>{ el.style.animation='tOut .25s forwards'; setTimeout(()=>el.remove(),250); }, 2600);
-}
-
-function statusClass(st) {
-  const map={'Beklemede':'beklemede','Teklif Verildi':'teklif','Müzakerede':'muzakere','Revize İstendi':'revize','Onaylandı':'onaylandi','Onaylanmadı':'onaylanmadi'};
-  return map[st]||'beklemede';
-}
-// Durum select için renk sınıfı
-function statusSelectClass(st) {
-  const map={'Beklemede':'s-beklemede','Teklif Verildi':'s-teklif','Müzakerede':'s-muzakere','Revize İstendi':'s-revize','Onaylandı':'s-onaylandi','Onaylanmadı':'s-onaylanmadi'};
-  return map[st]||'s-beklemede';
-}
-function statusEmoji(st) {
-  const map={'Beklemede':'⏳','Teklif Verildi':'📤','Müzakerede':'🤝','Revize İstendi':'🔄','Onaylandı':'✅','Onaylanmadı':'❌'};
-  return map[st]||'⏳';
-}
-
-async function loadMusteriler() {
-  const {data,error} = await db.from('musteriler').select('id,firma_adi,bolge').order('firma_adi',{ascending:true});
-  if(!error && data) M = data;
-}
-
-async function sync() {
+async function sync(){
   dot('busy');
-  const [tRes, mRes] = await Promise.all([
+  const [tRes,mRes]=await Promise.all([
     db.from('fiyat_teklifleri').select('*').order('created_at',{ascending:false}),
     db.from('musteriler').select('id,firma_adi,bolge').order('firma_adi',{ascending:true})
   ]);
-  if(tRes.error) {
-    if(tRes.error.code==='42P01') { await createTable(); D=[]; }
-    else { dot('err'); document.getElementById('list').innerHTML='<div class="empty"><div class="ei">⚠️</div><h3>Bağlantı hatası</h3><p>'+esc(tRes.error.message)+'</p></div>'; return; }
-  } else { D = tRes.data||[]; }
-  if(!mRes.error && mRes.data) M = mRes.data;
-  dot('ok'); buildStats(); render();
+  if(tRes.error){dot('err');document.getElementById('list').innerHTML='<div class="empty"><div class="ei">⚠️</div><h3>Bağlantı hatası</h3><p>'+esc(tRes.error.message)+'</p></div>';return}
+  D=tRes.data||[];
+  if(!mRes.error&&mRes.data)M=mRes.data;
+  dot('ok');buildStats();render();
 }
 
-async function createTable() {
-  document.getElementById('list').innerHTML='<div class="empty"><div class="ei">⚙️</div><h3>Tablo oluşturulması gerekiyor</h3><p>Supabase SQL Editor\'da şu komutu çalıştırın:</p><code style="display:block;background:#E8F6FF;padding:12px;border-radius:8px;font-size:11px;margin-top:10px;text-align:left;line-height:1.6;color:#0A2A3F">CREATE TABLE fiyat_teklifleri (<br>&nbsp;&nbsp;id bigserial primary key,<br>&nbsp;&nbsp;firma_adi text not null,<br>&nbsp;&nbsp;urun text not null,<br>&nbsp;&nbsp;fiyat numeric,<br>&nbsp;&nbsp;durum text default \'Beklemede\',<br>&nbsp;&nbsp;teklif_tarihi date,<br>&nbsp;&nbsp;gecerlilik_tarihi date,<br>&nbsp;&nbsp;notlar text,<br>&nbsp;&nbsp;created_at timestamptz default now(),<br>&nbsp;&nbsp;updated_at timestamptz default now()<br>);</code></div>';
-}
-
-function buildStats() {
+function buildStats(){
   const all=D.length;
-  const bekle=D.filter(d=>d.durum==='Beklemede').length;
   const teklif=D.filter(d=>d.durum==='Teklif Verildi').length;
-  const muz=D.filter(d=>d.durum==='Müzakerede').length;
-  const rev=D.filter(d=>d.durum==='Revize İstendi').length;
   const onay=D.filter(d=>d.durum==='Onaylandı').length;
   const ret=D.filter(d=>d.durum==='Onaylanmadı').length;
-
   document.getElementById('k-all').textContent=all;
-  document.getElementById('k-teklif').textContent=teklif+muz+rev;
   document.getElementById('k-onay').textContent=onay;
   document.getElementById('k-red').textContent=ret;
   document.getElementById('n-all').textContent=all;
-  document.getElementById('n-bekle').textContent=bekle;
   document.getElementById('n-teklif').textContent=teklif;
-  document.getElementById('n-muz').textContent=muz;
-  document.getElementById('n-rev').textContent=rev;
   document.getElementById('n-onay').textContent=onay;
   document.getElementById('n-ret').textContent=ret;
-
-  // ── Değişiklik 2: Bekleyen Tutar kaldırıldı ──
   const onayTutar=D.filter(d=>d.durum==='Onaylandı'&&d.fiyat).reduce((s,d)=>s+parseFloat(d.fiyat||0),0);
   const onayRate=all>0?Math.round(onay/all*100):0;
-
   document.getElementById('mini-stats').innerHTML=
     '<div class="ms"><span class="ms-icon">✅</span><div class="ms-info"><span class="ms-label">Onaylı Tutar</span><span class="ms-val grn">'+onayTutar.toLocaleString('tr-TR',{minimumFractionDigits:2})+'$</span></div></div>'+
     '<div class="ms"><span class="ms-icon">📊</span><div class="ms-info"><span class="ms-label">Onay Oranı</span><span class="ms-val blu">%'+onayRate+'</span></div></div>'+
     '<div class="ms"><span class="ms-icon">🏢</span><div class="ms-info"><span class="ms-label">Firma Sayısı</span><span class="ms-val">'+(new Set(D.map(d=>d.firma_adi)).size)+'</span></div></div>';
 }
 
-function setF(f) {
+function setF(f){
   curF=f;
   document.querySelectorAll('.ft').forEach(x=>x.classList.toggle('on',x.dataset.f===f));
   document.querySelectorAll('.kpi').forEach(x=>x.classList.toggle('active',x.dataset.f===f));
   render();
 }
-function onQ() { document.getElementById('qc').classList.toggle('on',document.getElementById('q').value.length>0); render(); }
-function clrQ() { document.getElementById('q').value=''; document.getElementById('qc').classList.remove('on'); render(); }
+function onQ(){document.getElementById('qc').classList.toggle('on',document.getElementById('q').value.length>0);render()}
+function clrQ(){document.getElementById('q').value='';document.getElementById('qc').classList.remove('on');render()}
 
-function render() {
+function toggleFirma(firmaAdi){
+  if(openFirmalar.has(firmaAdi))openFirmalar.delete(firmaAdi);
+  else openFirmalar.add(firmaAdi);
+  // sadece bu kartı güncelle
+  const card=document.querySelector(`.firma-card[data-firma="${CSS.escape(firmaAdi)}"]`);
+  if(!card)return;
+  const isOpen=openFirmalar.has(firmaAdi);
+  card.querySelector('.firma-card-head').classList.toggle('open',isOpen);
+  card.querySelector('.firma-chevron').classList.toggle('open',isOpen);
+  card.querySelector('.firma-teklifler').classList.toggle('open',isOpen);
+}
+
+function render(){
   const area=document.getElementById('list');
   const q=trl(document.getElementById('q').value.trim());
   let fil=[...D];
-  if(curF!=='Hepsi') fil=fil.filter(d=>d.durum===curF);
-  if(q) fil=fil.filter(d=>trl(d.firma_adi).includes(q)||trl(d.urun).includes(q)||trl(d.notlar||'').includes(q));
-
-  // ── Değişiklik 3: Aktif filtreyi kaydet (Excel için) ──
-  currentFiltered = fil;
+  if(curF!=='Hepsi')fil=fil.filter(d=>d.durum===curF);
+  if(q)fil=fil.filter(d=>trl(d.firma_adi).includes(q)||trl(d.urun).includes(q)||trl(d.notlar||'').includes(q));
+  currentFiltered=fil;
 
   if(!fil.length){
     area.innerHTML=D.length===0
@@ -595,216 +467,220 @@ function render() {
     return;
   }
 
-  let rows='';
-  fil.forEach((d,i)=>{
-    const sc=statusClass(d.durum);
-    const ssc=statusSelectClass(d.durum);
-    const id=esc(String(d.id));
+  // Gruplama
+  const firmaMap=new Map();
+  fil.forEach(d=>{
+    if(!firmaMap.has(d.firma_adi))firmaMap.set(d.firma_adi,[]);
+    firmaMap.get(d.firma_adi).push(d);
+  });
+  // Her firmanın tekliflerini tarihe göre yeniden eskiye sırala
+  firmaMap.forEach(teklifler=>{
+    teklifler.sort((a,b)=>{
+      const da=a.teklif_tarihi||a.created_at||'';
+      const db2=b.teklif_tarihi||b.created_at||'';
+      return db2.localeCompare(da);
+    });
+  });
+  // Firmaları son teklif tarihine göre sırala (en yeni üstte)
+  const sorted=[...firmaMap.entries()].sort((a,b)=>{
+    const da=a[1][0]?.teklif_tarihi||a[1][0]?.created_at||'';
+    const db2=b[1][0]?.teklif_tarihi||b[1][0]?.created_at||'';
+    return db2.localeCompare(da);
+  });
 
-    // Geçerlilik uyarısı
-    let gecWarn='';
-    if(d.gecerlilik_tarihi&&['Teklif Verildi','Müzakerede'].includes(d.durum)){
-      const diff=Math.floor((new Date(d.gecerlilik_tarihi)-new Date())/(1000*60*60*24));
-      if(diff<0) gecWarn=' 🔴';
-      else if(diff<=3) gecWarn=' 🟠';
-    }
+  let html='';
+  sorted.forEach(([firmaAdi,teklifler],fi)=>{
+    const isOpen=openFirmalar.has(firmaAdi)||(q.length>0);
+    const tCount=teklifler.length;
+    const lastDate=teklifler[0]?.teklif_tarihi?fmt(teklifler[0].teklif_tarihi):'';
+    const teklifN=teklifler.filter(t=>t.durum==='Teklif Verildi').length;
+    const onayN=teklifler.filter(t=>t.durum==='Onaylandı').length;
+    const retN=teklifler.filter(t=>t.durum==='Onaylanmadı').length;
+    const av=firmaAdi.trim().charAt(0).toUpperCase();
 
-    // ── Değişiklik 1: Durum select direkt satırda, renkli ──
-    const statOpts=['Beklemede','Teklif Verildi','Müzakerede','Revize İstendi','Onaylandı','Onaylanmadı']
-      .map(s=>`<option value="${s}"${s===d.durum?' selected':''}>${statusEmoji(s)} ${s}</option>`).join('');
+    let badges='';
+    if(teklifN)badges+=`<span class="fbadge t">📤 ${teklifN}</span>`;
+    if(onayN)badges+=`<span class="fbadge o">✅ ${onayN}</span>`;
+    if(retN)badges+=`<span class="fbadge r">❌ ${retN}</span>`;
 
-    rows+=`<div class="tr st-${sc}" style="animation-delay:${i*0.02}s">
-      <div class="td">
-        <div class="td-firma-name">${esc(d.firma_adi)}</div>
+    let rowsHtml='';
+    teklifler.forEach(d=>{
+      const id=esc(String(d.id));
+      const ssc=statusSelectClass(d.durum);
+      const statOpts=['Teklif Verildi','Onaylandı','Onaylanmadı']
+        .map(s=>`<option value="${s}"${s===d.durum?' selected':''}>${statusEmoji(s)} ${s}</option>`).join('');
+
+      // Tarih parçala
+      let day='—',mon='',yr='';
+      if(d.teklif_tarihi){
+        const p=d.teklif_tarihi.split('-');
+        if(p.length===3){
+          day=p[2];
+          const months=['Oca','Şub','Mar','Nis','May','Haz','Tem','Ağu','Eyl','Eki','Kas','Ara'];
+          mon=months[parseInt(p[1],10)-1]||p[1];
+          yr=p[0];
+        }
+      }
+
+      // Geçerlilik uyarısı
+      let gecWarn='';
+      if(d.gecerlilik_tarihi&&d.durum==='Teklif Verildi'){
+        const diff=Math.floor((new Date(d.gecerlilik_tarihi)-new Date())/(1000*60*60*24));
+        if(diff<0)gecWarn=' 🔴';
+        else if(diff<=3)gecWarn=' 🟠';
+      }
+
+      rowsHtml+=`<div class="teklif-row">
+        <div class="tr-date-col">
+          <div class="tr-date-day">${esc(day)}</div>
+          <div class="tr-date-mon">${esc(mon)}</div>
+          <div class="tr-date-yr">${esc(yr)}</div>
+        </div>
+        <div class="tr-body">
+          <div class="tr-urun">${esc(d.urun)}</div>
+          <div class="tr-fiyat${d.fiyat?'':' empty'}">${d.fiyat?fmtPara(d.fiyat):'Fiyat yok'}${gecWarn}</div>
+          ${d.gecerlilik_tarihi?`<div style="font-size:10px;color:var(--text3);margin-top:2px">Son: ${fmt(d.gecerlilik_tarihi)}</div>`:''}
+          ${d.notlar?`<div class="tr-note">${esc(d.notlar.substring(0,60))}${d.notlar.length>60?'…':''}</div>`:''}
+        </div>
+        <div class="tr-right">
+          <select class="st-select ${ssc}" data-id="${id}" onchange="updateStatus(this)">${statOpts}</select>
+          <div class="tr-acts">
+            <button class="tb" onclick="editRow('${id}')" title="Düzenle">✏️</button>
+            <button class="tb dng" onclick="askDel('${id}')" title="Sil">🗑️</button>
+          </div>
+        </div>
+      </div>`;
+    });
+
+    const firmaEsc=esc(firmaAdi).replace(/"/g,'&quot;');
+    html+=`<div class="firma-card" data-firma="${firmaEsc}" style="animation-delay:${fi*0.04}s">
+      <div class="firma-card-head${isOpen?' open':''}" onclick="toggleFirma(${JSON.stringify(firmaAdi)})">
+        <div class="firma-avatar">${esc(av)}</div>
+        <div class="firma-info">
+          <div class="firma-name">${esc(firmaAdi)}</div>
+          <div class="firma-meta">
+            <span class="firma-teklif-count">${tCount} teklif</span>
+            ${lastDate?`<span class="firma-last-date">${lastDate}</span>`:''}
+            <div class="firma-badges">${badges}</div>
+          </div>
+        </div>
+        <span class="firma-chevron${isOpen?' open':''}">▼</span>
       </div>
-      <div class="td td-urun">${esc(d.urun)}</div>
-      <div class="td"><span class="td-price${d.fiyat?'':' empty'}">${d.fiyat?fmtPara(d.fiyat):'—'}</span></div>
-      <div class="td"><span class="td-date${d.teklif_tarihi?'':' empty'}">${d.teklif_tarihi?fmt(d.teklif_tarihi):'—'}</span></div>
-      <div class="td td-durum">
-        <select class="st-select ${ssc}" data-id="${id}" onchange="updateStatus(this)">${statOpts}</select>
-      </div>
-      <div class="td td-acts">
-        <button class="tb edt" onclick="editRow('${id}')" title="Düzenle">✏️</button>
-        <button class="tb dng" onclick="askDel('${id}')" title="Sil">🗑️</button>
+      <div class="firma-teklifler${isOpen?' open':''}">
+        ${rowsHtml}
+        <button class="firma-add-btn" onclick="openDwForFirma(${JSON.stringify(firmaAdi)})">＋ Bu firmaya teklif ekle</button>
       </div>
     </div>`;
   });
 
-  // ── Değişiklik 4: Bölge kolonu kaldırıldı, tablo başlığı güncellendi ──
-  area.innerHTML=`<div class="tbl-wrap">
-    <div class="tbl-head">
-      <span>Firma</span><span>Ürün / Kalite</span><span>Fiyat</span><span>Teklif Tar.</span><span>Durum</span>
-    </div>
-    ${rows}
-  </div>`;
+  area.innerHTML=html;
 }
 
-async function updateStatus(sel) {
-  const id=sel.dataset.id, st=sel.value;
-  // Renk sınıfını anında güncelle
+async function updateStatus(sel){
+  const id=sel.dataset.id,st=sel.value;
   sel.className='st-select '+statusSelectClass(st);
   dot('busy');
   const {error}=await db.from('fiyat_teklifleri').update({durum:st,updated_at:new Date().toISOString()}).eq('id',id);
-  if(error){dot('err');toast('Hata','bad');return;}
+  if(error){dot('err');toast('Hata','bad');return}
   const it=D.find(x=>String(x.id)===String(id));
-  if(it){
-    it.durum=st;
-    // Satır border rengini güncelle
-    const tr=sel.closest('.tr');
-    if(tr){
-      tr.className='tr st-'+statusClass(st);
-    }
-  }
-  dot('ok'); toast('Durum güncellendi','ok'); buildStats();
+  if(it)it.durum=st;
+  dot('ok');toast('Durum güncellendi','ok');buildStats();render();
 }
 
-// ── FİRMA DROPDOWN ──
-let firmaSelected = null;
-
-function onFirmaInput(val) {
-  firmaSelected=null;
-  document.getElementById('f-firma-id').value='';
-  document.getElementById('f-firma-bolge').value='';
-  renderFirmaDd(val);
+// FİRMA DROPDOWN
+let firmaSelected=null;
+function onFirmaInput(val){firmaSelected=null;renderFirmaDd(val)}
+function onFirmaFocus(){
+  if(!M.length)db.from('musteriler').select('id,firma_adi,bolge').order('firma_adi',{ascending:true}).then(({data})=>{if(data)M=data;renderFirmaDd(document.getElementById('f-firma-q').value)});
+  else renderFirmaDd(document.getElementById('f-firma-q').value);
 }
-function onFirmaFocus() {
-  if(!M.length) { loadMusteriler().then(()=>renderFirmaDd(document.getElementById('f-firma-q').value)); }
-  else { renderFirmaDd(document.getElementById('f-firma-q').value); }
-}
-function renderFirmaDd(val) {
+function renderFirmaDd(val){
   const dd=document.getElementById('firma-dd');
   const q=trl(val||'');
   const filtered=q?M.filter(m=>trl(m.firma_adi).includes(q)):M;
-  if(!filtered.length) {
-    dd.innerHTML='<div class="firma-dd-empty">'+(M.length===0?'Müşteri yükleniyor...':'Eşleşen firma yok')+'</div>';
-    dd.classList.add('on'); return;
-  }
+  if(!filtered.length){dd.innerHTML='<div class="firma-dd-empty">Eşleşen firma yok</div>';dd.classList.add('on');return}
   const items=filtered.slice(0,40);
-  dd.innerHTML=items.map((m,i)=>`
-    <div class="firma-dd-item" data-idx="${i}">
-      <div>${esc(m.firma_adi)}</div>
-      ${m.bolge?`<div class="dd-bolge">📍 ${esc(m.bolge)}</div>`:''}
-    </div>`).join('');
+  dd.innerHTML=items.map((m,i)=>`<div class="firma-dd-item" data-idx="${i}">${esc(m.firma_adi)}</div>`).join('');
   dd.querySelectorAll('.firma-dd-item').forEach((el,i)=>{
-    const m=items[i];
-    const fn=()=>selectFirma(m.firma_adi,m.bolge||'');
-    el.addEventListener('touchstart',function(e){e.preventDefault();fn();},{passive:false});
-    el.addEventListener('mousedown',function(e){e.preventDefault();fn();});
+    const fn=()=>selectFirma(items[i].firma_adi);
+    el.addEventListener('touchstart',e=>{e.preventDefault();fn()},{passive:false});
+    el.addEventListener('mousedown',e=>{e.preventDefault();fn()});
   });
   dd.classList.add('on');
 }
-function selectFirma(firmaAdi, bolge) {
-  firmaSelected={firma_adi:firmaAdi,bolge:bolge};
-  document.getElementById('f-firma-bolge').value=bolge;
+function selectFirma(firmaAdi){
+  firmaSelected={firma_adi:firmaAdi};
   document.getElementById('f-firma-q').style.display='none';
   document.getElementById('firma-selected').style.display='block';
   document.getElementById('firma-selected-name').textContent=firmaAdi;
-  document.getElementById('firma-selected-bolge').textContent=bolge?'📍 '+bolge:'';
   document.getElementById('field-firma').classList.remove('bad');
   closeFirmaDd();
 }
-function clearFirma() {
+function clearFirma(){
   firmaSelected=null;
-  document.getElementById('f-firma-id').value='';
-  document.getElementById('f-firma-bolge').value='';
   document.getElementById('f-firma-q').value='';
   document.getElementById('f-firma-q').style.display='';
   document.getElementById('firma-selected').style.display='none';
   setTimeout(()=>document.getElementById('f-firma-q').focus(),50);
 }
-function closeFirmaDd() { document.getElementById('firma-dd').classList.remove('on'); }
-document.addEventListener('mousedown',function(e){
-  const dd=document.getElementById('firma-dd');
-  const inp=document.getElementById('f-firma-q');
-  if(dd&&inp&&!dd.contains(e.target)&&e.target!==inp) closeFirmaDd();
+function closeFirmaDd(){document.getElementById('firma-dd').classList.remove('on')}
+document.addEventListener('mousedown',e=>{
+  const dd=document.getElementById('firma-dd'),inp=document.getElementById('f-firma-q');
+  if(dd&&inp&&!dd.contains(e.target)&&e.target!==inp)closeFirmaDd();
 });
 
-// ── KALİTE SATIRLARI ──
-let kaliteRows = [];
-let kaliteRowId = 0;
-
-const DURUM_OPTS = ['Beklemede','Teklif Verildi','Müzakerede','Revize İstendi','Onaylandı','Onaylanmadı'];
-
-function addKaliteRow(urun='', fiyat='', durum='Teklif Verildi') {
-  const rid = ++kaliteRowId;
-  kaliteRows.push(rid);
-
-  const statOpts = DURUM_OPTS.map(s=>`<option value="${s}"${s===durum?' selected':''}>${statusEmoji(s)} ${s}</option>`).join('');
-
-  const wrap = document.createElement('div');
-  wrap.className = 'kalite-wrap';
-  wrap.id = 'krw-' + rid;
-  wrap.innerHTML = `
+// KALİTE SATIRLARI
+let kaliteRows=[],kaliteRowId=0;
+const DURUM_OPTS=['Teklif Verildi','Onaylandı','Onaylanmadı'];
+function addKaliteRow(urun='',fiyat='',durum='Teklif Verildi'){
+  const rid=++kaliteRowId;kaliteRows.push(rid);
+  const statOpts=DURUM_OPTS.map(s=>`<option value="${s}"${s===durum?' selected':''}>${statusEmoji(s)} ${s}</option>`).join('');
+  const wrap=document.createElement('div');
+  wrap.className='kalite-wrap';wrap.id='krw-'+rid;
+  wrap.innerHTML=`
     <div style="display:grid;grid-template-columns:1fr 32px;gap:6px;align-items:center;margin-bottom:6px">
-      <input type="text" placeholder="Ürün / Kalite adı..." value="${esc(urun)}"
-        data-rid="${rid}" data-field="urun"
+      <input type="text" placeholder="Ürün / Kalite adı..." value="${esc(urun)}" data-rid="${rid}" data-field="urun"
         style="padding:10px 12px;border-radius:10px;border:1.5px solid rgba(15,76,110,.18);background:#F0F9FF;font-family:inherit;font-size:13px;color:#0A2A3F;width:100%">
-      <button class="kalite-del" onclick="removeKaliteRow(${rid})" title="Kaldır">✕</button>
+      <button class="kalite-del" onclick="removeKaliteRow(${rid})">✕</button>
     </div>
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px">
-      <input type="number" placeholder="Fiyat ($)" step="0.01" min="0" value="${esc(fiyat)}"
-        data-rid="${rid}" data-field="fiyat"
+      <input type="number" placeholder="Fiyat ($)" step="0.01" min="0" value="${esc(fiyat)}" data-rid="${rid}" data-field="fiyat"
         style="padding:10px 12px;border-radius:10px;border:1.5px solid rgba(15,76,110,.18);background:#F0F9FF;font-family:inherit;font-size:13px;color:#0A2A3F;width:100%">
       <select data-rid="${rid}" data-field="durum" class="kalite-durum-sel"
         style="padding:10px 12px;border-radius:10px;border:1.5px solid rgba(15,76,110,.18);background:#F0F9FF;font-family:inherit;font-size:11px;color:#0A2A3F;width:100%">
         ${statOpts}
       </select>
     </div>`;
-
   document.getElementById('kalite-rows-container').appendChild(wrap);
   updateKaliteCount();
-  setTimeout(()=> wrap.querySelector('input[data-field="urun"]').focus(), 80);
+  setTimeout(()=>wrap.querySelector('[data-field="urun"]').focus(),80);
 }
-
-function removeKaliteRow(rid) {
-  const idx = kaliteRows.indexOf(rid);
-  if(idx > -1) kaliteRows.splice(idx, 1);
-  document.getElementById('krw-' + rid)?.remove();
-  updateKaliteCount();
+function removeKaliteRow(rid){
+  const idx=kaliteRows.indexOf(rid);if(idx>-1)kaliteRows.splice(idx,1);
+  document.getElementById('krw-'+rid)?.remove();updateKaliteCount();
 }
-
-function updateKaliteCount() {
-  const el = document.getElementById('kalite-count');
-  if(el) el.textContent = kaliteRows.length + ' kalite';
-}
-
-function getKaliteData() {
-  return kaliteRows.map(rid => {
-    const wrap = document.getElementById('krw-' + rid);
-    if(!wrap) return null;
-    return {
-      urun: wrap.querySelector('[data-field="urun"]').value.trim(),
-      fiyat: parseFloat(wrap.querySelector('[data-field="fiyat"]').value) || null,
-      durum: wrap.querySelector('[data-field="durum"]').value
-    };
+function updateKaliteCount(){const el=document.getElementById('kalite-count');if(el)el.textContent=kaliteRows.length+' kalite'}
+function getKaliteData(){
+  return kaliteRows.map(rid=>{
+    const w=document.getElementById('krw-'+rid);if(!w)return null;
+    return{urun:w.querySelector('[data-field="urun"]').value.trim(),fiyat:parseFloat(w.querySelector('[data-field="fiyat"]').value)||null,durum:w.querySelector('[data-field="durum"]').value};
   }).filter(Boolean);
 }
+function clearKaliteRows(){kaliteRows=[];kaliteRowId=0;document.getElementById('kalite-rows-container').innerHTML='';updateKaliteCount()}
 
-function clearKaliteRows() {
-  kaliteRows = [];
-  kaliteRowId = 0;
-  document.getElementById('kalite-rows-container').innerHTML = '';
-  updateKaliteCount();
-}
-
-// ── DRAWER ──
-function resetFirmaField() {
+// DRAWER
+function resetFirmaField(){
   firmaSelected=null;
-  document.getElementById('f-firma-id').value='';
-  document.getElementById('f-firma-bolge').value='';
   document.getElementById('f-firma-q').value='';
   document.getElementById('f-firma-q').style.display='';
   document.getElementById('firma-selected').style.display='none';
   closeFirmaDd();
 }
-
-function openDw() {
+function openDw(){
   document.getElementById('eid').value='';
   document.getElementById('dw-t').textContent='📤 Yeni Teklif';
   document.getElementById('sv-btn').textContent='Kaydet';
-  resetFirmaField();
-  clearKaliteRows();
-  addKaliteRow();
+  resetFirmaField();clearKaliteRows();addKaliteRow();
   document.getElementById('f-tarih').value=new Date().toISOString().split('T')[0];
   document.getElementById('f-gecerlilik').value='';
   document.getElementById('f-not').value='';
@@ -814,24 +690,21 @@ function openDw() {
   document.getElementById('dw').classList.add('on');
   setTimeout(()=>document.getElementById('f-firma-q').focus(),250);
 }
-
-function editRow(id) {
-  const d=D.find(x=>String(x.id)===String(id)); if(!d) return;
+function openDwForFirma(firmaAdi){
+  openDw();
+  setTimeout(()=>selectFirma(firmaAdi),120);
+}
+function editRow(id){
+  const d=D.find(x=>String(x.id)===String(id));if(!d)return;
   document.getElementById('eid').value=d.id;
   document.getElementById('dw-t').textContent='✏️ Teklif Düzenle';
   document.getElementById('sv-btn').textContent='Güncelle';
-
-  const bolge=getBolge(d.firma_adi);
-  firmaSelected={firma_adi:d.firma_adi,bolge};
+  firmaSelected={firma_adi:d.firma_adi};
   document.getElementById('f-firma-q').style.display='none';
   document.getElementById('firma-selected').style.display='block';
   document.getElementById('firma-selected-name').textContent=d.firma_adi||'';
-  document.getElementById('firma-selected-bolge').textContent=bolge?'📍 '+bolge:'';
   closeFirmaDd();
-
-  clearKaliteRows();
-  addKaliteRow(d.urun, d.fiyat, d.durum);
-
+  clearKaliteRows();addKaliteRow(d.urun,d.fiyat,d.durum);
   document.getElementById('f-tarih').value=d.teklif_tarihi||'';
   document.getElementById('f-gecerlilik').value=d.gecerlilik_tarihi||'';
   document.getElementById('f-not').value=d.notlar||'';
@@ -840,141 +713,117 @@ function editRow(id) {
   document.getElementById('ov').classList.add('on');
   document.getElementById('dw').classList.add('on');
 }
-
-function closeDw() {
+function closeDw(){
   document.getElementById('ov').classList.remove('on');
   document.getElementById('dw').classList.remove('on');
   closeFirmaDd();
 }
-
-async function save() {
+async function save(){
   document.querySelectorAll('.field').forEach(f=>f.classList.remove('bad'));
   document.getElementById('kalite-err').style.display='none';
-
   let bad=false;
-  if(!firmaSelected) { document.getElementById('field-firma').classList.add('bad'); bad=true; }
-
-  const kaliteler = getKaliteData();
-  const gecerli = kaliteler.filter(k=>k.urun);
-  if(!gecerli.length) {
-    document.getElementById('kalite-err').style.display='block';
-    bad=true;
-  }
-  if(bad) return;
-
+  if(!firmaSelected){document.getElementById('field-firma').classList.add('bad');bad=true}
+  const kaliteler=getKaliteData();
+  const gecerli=kaliteler.filter(k=>k.urun);
+  if(!gecerli.length){document.getElementById('kalite-err').style.display='block';bad=true}
+  if(bad)return;
   const id=document.getElementById('eid').value;
   const tarih=document.getElementById('f-tarih').value||null;
   const gecerlilik=document.getElementById('f-gecerlilik').value||null;
   const notlar=document.getElementById('f-not').value.trim()||null;
   const now=new Date().toISOString();
-
   const btn=document.getElementById('sv-btn');
-  btn.disabled=true; btn.textContent='Kaydediliyor...'; dot('busy');
-
+  btn.disabled=true;btn.textContent='Kaydediliyor...';dot('busy');
   let error;
-  if(id) {
+  if(id){
     const k=gecerli[0];
-    ({error}=await db.from('fiyat_teklifleri').update({
-      firma_adi:firmaSelected.firma_adi,
-      urun:k.urun, fiyat:k.fiyat, durum:k.durum,
-      teklif_tarihi:tarih, gecerlilik_tarihi:gecerlilik,
-      notlar, updated_at:now
-    }).eq('id',id));
-  } else {
-    const payload=gecerli.map(k=>({
-      firma_adi:firmaSelected.firma_adi,
-      urun:k.urun, fiyat:k.fiyat, durum:k.durum,
-      teklif_tarihi:tarih, gecerlilik_tarihi:gecerlilik,
-      notlar, updated_at:now
-    }));
+    ({error}=await db.from('fiyat_teklifleri').update({firma_adi:firmaSelected.firma_adi,urun:k.urun,fiyat:k.fiyat,durum:k.durum,teklif_tarihi:tarih,gecerlilik_tarihi:gecerlilik,notlar,updated_at:now}).eq('id',id));
+  }else{
+    const payload=gecerli.map(k=>({firma_adi:firmaSelected.firma_adi,urun:k.urun,fiyat:k.fiyat,durum:k.durum,teklif_tarihi:tarih,gecerlilik_tarihi:gecerlilik,notlar,updated_at:now}));
     ({error}=await db.from('fiyat_teklifleri').insert(payload));
   }
-
-  btn.disabled=false; btn.textContent=id?'Güncelle':'Kaydet';
-  if(error) { dot('err'); toast('Hata: '+error.message,'bad'); return; }
-  dot('ok');
-  toast(id?'Güncellendi ✓':`${gecerli.length} teklif eklendi ✓`,'ok');
-  closeDw(); sync();
+  btn.disabled=false;btn.textContent=id?'Güncelle':'Kaydet';
+  if(error){dot('err');toast('Hata: '+error.message,'bad');return}
+  if(firmaSelected)openFirmalar.add(firmaSelected.firma_adi);
+  dot('ok');toast(id?'Güncellendi ✓':`${gecerli.length} teklif eklendi ✓`,'ok');
+  closeDw();sync();
 }
 
-// ── SİL ──
-function askDel(id) {
-  const d=D.find(x=>String(x.id)===String(id)); if(!d) return;
+// SİL
+function askDel(id){
+  const d=D.find(x=>String(x.id)===String(id));if(!d)return;
   document.getElementById('cf-t').textContent='Teklifi Sil';
   document.getElementById('cf-b').textContent='"'+d.firma_adi+'" — '+d.urun+' teklifi silinsin mi?';
   cfCb=async()=>{
     dot('busy');
     const {error}=await db.from('fiyat_teklifleri').delete().eq('id',id);
-    if(error){dot('err');toast('Silinemedi','bad');return;}
-    dot('ok'); toast('Silindi','ok'); sync();
+    if(error){dot('err');toast('Silinemedi','bad');return}
+    dot('ok');toast('Silindi','ok');sync();
   };
   document.getElementById('mod-cf').classList.add('on');
 }
-function clM() { document.getElementById('mod-cf').classList.remove('on'); cfCb=null; }
-document.getElementById('cf-ok').addEventListener('click',()=>{ const c=cfCb; clM(); if(c) c(); });
-document.getElementById('mod-cf').addEventListener('click',e=>{ if(e.target===e.currentTarget) clM(); });
+function clM(){document.getElementById('mod-cf').classList.remove('on');cfCb=null}
+document.getElementById('cf-ok').addEventListener('click',()=>{const c=cfCb;clM();if(c)c()});
+document.getElementById('mod-cf').addEventListener('click',e=>{if(e.target===e.currentTarget)clM()});
 
-// ── EXCEL — Değişiklik 3: Sadece görünen (filtrelenmiş) kayıtları export et ──
-async function exportXL() {
-  const exportData = currentFiltered.length ? currentFiltered : D;
-  if(!exportData.length){toast('Veri yok','wrn');return;}
-
-  const q = document.getElementById('q').value.trim();
-  const filterLabel = q ? `"${q}" araması` : (curF !== 'Hepsi' ? curF : 'Tüm Teklifler');
-
-  const btn=document.getElementById('xbtn'); btn.disabled=true; btn.textContent='⏳';
-  try {
-    const wb=new ExcelJS.Workbook(); wb.creator='Yanteks Pro';
+// EXCEL
+async function exportXL(){
+  const exportData=currentFiltered.length?currentFiltered:D;
+  if(!exportData.length){toast('Veri yok','wrn');return}
+  const q=document.getElementById('q').value.trim();
+  const label=q?`"${q}"`:(curF!=='Hepsi'?curF:'Tüm Teklifler');
+  const btn=document.getElementById('xbtn');btn.disabled=true;btn.textContent='⏳';
+  try{
+    const wb=new ExcelJS.Workbook();wb.creator='Yanteks Pro';
     const sh=wb.addWorksheet('Teklifler');
     const dt=new Date().toLocaleDateString('tr-TR');
-
     sh.mergeCells('A1:G1');
-    const tc=sh.getCell('A1'); tc.value='YANTEKS FİYAT TEKLİFLERİ · '+filterLabel+' · '+dt;
+    const tc=sh.getCell('A1');tc.value='YANTEKS FİYAT TEKLİFLERİ · '+label+' · '+dt;
     tc.font={bold:true,size:14,color:{argb:'FFFFFFFF'}};
     tc.fill={type:'pattern',pattern:'solid',fgColor:{argb:'FF0F4C6E'}};
-    tc.alignment={horizontal:'center',vertical:'middle'}; sh.getRow(1).height=30;
-
+    tc.alignment={horizontal:'center',vertical:'middle'};sh.getRow(1).height=30;
     const hr=sh.addRow(['FİRMA','ÜRÜN','FİYAT ($)','DURUM','TEKLİF TARİHİ','GEÇERLİLİK','NOTLAR']);
-    hr.font={bold:true,color:{argb:'FFFFFFFF'}}; hr.height=22;
-    hr.eachCell(c=>{c.fill={type:'pattern',pattern:'solid',fgColor:{argb:'FF1E5A7A'}};c.alignment={horizontal:'center'};});
+    hr.font={bold:true,color:{argb:'FFFFFFFF'}};hr.height=22;
+    hr.eachCell(c=>{c.fill={type:'pattern',pattern:'solid',fgColor:{argb:'FF1E5A7A'}};c.alignment={horizontal:'center'}});
     sh.columns=[{width:30},{width:30},{width:14},{width:18},{width:16},{width:16},{width:35}];
-
-    const stColor={'Onaylandı':'FF15803D','Onaylanmadı':'FF991B1B','Teklif Verildi':'FFEA580C','Müzakerede':'FF1D4ED8','Revize İstendi':'FF5B21B6','Beklemede':'FF5B8FA8'};
+    const stColor={'Onaylandı':'FF15803D','Onaylanmadı':'FF991B1B','Teklif Verildi':'FFEA580C'};
     exportData.forEach(d=>{
       const row=sh.addRow([d.firma_adi,d.urun,d.fiyat||'',d.durum,fmt(d.teklif_tarihi||''),fmt(d.gecerlilik_tarihi||''),d.notlar||'']);
-      const col=stColor[d.durum]||'FF5B8FA8';
+      const col=stColor[d.durum]||'FFEA580C';
       row.getCell(4).font={color:{argb:col},bold:true};
       row.getCell(3).font={color:{argb:'FF15803D'},bold:true};
       [3,4].forEach(ci=>row.getCell(ci).alignment={horizontal:'center'});
     });
     sh.autoFilter={from:'A2',to:'G2'};
-
     const buf=await wb.xlsx.writeBuffer();
     const blob=new Blob([buf],{type:'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'});
-    const safeLabel=filterLabel.replace(/[^a-zA-Z0-9ğüşıöçĞÜŞİÖÇ_\- ]/g,'').replace(/ /g,'_');
-    const a=document.createElement('a'); a.href=URL.createObjectURL(blob);
-    a.download='Yanteks_'+safeLabel+'_'+dt.replace(/\./g,'-')+'.xlsx'; a.click(); URL.revokeObjectURL(a.href);
-    toast(`Excel: ${exportData.length} kayıt indirildi ✓`,'ok');
-  } catch(e) { toast('Excel hatası','bad'); console.error(e); }
-  finally { btn.disabled=false; btn.textContent='📊'; }
+    const safe=label.replace(/[^a-zA-Z0-9ğüşıöçĞÜŞİÖÇ_\- ]/g,'').replace(/ /g,'_');
+    const a=document.createElement('a');a.href=URL.createObjectURL(blob);
+    a.download='Yanteks_'+safe+'_'+dt.replace(/\./g,'-')+'.xlsx';a.click();URL.revokeObjectURL(a.href);
+    toast(`${exportData.length} kayıt indirildi ✓`,'ok');
+  }catch(e){toast('Excel hatası','bad');console.error(e)}
+  finally{btn.disabled=false;btn.textContent='📊'}
 }
 
 document.addEventListener('keydown',e=>{
-  if((e.ctrlKey||e.metaKey)&&e.key==='n'){e.preventDefault();openDw();}
-  if((e.ctrlKey||e.metaKey)&&e.key==='k'){e.preventDefault();document.getElementById('q').focus();}
-  if(e.key==='Escape'){closeDw();clM();}
+  if((e.ctrlKey||e.metaKey)&&e.key==='n'){e.preventDefault();openDw()}
+  if((e.ctrlKey||e.metaKey)&&e.key==='k'){e.preventDefault();document.getElementById('q').focus()}
+  if(e.key==='Escape'){closeDw();clM()}
 });
 
-loadMusteriler().then(()=>sync());
+sync();
 </script>
 
 <script>
-(function(){var sp=document.getElementById('splash');if(!sp)return;setTimeout(function(){sp.classList.add('hide');setTimeout(function(){sp.remove();},400);},600);})();
-(function(){var sY=0,pu=false,tr=false;var IND=document.getElementById('ptr-indicator');if(!IND)return;document.addEventListener('touchstart',function(e){if(window.scrollY===0)sY=e.touches[0].clientY;},{passive:true});document.addEventListener('touchmove',function(e){if(!sY)return;var dy=e.touches[0].clientY-sY;if(dy>10&&window.scrollY===0){pu=true;IND.classList.add('show');}if(dy>60&&!tr){tr=true;IND.querySelector('.ptr-text').textContent='Bırakın...';}},{passive:true});document.addEventListener('touchend',function(){if(!pu)return;if(tr){IND.classList.add('spin');IND.querySelector('.ptr-text').textContent='Yenileniyor...';var done=function(){IND.classList.remove('show','spin');IND.querySelector('.ptr-text').textContent='Yenilemek için çekin';};if(typeof sync==='function')sync().finally(done);else setTimeout(done,1000);}else{IND.classList.remove('show');}sY=0;pu=false;tr=false;},{passive:true});})();
+(function(){var sp=document.getElementById('splash');if(!sp)return;setTimeout(function(){sp.classList.add('hide');setTimeout(function(){sp.remove()},400)},600)})();
+(function(){
+  var sY=0,pu=false,pulling=false;
+  var IND=document.getElementById('ptr-indicator');if(!IND)return;
+  document.addEventListener('touchstart',function(e){if(window.scrollY===0)sY=e.touches[0].clientY},{passive:true});
+  document.addEventListener('touchmove',function(e){if(!sY)return;var dy=e.touches[0].clientY-sY;if(dy>10&&window.scrollY===0){pu=true;IND.classList.add('show')}if(dy>60&&!pulling){pulling=true;IND.querySelector('.ptr-text').textContent='Bırakın...'}},{passive:true});
+  document.addEventListener('touchend',function(){if(!pu)return;if(pulling){IND.classList.add('spin');IND.querySelector('.ptr-text').textContent='Yenileniyor...';var done=function(){IND.classList.remove('show','spin');IND.querySelector('.ptr-text').textContent='Yenilemek için çekin'};if(typeof sync==='function')sync().finally(done);else setTimeout(done,1000)}else IND.classList.remove('show');sY=0;pu=false;pulling=false},{passive:true});
+})();
 </script>
-
-<link rel="manifest" href="manifest.json">
-<script>if('serviceWorker' in navigator){window.addEventListener('load',()=>{navigator.serviceWorker.register('/sw.js').catch(()=>{});});}</script>
 
 <nav class="bnav">
   <a href="index.html" class="bnav-item"><span class="ni">📦</span><span class="nl">Numune</span></a>
