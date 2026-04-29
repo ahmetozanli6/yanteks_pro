@@ -268,7 +268,7 @@ a,button{-webkit-tap-highlight-color:transparent}
   <div class="topbar-actions">
     <span class="sync-dot" id="sd"></span>
     <button class="chip pri" onclick="openDw()">＋ Yeni</button>
-    <button class="chip" onclick="exportXL()" id="xbtn">📊</button>
+    <button class="chip" onclick="openExport()" id="xbtn">📊</button>
     <button class="chip" onclick="openImport()" id="ibtn" title="Excel'den aktar">📥</button>
   </div>
 </header>
@@ -373,6 +373,42 @@ a,button{-webkit-tap-highlight-color:transparent}
       <button class="btn gho" onclick="clM()">İptal</button>
       <button class="btn pri" style="background:#991B1B" id="cf-ok">Sil</button>
     </div>
+  </div>
+</div>
+
+<!-- Excel Export Modal -->
+
+<div class="modal" id="mod-export">
+  <div class="m-card" style="max-width:380px">
+    <h3>📊 Excel'e Aktar</h3>
+    <p style="margin-bottom:14px;font-size:13px;color:var(--text2)">Firma seçin veya boş bırakın (tüm teklifler)</p>
+
+```
+<div class="field">
+  <label>Firma <span style="font-weight:500;color:var(--text3)">(opsiyonel)</span></label>
+  <div class="firma-wrap">
+    <input type="text" id="exp-firma-q" placeholder="Tüm firmalar..." autocomplete="off"
+      oninput="onExpFirmaInput(this.value)" onfocus="onExpFirmaFocus()">
+    <div class="firma-dd" id="exp-firma-dd"></div>
+  </div>
+  <div id="exp-firma-selected" style="display:none">
+    <div class="firma-selected-badge">
+      <span>🏢</span><span id="exp-firma-name"></span>
+      <button class="firma-clear-btn" onclick="clearExpFirma()">✕</button>
+    </div>
+  </div>
+</div>
+
+<div id="exp-info" style="font-size:12px;color:var(--text3);margin-bottom:14px;padding:8px 12px;background:var(--surface2);border-radius:8px">
+  <span id="exp-count">0</span> teklif aktarılacak
+</div>
+
+<div class="btn-r">
+  <button class="btn gho" onclick="closeExport()">İptal</button>
+  <button class="btn pri" onclick="doExportXL()" id="exp-btn">📊 İndir</button>
+</div>
+```
+
   </div>
 </div>
 
@@ -849,12 +885,76 @@ document.getElementById('cf-ok').addEventListener('click',()=>{const c=cfCb;clM(
 document.getElementById('mod-cf').addEventListener('click',e=>{if(e.target===e.currentTarget)clM()});
 
 // EXCEL
-async function exportXL(){
-  const exportData=currentFiltered.length?currentFiltered:D;
+// ── EXCEL EXPORT ──
+let expFirmaSelected=null;
+
+function openExport(){
+  expFirmaSelected=null;
+  document.getElementById('exp-firma-q').value='';
+  document.getElementById('exp-firma-q').style.display='';
+  document.getElementById('exp-firma-selected').style.display='none';
+  document.getElementById('exp-firma-dd').classList.remove('on');
+  updateExpCount();
+  document.getElementById('mod-export').classList.add('on');
+}
+function closeExport(){document.getElementById('mod-export').classList.remove('on')}
+document.getElementById('mod-export').addEventListener('click',e=>{if(e.target===e.currentTarget)closeExport()});
+
+function updateExpCount(){
+  const data=expFirmaSelected?D.filter(d=>d.firma_adi===expFirmaSelected.firma_adi):D;
+  document.getElementById('exp-count').textContent=data.length;
+}
+function onExpFirmaInput(val){
+  expFirmaSelected=null;
+  renderExpFirmaDd(val);
+  updateExpCount();
+}
+function onExpFirmaFocus(){
+  if(!M.length)db.from('musteriler').select('id,firma_adi').order('firma_adi',{ascending:true}).then(({data})=>{if(data)M=data;renderExpFirmaDd(document.getElementById('exp-firma-q').value)});
+  else renderExpFirmaDd(document.getElementById('exp-firma-q').value);
+}
+function renderExpFirmaDd(val){
+  const dd=document.getElementById('exp-firma-dd');
+  const q=trl(val||'');
+  // Also include firms from D (actual data), not just M
+  const firmsInD=[...new Set(D.map(d=>d.firma_adi))].sort();
+  const allFirms=firmsInD;
+  const filtered=q?allFirms.filter(f=>trl(f).includes(q)):allFirms;
+  if(!filtered.length){dd.innerHTML='<div class="firma-dd-empty">Firma yok</div>';dd.classList.add('on');return}
+  dd.innerHTML=filtered.slice(0,40).map(f=>`<div class="firma-dd-item">${esc(f)}</div>`).join('');
+  dd.querySelectorAll('.firma-dd-item').forEach((el,i)=>{
+    const fn=()=>{
+      expFirmaSelected={firma_adi:filtered[i]};
+      document.getElementById('exp-firma-q').style.display='none';
+      document.getElementById('exp-firma-selected').style.display='block';
+      document.getElementById('exp-firma-name').textContent=filtered[i];
+      dd.classList.remove('on');
+      updateExpCount();
+    };
+    el.addEventListener('touchstart',e=>{e.preventDefault();fn()},{passive:false});
+    el.addEventListener('mousedown',e=>{e.preventDefault();fn()});
+  });
+  dd.classList.add('on');
+}
+function clearExpFirma(){
+  expFirmaSelected=null;
+  document.getElementById('exp-firma-q').value='';
+  document.getElementById('exp-firma-q').style.display='';
+  document.getElementById('exp-firma-selected').style.display='none';
+  updateExpCount();
+  setTimeout(()=>document.getElementById('exp-firma-q').focus(),50);
+}
+document.addEventListener('mousedown',e=>{
+  const dd=document.getElementById('exp-firma-dd');
+  const inp=document.getElementById('exp-firma-q');
+  if(dd&&inp&&!dd.contains(e.target)&&e.target!==inp)dd.classList.remove('on');
+});
+
+async function doExportXL(){
+  const exportData=expFirmaSelected?D.filter(d=>d.firma_adi===expFirmaSelected.firma_adi):D;
   if(!exportData.length){toast('Veri yok','wrn');return}
-  const q=document.getElementById('q').value.trim();
-  const label=q?`"${q}"`:(curF!=='Hepsi'?curF:'Tüm Teklifler');
-  const btn=document.getElementById('xbtn');btn.disabled=true;btn.textContent='⏳';
+  const label=expFirmaSelected?expFirmaSelected.firma_adi:'Tüm Teklifler';
+  const btn=document.getElementById('exp-btn');btn.disabled=true;btn.textContent='⏳';
   try{
     const wb=new ExcelJS.Workbook();wb.creator='Yanteks Pro';
     const sh=wb.addWorksheet('Teklifler');
@@ -866,7 +966,7 @@ async function exportXL(){
     tc.alignment={horizontal:'center',vertical:'middle'};sh.getRow(1).height=30;
     const hr=sh.addRow(['FİRMA','ÜRÜN','FİYAT ($)','DURUM','TEKLİF TARİHİ','GEÇERLİLİK','NOTLAR']);
     hr.font={bold:true,color:{argb:'FFFFFFFF'}};hr.height=22;
-    hr.eachCell(c=>{c.fill={type:'pattern',pattern:'solid',fgColor:{argb:'FF1E5A7A'}};c.alignment={horizontal:'center'}});
+    hr.eachCell(cell=>{cell.fill={type:'pattern',pattern:'solid',fgColor:{argb:'FF1E5A7A'}};cell.alignment={horizontal:'center'}});
     sh.columns=[{width:30},{width:30},{width:14},{width:18},{width:16},{width:16},{width:35}];
     const stColor={'Onaylandı':'FF15803D','Onaylanmadı':'FF991B1B','Teklif Verildi':'FFEA580C'};
     exportData.forEach(d=>{
@@ -883,8 +983,9 @@ async function exportXL(){
     const a=document.createElement('a');a.href=URL.createObjectURL(blob);
     a.download='Yanteks_'+safe+'_'+dt.replace(/\./g,'-')+'.xlsx';a.click();URL.revokeObjectURL(a.href);
     toast(`${exportData.length} kayıt indirildi ✓`,'ok');
+    closeExport();
   }catch(e){toast('Excel hatası','bad');console.error(e)}
-  finally{btn.disabled=false;btn.textContent='📊'}
+  finally{btn.disabled=false;btn.textContent='📊 İndir'}
 }
 
 // ── EXCEL İMPORT ──
