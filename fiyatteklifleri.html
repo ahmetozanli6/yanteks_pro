@@ -964,7 +964,7 @@ async function previewImport(input){
     sh.eachRow((row,rn)=>{
       if(rn<=2)return; // ilk 2 satır başlık
       const urun=String(row.getCell(1).value||'').trim();
-      const fiyatRaw=row.getCell(2).value;
+      const fiyatRaw=row.getCell(3).value;
       if(!urun)return;
       let fiyat=null;
       if(fiyatRaw!=null){
