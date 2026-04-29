@@ -155,13 +155,13 @@ select option{background:#fff;color:var(--text);}
 
 /* Firma arama dropdown */
 .firma-wrap{position:relative}
-.firma-dd{display:none;position:absolute;top:100%;left:0;right:0;z-index:9999;background:var(–surface);border:1.5px solid var(–border2);border-radius:var(–r);max-height:220px;overflow-y:auto;margin-top:4px;box-shadow:var(–shadow-lg)}
+.firma-dd{display:none;position:absolute;top:100%;left:0;right:0;z-index:99999;background:#ffffff !important;border:2px solid #0F4C6E;border-radius:12px;max-height:240px;overflow-y:auto;margin-top:4px;box-shadow:0 12px 40px rgba(10,40,60,.28);-webkit-overflow-scrolling:touch;}
 .firma-dd.on{display:block}
-.firma-dd-item{padding:10px 14px;cursor:pointer;font-size:13px;font-weight:600;border-bottom:1px solid var(–border);transition:background var(–t);color:var(–text)}
+.firma-dd-item{padding:13px 14px;cursor:pointer;font-size:13px;font-weight:600;border-bottom:1px solid rgba(15,76,110,.1);color:#0A2A3F;background:#ffffff;-webkit-tap-highlight-color:transparent;user-select:none;}
 .firma-dd-item:last-child{border-bottom:none}
-.firma-dd-item:hover{background:var(–surface3)}
-.firma-dd-item .dd-bolge{font-size:10px;color:var(–text3);font-weight:500;margin-top:1px}
-.firma-dd-empty{padding:12px 14px;font-size:12px;color:var(–text3);text-align:center}
+.firma-dd-item:active{background:#D0EDFF}
+.firma-dd-item .dd-bolge{font-size:10px;color:#5B8FA8;font-weight:500;margin-top:2px}
+.firma-dd-empty{padding:14px;font-size:12px;color:#5B8FA8;text-align:center;background:#ffffff}
 
 /* Status select inline */
 .st-select{padding:4px 8px;border-radius:20px;border:1.5px solid var(–border);font-size:10px;font-weight:700;font-family:inherit;cursor:pointer;background:var(–surface);color:var(–text2);transition:var(–t);-webkit-appearance:none;appearance:none;padding-right:20px;background-image:url(“data:image/svg+xml,%3Csvg xmlns=‘http://www.w3.org/2000/svg’ width=‘8’ height=‘5’ viewBox=‘0 0 8 5’%3E%3Cpath fill=’%235B8FA8’ d=‘M0 0l4 5 4-5z’/%3E%3C/svg%3E”);background-repeat:no-repeat;background-position:right 6px center}
@@ -653,11 +653,18 @@ function renderFirmaDd(val){
     dd.classList.add('on');
     return;
   }
-  dd.innerHTML=filtered.slice(0,40).map(m=>`
-    <div class="firma-dd-item" onmousedown="event.preventDefault();selectFirma(${JSON.stringify(m.firma_adi)},${JSON.stringify(m.bolge||'')})">
+  const items=filtered.slice(0,40);
+  dd.innerHTML=items.map((m,i)=>`
+    <div class="firma-dd-item" data-idx="${i}">
       <div>${esc(m.firma_adi)}</div>
       ${m.bolge?`<div class="dd-bolge">📍 ${esc(m.bolge)}</div>`:''}
     </div>`).join('');
+  dd.querySelectorAll('.firma-dd-item').forEach((el,i)=>{
+    const m=items[i];
+    const fn=()=>selectFirma(m.firma_adi,m.bolge||'');
+    el.addEventListener('touchstart',function(e){e.preventDefault();fn();},{passive:false});
+    el.addEventListener('mousedown',function(e){e.preventDefault();fn();});
+  });
   dd.classList.add('on');
 }
 function selectFirma(firmaAdi, bolge){
