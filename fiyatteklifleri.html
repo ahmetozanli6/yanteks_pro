@@ -603,16 +603,15 @@ function render(){
         <div class="tr-right">
           <select class="st-select ${ssc}" data-id="${id}" onchange="updateStatus(this)">${statOpts}</select>
           <div class="tr-acts">
-            <button class="tb" onclick="editRow('${id}')" title="Düzenle">✏️</button>
-            <button class="tb dng" onclick="askDel('${id}')" title="Sil">🗑️</button>
+            <button class="tb" data-edit-id="${id}" title="Düzenle">✏️</button>
+            <button class="tb dng" data-del-id="${id}" title="Sil">🗑️</button>
           </div>
         </div>
       </div>`;
     });
 
-    const firmaEsc=esc(firmaAdi).replace(/"/g,'&quot;');
     html+=`<div class="firma-card" data-firma-idx="${fi}" style="animation-delay:${fi*0.04}s">
-      <div class="firma-card-head${isOpen?' open':''}" onclick="toggleFirma(${JSON.stringify(firmaAdi)})">
+      <div class="firma-card-head${isOpen?' open':''}" data-toggle-idx="${fi}">
         <div class="firma-avatar">${esc(av)}</div>
         <div class="firma-info">
           <div class="firma-name">${esc(firmaAdi)}</div>
@@ -626,12 +625,37 @@ function render(){
       </div>
       <div class="firma-teklifler${isOpen?' open':''}">
         ${rowsHtml}
-        <button class="firma-add-btn" onclick="openDwForFirma(${JSON.stringify(firmaAdi)})">＋ Bu firmaya teklif ekle</button>
+        <button class="firma-add-btn" data-add-idx="${fi}">＋ Bu firmaya teklif ekle</button>
       </div>
     </div>`;
   });
 
   area.innerHTML=html;
+  // Attach click handlers safely (avoids JSON/HTML escaping issues with firm names)
+  area.querySelectorAll('[data-toggle-idx]').forEach(el=>{
+    const idx=parseInt(el.getAttribute('data-toggle-idx'));
+    const firma=sorted[idx]?sorted[idx][0]:null;
+    if(!firma)return;
+    el.addEventListener('click',function(e){
+      // Don't trigger if clicking a button/select inside
+      if(e.target.closest('button,select'))return;
+      toggleFirma(firma);
+    });
+  });
+  area.querySelectorAll('[data-add-idx]').forEach(el=>{
+    const idx=parseInt(el.getAttribute('data-add-idx'));
+    const firma=sorted[idx]?sorted[idx][0]:null;
+    if(!firma)return;
+    el.addEventListener('click',function(){openDwForFirma(firma)});
+  });
+  area.querySelectorAll('[data-edit-id]').forEach(el=>{
+    const id=el.getAttribute('data-edit-id');
+    el.addEventListener('click',function(){editRow(id)});
+  });
+  area.querySelectorAll('[data-del-id]').forEach(el=>{
+    const id=el.getAttribute('data-del-id');
+    el.addEventListener('click',function(){askDel(id)});
+  });
 }
 
 async function updateStatus(sel){
