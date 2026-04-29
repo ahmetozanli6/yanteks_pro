@@ -269,6 +269,7 @@ a,button{-webkit-tap-highlight-color:transparent}
     <span class="sync-dot" id="sd"></span>
     <button class="chip pri" onclick="openDw()">＋ Yeni</button>
     <button class="chip" onclick="exportXL()" id="xbtn">📊</button>
+    <button class="chip" onclick="openImport()" id="ibtn" title="Excel'den aktar">📥</button>
   </div>
 </header>
 
@@ -375,6 +376,69 @@ a,button{-webkit-tap-highlight-color:transparent}
   </div>
 </div>
 
+<!-- Excel Import Modal -->
+
+<div class="modal" id="mod-import">
+  <div class="m-card" style="max-width:420px">
+    <h3>📥 Excel'den Toplu Aktar</h3>
+    <p style="margin-bottom:12px">Firma seç, ardından Excel dosyasını yükle.<br>
+    <span style="font-size:11px;color:var(--text3)">Format: <b>A=Ürün Adı</b>, <b>B=Denye (not)</b>, <b>C=Fiyat ($)</b> — 3. satırdan başlar</span></p>
+
+```
+<div class="field" id="imp-field-firma">
+  <label>Firma *</label>
+  <div class="firma-wrap">
+    <input type="text" id="imp-firma-q" placeholder="Firma ara..." autocomplete="off"
+      oninput="onImpFirmaInput(this.value)" onfocus="onImpFirmaFocus()">
+    <div class="firma-dd" id="imp-firma-dd"></div>
+  </div>
+  <div id="imp-firma-selected" style="display:none">
+    <div class="firma-selected-badge">
+      <span>🏢</span><span id="imp-firma-name"></span>
+      <button class="firma-clear-btn" onclick="clearImpFirma()">✕</button>
+    </div>
+  </div>
+  <div class="err">Firma seçimi zorunlu</div>
+</div>
+
+<div class="field-row">
+  <div class="field">
+    <label>Teklif Tarihi</label>
+    <input type="date" id="imp-tarih">
+  </div>
+  <div class="field">
+    <label>Durum</label>
+    <select id="imp-durum" style="padding:12px 14px;border-radius:var(--r);border:1.5px solid var(--border2);background:#F0F9FF;font-family:inherit;font-size:14px;color:#0A2A3F;width:100%">
+      <option value="Teklif Verildi">📤 Teklif Verildi</option>
+      <option value="Onaylandı">✅ Onaylandı</option>
+      <option value="Onaylanmadı">❌ Onaylanmadı</option>
+    </select>
+  </div>
+</div>
+
+<div class="field">
+  <label>Excel Dosyası *</label>
+  <input type="file" id="imp-file" accept=".xlsx,.xls"
+    style="padding:10px 14px;border-radius:var(--r);border:1.5px solid var(--border2);background:#F0F9FF;font-family:inherit;font-size:13px;color:#0A2A3F;width:100%"
+    onchange="previewImport(this)">
+</div>
+
+<div id="imp-preview" style="display:none;margin-bottom:14px">
+  <div style="font-size:10px;font-weight:800;color:var(--text3);text-transform:uppercase;letter-spacing:.07em;margin-bottom:6px">Önizleme (<span id="imp-count">0</span> satır)</div>
+  <div id="imp-list" style="max-height:160px;overflow-y:auto;border:1.5px solid var(--border);border-radius:var(--r);background:var(--bg)"></div>
+</div>
+
+<div id="imp-err" style="display:none;font-size:11px;color:#991B1B;margin-bottom:10px;padding:8px 12px;background:rgba(153,27,27,.06);border-radius:8px"></div>
+
+<div class="btn-r">
+  <button class="btn gho" onclick="closeImport()">İptal</button>
+  <button class="btn pri" onclick="doImport()" id="imp-btn">İçe Aktar</button>
+</div>
+```
+
+  </div>
+</div>
+
 <div class="toasts" id="toasts"></div>
 
 <script>
@@ -443,13 +507,14 @@ function clrQ(){document.getElementById('q').value='';document.getElementById('q
 function toggleFirma(firmaAdi){
   if(openFirmalar.has(firmaAdi))openFirmalar.delete(firmaAdi);
   else openFirmalar.add(firmaAdi);
-  // sadece bu kartı güncelle
-  const card=document.querySelector(`.firma-card[data-firma="${CSS.escape(firmaAdi)}"]`);
-  if(!card)return;
   const isOpen=openFirmalar.has(firmaAdi);
-  card.querySelector('.firma-card-head').classList.toggle('open',isOpen);
-  card.querySelector('.firma-chevron').classList.toggle('open',isOpen);
-  card.querySelector('.firma-teklifler').classList.toggle('open',isOpen);
+  document.querySelectorAll('.firma-card').forEach(card=>{
+    if(card._firmaKey===firmaAdi){
+      card.querySelector('.firma-card-head').classList.toggle('open',isOpen);
+      card.querySelector('.firma-chevron').classList.toggle('open',isOpen);
+      card.querySelector('.firma-teklifler').classList.toggle('open',isOpen);
+    }
+  });
 }
 
 function render(){
@@ -553,7 +618,7 @@ function render(){
     });
 
     const firmaEsc=esc(firmaAdi).replace(/"/g,'&quot;');
-    html+=`<div class="firma-card" data-firma="${firmaEsc}" style="animation-delay:${fi*0.04}s">
+    html+=`<div class="firma-card" data-firma-idx="${fi}" style="animation-delay:${fi*0.04}s">
       <div class="firma-card-head${isOpen?' open':''}" onclick="toggleFirma(${JSON.stringify(firmaAdi)})">
         <div class="firma-avatar">${esc(av)}</div>
         <div class="firma-info">
@@ -574,6 +639,11 @@ function render(){
   });
 
   area.innerHTML=html;
+  // Set JS property for firma key (avoids CSS.escape issues)
+  const allCards=area.querySelectorAll('.firma-card');
+  sorted.forEach(([firmaAdi],fi)=>{
+    if(allCards[fi])allCards[fi]._firmaKey=firmaAdi;
+  });
 }
 
 async function updateStatus(sel){
@@ -803,6 +873,141 @@ async function exportXL(){
     toast(`${exportData.length} kayıt indirildi ✓`,'ok');
   }catch(e){toast('Excel hatası','bad');console.error(e)}
   finally{btn.disabled=false;btn.textContent='📊'}
+}
+
+// ── EXCEL İMPORT ──
+let impFirmaSelected=null;
+let impRows=[];
+
+function openImport(){
+  impFirmaSelected=null;impRows=[];
+  document.getElementById('imp-firma-q').value='';
+  document.getElementById('imp-firma-q').style.display='';
+  document.getElementById('imp-firma-selected').style.display='none';
+  document.getElementById('imp-file').value='';
+  document.getElementById('imp-preview').style.display='none';
+  document.getElementById('imp-err').style.display='none';
+  document.getElementById('imp-tarih').value=new Date().toISOString().split('T')[0];
+  document.getElementById('imp-durum').value='Teklif Verildi';
+  document.getElementById('imp-field-firma').classList.remove('bad');
+  document.getElementById('mod-import').classList.add('on');
+}
+function closeImport(){document.getElementById('mod-import').classList.remove('on')}
+document.getElementById('mod-import').addEventListener('click',e=>{if(e.target===e.currentTarget)closeImport()});
+
+function onImpFirmaInput(val){
+  impFirmaSelected=null;
+  renderImpFirmaDd(val);
+}
+function onImpFirmaFocus(){
+  if(!M.length)db.from('musteriler').select('id,firma_adi').order('firma_adi',{ascending:true}).then(({data})=>{if(data)M=data;renderImpFirmaDd(document.getElementById('imp-firma-q').value)});
+  else renderImpFirmaDd(document.getElementById('imp-firma-q').value);
+}
+function renderImpFirmaDd(val){
+  const dd=document.getElementById('imp-firma-dd');
+  const q=trl(val||'');
+  const filtered=q?M.filter(m=>trl(m.firma_adi).includes(q)):M;
+  if(!filtered.length){dd.innerHTML='<div class="firma-dd-empty">Eşleşen firma yok</div>';dd.classList.add('on');return}
+  const items=filtered.slice(0,40);
+  dd.innerHTML=items.map((m,i)=>`<div class="firma-dd-item" data-idx="${i}">${esc(m.firma_adi)}</div>`).join('');
+  dd.querySelectorAll('.firma-dd-item').forEach((el,i)=>{
+    const fn=()=>{
+      impFirmaSelected={firma_adi:items[i].firma_adi};
+      document.getElementById('imp-firma-q').style.display='none';
+      document.getElementById('imp-firma-selected').style.display='block';
+      document.getElementById('imp-firma-name').textContent=items[i].firma_adi;
+      document.getElementById('imp-field-firma').classList.remove('bad');
+      dd.classList.remove('on');
+    };
+    el.addEventListener('touchstart',e=>{e.preventDefault();fn()},{passive:false});
+    el.addEventListener('mousedown',e=>{e.preventDefault();fn()});
+  });
+  dd.classList.add('on');
+}
+function clearImpFirma(){
+  impFirmaSelected=null;
+  document.getElementById('imp-firma-q').value='';
+  document.getElementById('imp-firma-q').style.display='';
+  document.getElementById('imp-firma-selected').style.display='none';
+  setTimeout(()=>document.getElementById('imp-firma-q').focus(),50);
+}
+document.addEventListener('mousedown',e=>{
+  const dd=document.getElementById('imp-firma-dd');
+  const inp=document.getElementById('imp-firma-q');
+  if(dd&&inp&&!dd.contains(e.target)&&e.target!==inp)dd.classList.remove('on');
+});
+
+async function previewImport(input){
+  const file=input.files[0];if(!file)return;
+  const errEl=document.getElementById('imp-err');
+  errEl.style.display='none';
+  try{
+    const buf=await file.arrayBuffer();
+    const wb=new ExcelJS.Workbook();
+    await wb.xlsx.load(buf);
+    const sh=wb.worksheets[0];
+    if(!sh){errEl.textContent='Çalışma sayfası bulunamadı.';errEl.style.display='block';return}
+
+    impRows=[];
+    sh.eachRow((row,rn)=>{
+      if(rn<=2)return; // ilk 2 satır başlık
+      const urun=String(row.getCell(1).value||'').trim();
+      const denyeRaw=row.getCell(2).value;
+      const fiyatRaw=row.getCell(3).value;
+      if(!urun)return;
+      const denye=denyeRaw!=null?String(denyeRaw).trim():'';
+      let fiyat=null;
+      if(fiyatRaw!=null){
+        const n=parseFloat(String(fiyatRaw).replace(',','.').replace(/[^0-9.]/g,''));
+        if(!isNaN(n))fiyat=n;
+      }
+      // Denye notlara ekle
+      const notlar=denye?'Denye: '+denye:null;
+      impRows.push({urun,fiyat,notlar});
+    });
+
+    if(!impRows.length){errEl.textContent='Okunan satır yok. A sütununda ürün adı olduğundan emin olun.';errEl.style.display='block';document.getElementById('imp-preview').style.display='none';return}
+
+    document.getElementById('imp-count').textContent=impRows.length;
+    const listEl=document.getElementById('imp-list');
+    listEl.innerHTML=impRows.map(r=>`
+      <div style="display:flex;justify-content:space-between;align-items:center;padding:7px 12px;border-bottom:1px solid var(--border);font-size:11px">
+        <span style="font-weight:600;flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(r.urun)}</span>
+        <span style="font-weight:800;color:#15803D;font-family:'JetBrains Mono',monospace;margin-left:8px;flex-shrink:0">${r.fiyat!=null?r.fiyat.toFixed(2)+' $':'—'}</span>
+        ${r.notlar?`<span style="font-size:9px;color:var(--text3);margin-left:6px;flex-shrink:0">${esc(r.notlar)}</span>`:''}
+      </div>`).join('');
+    document.getElementById('imp-preview').style.display='block';
+  }catch(e){
+    errEl.textContent='Dosya okunamadı: '+e.message;errEl.style.display='block';
+    document.getElementById('imp-preview').style.display='none';
+  }
+}
+
+async function doImport(){
+  const errEl=document.getElementById('imp-err');
+  errEl.style.display='none';
+  if(!impFirmaSelected){document.getElementById('imp-field-firma').classList.add('bad');return}
+  if(!impRows.length){errEl.textContent='Önce Excel dosyası yükleyin.';errEl.style.display='block';return}
+
+  const tarih=document.getElementById('imp-tarih').value||null;
+  const durum=document.getElementById('imp-durum').value;
+  const now=new Date().toISOString();
+  const btn=document.getElementById('imp-btn');
+  btn.disabled=true;btn.textContent='Aktarılıyor...';dot('busy');
+
+  const payload=impRows.map(r=>({
+    firma_adi:impFirmaSelected.firma_adi,
+    urun:r.urun,fiyat:r.fiyat,durum,
+    teklif_tarihi:tarih,notlar:r.notlar,updated_at:now
+  }));
+
+  const {error}=await db.from('fiyat_teklifleri').insert(payload);
+  btn.disabled=false;btn.textContent='İçe Aktar';
+  if(error){dot('err');errEl.textContent='Hata: '+error.message;errEl.style.display='block';return}
+
+  openFirmalar.add(impFirmaSelected.firma_adi);
+  dot('ok');toast(`${payload.length} teklif aktarıldı ✓`,'ok');
+  closeImport();sync();
 }
 
 document.addEventListener('keydown',e=>{
