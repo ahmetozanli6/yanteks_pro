@@ -464,6 +464,12 @@ function statusEmoji(st){
   return map[st]||'⏳';
 }
 
+// ── MÜŞTERİ YÜKLE (bağımsız, sayfa açılışında) ──
+async function loadMusteriler(){
+  const {data,error}=await db.from('musteriler').select('id,firma_adi,bolge').order('firma_adi',{ascending:true});
+  if(!error && data) M=data;
+}
+
 // ── SYNC ──
 async function sync(){
   dot('busy');
@@ -485,7 +491,7 @@ async function sync(){
     D=tRes.data||[];
   }
 
-  M=mRes.data||[];
+  if(!mRes.error && mRes.data) M=mRes.data;
   dot('ok');
   buildStats();
   render();
@@ -622,6 +628,8 @@ async function updateStatus(sel){
 // ── FİRMA ARAMA DROPDOWN ──
 let firmaSelected=null; // {firma_adi, bolge}
 
+let firmaDdOpen=false;
+
 function onFirmaInput(val){
   firmaSelected=null;
   document.getElementById('f-firma-id').value='';
@@ -629,27 +637,24 @@ function onFirmaInput(val){
   renderFirmaDd(val);
 }
 function onFirmaFocus(){
-  renderFirmaDd(document.getElementById('f-firma-q').value);
-  setTimeout(()=>{
-    document.addEventListener('click',function closeDdHandler(e){
-      if(!e.target.closest('#firma-dd')&&e.target.id!=='f-firma-q'){
-        closeFirmaDd();
-        document.removeEventListener('click',closeDdHandler);
-      }
-    });
-  },100);
+  // M henüz boşsa tekrar yükle
+  if(!M.length){
+    loadMusteriler().then(()=>renderFirmaDd(document.getElementById('f-firma-q').value));
+  } else {
+    renderFirmaDd(document.getElementById('f-firma-q').value);
+  }
 }
 function renderFirmaDd(val){
   const dd=document.getElementById('firma-dd');
   const q=trl(val||'');
   const filtered=q?M.filter(m=>trl(m.firma_adi).includes(q)):M;
   if(!filtered.length){
-    dd.innerHTML='<div class="firma-dd-empty">Müşteri bulunamadı</div>';
+    dd.innerHTML='<div class="firma-dd-empty">'+(M.length===0?'Müşteri yükleniyor...':'Eşleşen firma yok')+'</div>';
     dd.classList.add('on');
     return;
   }
-  dd.innerHTML=filtered.slice(0,30).map(m=>`
-    <div class="firma-dd-item" onclick="selectFirma(${JSON.stringify(m.firma_adi)},${JSON.stringify(m.bolge||'')})">
+  dd.innerHTML=filtered.slice(0,40).map(m=>`
+    <div class="firma-dd-item" onmousedown="event.preventDefault();selectFirma(${JSON.stringify(m.firma_adi)},${JSON.stringify(m.bolge||'')})">
       <div>${esc(m.firma_adi)}</div>
       ${m.bolge?`<div class="dd-bolge">📍 ${esc(m.bolge)}</div>`:''}
     </div>`).join('');
@@ -658,7 +663,6 @@ function renderFirmaDd(val){
 function selectFirma(firmaAdi, bolge){
   firmaSelected={firma_adi:firmaAdi,bolge:bolge};
   document.getElementById('f-firma-bolge').value=bolge;
-  // input'u gizle, seçili badge göster
   document.getElementById('f-firma-q').style.display='none';
   document.getElementById('firma-selected').style.display='block';
   document.getElementById('firma-selected-name').textContent=firmaAdi;
@@ -678,6 +682,14 @@ function clearFirma(){
 function closeFirmaDd(){
   document.getElementById('firma-dd').classList.remove('on');
 }
+// Dropdown dışı tıklamada kapat
+document.addEventListener('mousedown',function(e){
+  const dd=document.getElementById('firma-dd');
+  const inp=document.getElementById('f-firma-q');
+  if(dd&&inp&&!dd.contains(e.target)&&e.target!==inp){
+    closeFirmaDd();
+  }
+});
 
 // ── DRAWER ──
 function resetFirmaField(){
@@ -819,7 +831,7 @@ document.addEventListener('keydown',e=>{
   if((e.ctrlKey||e.metaKey)&&e.key==='k'){e.preventDefault();document.getElementById('q').focus();}
   if(e.key==='Escape'){closeDw();clM();}
 });
-sync();
+loadMusteriler().then(()=>sync());
 </script>
 
 <script>
