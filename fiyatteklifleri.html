@@ -110,48 +110,56 @@ select option{background:#fff;color:var(--text);}
 .ft.on .n{background:rgba(255,255,255,.25);color:#fff}
 .ft:not(.on) .n{background:var(–surface3);color:var(–text3)}
 
-/* List */
-.list{padding:0 12px 12px}
+/* List — compact table */
+.list{padding:0 8px 8px}
 
-/* Teklif kartı */
-.teklif-card{background:var(–surface);border-radius:var(–r2);border:1.5px solid var(–border);box-shadow:var(–shadow);margin-bottom:10px;overflow:hidden;animation:fadeUp .25s both;transition:box-shadow var(–t)}
-.teklif-card:hover{box-shadow:var(–shadow-lg)}
-@keyframes fadeUp{from{opacity:0;transform:translateY(5px)}to{opacity:1;transform:translateY(0)}}
+@keyframes fadeUp{from{opacity:0;transform:translateY(3px)}to{opacity:1;transform:translateY(0)}}
 
-.teklif-card.st-beklemede{border-left:4px solid #5B8FA8}
-.teklif-card.st-teklif{border-left:4px solid #EA580C;background:rgba(234,88,12,.02)}
-.teklif-card.st-muzakere{border-left:4px solid #1D4ED8;background:rgba(29,78,216,.02)}
-.teklif-card.st-onaylandi{border-left:4px solid #15803D;background:rgba(21,128,61,.03)}
-.teklif-card.st-onaylanmadi{border-left:4px solid #991B1B;background:rgba(153,27,27,.02)}
-.teklif-card.st-revize{border-left:4px solid #5B21B6;background:rgba(91,33,182,.02)}
+/* Tablo wrapper */
+.tbl-wrap{background:var(–surface);border-radius:var(–r2);border:1.5px solid var(–border);box-shadow:var(–shadow);overflow:hidden}
+.tbl-head{display:grid;grid-template-columns:minmax(0,2.2fr) minmax(0,1.6fr) 72px 80px 70px 56px;gap:0;background:#0F4C6E;padding:0}
+.tbl-head span{font-size:8px;font-weight:800;color:rgba(255,255,255,.7);text-transform:uppercase;letter-spacing:.07em;padding:7px 8px;white-space:nowrap;overflow:hidden}
 
-.teklif-head{padding:12px 14px;display:flex;justify-content:space-between;align-items:flex-start;gap:10px;border-bottom:1px solid var(–border)}
-.teklif-firma{font-size:14px;font-weight:800;color:var(–text);flex:1;min-width:0}
-.teklif-bolge{font-size:10px;color:var(–text3);font-weight:600;margin-top:2px}
-.teklif-urun{font-size:11px;color:var(–text2);margin-top:2px;font-weight:500}
-.teklif-status{display:inline-flex;align-items:center;gap:4px;padding:4px 10px;border-radius:20px;font-size:10px;font-weight:800;white-space:nowrap;flex-shrink:0}
-.st-badge-beklemede{background:rgba(91,143,168,.12);color:#3A7A9C;border:1px solid rgba(91,143,168,.25)}
-.st-badge-teklif{background:rgba(234,88,12,.12);color:#EA580C;border:1px solid rgba(234,88,12,.25)}
-.st-badge-muzakere{background:rgba(29,78,216,.1);color:#1D4ED8;border:1px solid rgba(29,78,216,.2)}
-.st-badge-onaylandi{background:rgba(21,128,61,.1);color:#15803D;border:1px solid rgba(21,128,61,.2)}
-.st-badge-onaylanmadi{background:rgba(153,27,27,.1);color:#991B1B;border:1px solid rgba(153,27,27,.2)}
-.st-badge-revize{background:rgba(91,33,182,.1);color:#5B21B6;border:1px solid rgba(91,33,182,.2)}
+/* Satır */
+.tr{display:grid;grid-template-columns:minmax(0,2.2fr) minmax(0,1.6fr) 72px 80px 70px 56px;gap:0;border-bottom:1px solid var(–border);animation:fadeUp .2s both;transition:background var(–t);align-items:center}
+.tr:last-child{border-bottom:none}
+.tr:hover{background:var(–surface2)}
+.tr.st-teklif{border-left:3px solid #EA580C}
+.tr.st-muzakere{border-left:3px solid #1D4ED8}
+.tr.st-onaylandi{border-left:3px solid #15803D}
+.tr.st-onaylanmadi{border-left:3px solid #991B1B}
+.tr.st-revize{border-left:3px solid #5B21B6}
+.tr.st-beklemede{border-left:3px solid #5B8FA8}
 
-.teklif-body{padding:10px 14px;display:grid;grid-template-columns:1fr 1fr;gap:8px}
-.teklif-field{display:flex;flex-direction:column;gap:2px}
-.teklif-field-label{font-size:9px;font-weight:700;color:var(–text3);text-transform:uppercase;letter-spacing:.06em}
-.teklif-field-val{font-size:13px;font-weight:700;color:var(–text);font-family:‘JetBrains Mono’,monospace}
-.teklif-field-val.price{color:#15803D;font-size:15px;font-weight:900}
-.teklif-field-val.empty{color:var(–text3);font-weight:400;font-family:‘Inter’,sans-serif;font-size:12px}
+.td{padding:6px 8px;font-size:11px;overflow:hidden;min-width:0}
+.td-firma{display:flex;flex-direction:column;gap:1px}
+.td-firma-name{font-size:11px;font-weight:700;color:var(–text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.td-firma-sub{font-size:9px;color:var(–text3);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.td-urun{font-size:11px;color:var(–text2);font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.td-price{font-size:11px;font-weight:800;color:#15803D;font-family:‘JetBrains Mono’,monospace;white-space:nowrap}
+.td-price.empty{color:var(–text3);font-weight:400;font-size:10px;font-family:‘Inter’,sans-serif}
+.td-date{font-size:10px;color:var(–text2);font-family:‘JetBrains Mono’,monospace;white-space:nowrap}
+.td-date.empty{color:var(–text3)}
 
-.teklif-footer{padding:8px 14px;border-top:1px solid var(–border);display:flex;justify-content:space-between;align-items:center;gap:8px;background:var(–surface2)}
-.teklif-date{font-size:10px;color:var(–text3);font-weight:600}
-.teklif-note{font-size:11px;color:var(–text2);flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.teklif-acts{display:flex;gap:4px;flex-shrink:0}
-.tb{width:28px;height:28px;border-radius:7px;border:1.5px solid var(–border);display:flex;align-items:center;justify-content:center;background:var(–surface);cursor:pointer;font-size:12px;transition:var(–t);color:var(–text3);flex-shrink:0}
+/* Status badge küçük */
+.st-dot{display:inline-block;width:6px;height:6px;border-radius:50%;flex-shrink:0;margin-right:4px}
+.st-mini{display:inline-flex;align-items:center;padding:2px 6px;border-radius:10px;font-size:9px;font-weight:800;white-space:nowrap}
+.st-mini.beklemede{background:rgba(91,143,168,.12);color:#3A7A9C}
+.st-mini.teklif{background:rgba(234,88,12,.12);color:#EA580C}
+.st-mini.muzakere{background:rgba(29,78,216,.1);color:#1D4ED8}
+.st-mini.onaylandi{background:rgba(21,128,61,.1);color:#15803D}
+.st-mini.onaylanmadi{background:rgba(153,27,27,.1);color:#991B1B}
+.st-mini.revize{background:rgba(91,33,182,.1);color:#5B21B6}
+
+/* Aksiyon butonları */
+.td-acts{display:flex;gap:3px;align-items:center;justify-content:flex-end;padding-right:6px}
+.tb{width:24px;height:24px;border-radius:6px;border:1px solid var(–border);display:flex;align-items:center;justify-content:center;background:var(–surface);cursor:pointer;font-size:11px;transition:var(–t);color:var(–text3);flex-shrink:0}
 .tb:active{background:var(–surface3)}
 .tb.dng:active{background:var(–red-soft);color:var(–red)}
 .tb.edt:active{background:var(–accent-soft);color:var(–accent)}
+
+/* Status select inline (satır içi) */
+.st-select{padding:2px 16px 2px 4px;border-radius:8px;border:1px solid var(–border);font-size:9px;font-weight:700;font-family:inherit;cursor:pointer;background:var(–surface);color:var(–text2);-webkit-appearance:none;appearance:none;background-image:url(“data:image/svg+xml,%3Csvg xmlns=‘http://www.w3.org/2000/svg’ width=‘6’ height=‘4’ viewBox=‘0 0 6 4’%3E%3Cpath fill=’%235B8FA8’ d=‘M0 0l3 4 3-4z’/%3E%3C/svg%3E”);background-repeat:no-repeat;background-position:right 4px center;max-width:64px}
 
 /* Firma arama dropdown */
 .firma-wrap{position:relative}
@@ -545,66 +553,53 @@ function render() {
   if(curF!=='Hepsi') fil=fil.filter(d=>d.durum===curF);
   if(q) fil=fil.filter(d=>trl(d.firma_adi).includes(q)||trl(d.urun).includes(q)||trl(d.notlar||'').includes(q));
 
-  if(!fil.length) {
+  if(!fil.length){
     area.innerHTML=D.length===0
       ?'<div class="empty"><div class="ei">📤</div><h3>Henüz teklif yok</h3><p>"＋ Yeni" ile ilk teklifinizi ekleyin.</p></div>'
       :'<div class="empty"><div class="ei">🔍</div><h3>Sonuç yok</h3><p>'+(q?'"'+esc(q)+'" bulunamadı.':'Bu filtre için kayıt yok.')+'</p></div>';
     return;
   }
 
-  let h='';
+  let rows='';
   fil.forEach((d,i)=>{
     const sc=statusClass(d.durum);
-    const bc=statusBadgeClass(d.durum);
-    const em=statusEmoji(d.durum);
     const id=esc(String(d.id));
     const bolge=getBolge(d.firma_adi);
-    const gecerliStr=d.gecerlilik_tarihi?fmt(d.gecerlilik_tarihi):'';
-    let gecerliFlag='';
+
+    // Geçerlilik uyarısı
+    let gecWarn='';
     if(d.gecerlilik_tarihi&&['Teklif Verildi','Müzakerede'].includes(d.durum)){
       const diff=Math.floor((new Date(d.gecerlilik_tarihi)-new Date())/(1000*60*60*24));
-      if(diff<0) gecerliFlag='<span style="font-size:9px;background:rgba(153,27,27,.12);color:#991B1B;padding:2px 6px;border-radius:4px;font-weight:700;margin-left:6px">Süresi Doldu</span>';
-      else if(diff<=3) gecerliFlag='<span style="font-size:9px;background:rgba(234,88,12,.12);color:#EA580C;padding:2px 6px;border-radius:4px;font-weight:700;margin-left:6px">'+diff+'g kaldı</span>';
+      if(diff<0) gecWarn=' 🔴';
+      else if(diff<=3) gecWarn=' 🟠';
     }
 
-    h+=`<div class="teklif-card st-${sc}" style="animation-delay:${i*0.03}s">
-      <div class="teklif-head">
-        <div>
-          <div class="teklif-firma">${esc(d.firma_adi)}${gecerliFlag}</div>
-          ${bolge?`<div class="teklif-bolge">📍 ${esc(bolge)}</div>`:''}
-          <div class="teklif-urun">📦 ${esc(d.urun)}</div>
-        </div>
-        <span class="teklif-status ${bc}">${em} ${esc(d.durum)}</span>
+    const statOpts=['Beklemede','Teklif Verildi','Müzakerede','Revize İstendi','Onaylandı','Onaylanmadı']
+      .map(s=>`<option value="${s}"${s===d.durum?' selected':''}>${s}</option>`).join('');
+
+    rows+=`<div class="tr st-${sc}" style="animation-delay:${i*0.02}s">
+      <div class="td td-firma">
+        <div class="td-firma-name" title="${esc(d.firma_adi)}">${esc(d.firma_adi)}</div>
+        ${bolge?`<div class="td-firma-sub">📍${esc(bolge)}</div>`:''}
       </div>
-      <div class="teklif-body">
-        <div class="teklif-field">
-          <div class="teklif-field-label">Teklif Fiyatı</div>
-          <div class="teklif-field-val price">${d.fiyat?fmtPara(d.fiyat):'<span class="empty">Belirtilmedi</span>'}</div>
-        </div>
-        <div class="teklif-field">
-          <div class="teklif-field-label">Teklif Tarihi</div>
-          <div class="teklif-field-val ${d.teklif_tarihi?'':'empty'}">${d.teklif_tarihi?fmt(d.teklif_tarihi):'—'}</div>
-        </div>
-        <div class="teklif-field">
-          <div class="teklif-field-label">Geçerlilik</div>
-          <div class="teklif-field-val ${d.gecerlilik_tarihi?'':'empty'}">${gecerliStr||'—'}</div>
-        </div>
-      </div>
-      <div class="teklif-footer">
-        <div style="flex:1;min-width:0">
-          ${d.notlar?'<div class="teklif-note">📝 '+esc(d.notlar)+'</div>':''}
-        </div>
-        <div class="teklif-acts">
-          <select class="st-select" data-id="${id}" onchange="updateStatus(this)">
-            ${['Beklemede','Teklif Verildi','Müzakerede','Revize İstendi','Onaylandı','Onaylanmadı'].map(s=>`<option value="${s}"${s===d.durum?' selected':''}>${s}</option>`).join('')}
-          </select>
-          <button class="tb edt" onclick="editRow('${id}')" title="Düzenle">✏️</button>
-          <button class="tb dng" onclick="askDel('${id}')" title="Sil">🗑️</button>
-        </div>
+      <div class="td td-urun" title="${esc(d.urun)}">${esc(d.urun)}</div>
+      <div class="td"><span class="td-price${d.fiyat?'':' empty'}">${d.fiyat?fmtPara(d.fiyat):'—'}</span></div>
+      <div class="td"><span class="td-date${d.teklif_tarihi?'':' empty'}">${d.teklif_tarihi?fmt(d.teklif_tarihi):'—'}</span></div>
+      <div class="td"><span class="td-date${d.gecerlilik_tarihi?'':' empty'}">${d.gecerlilik_tarihi?fmt(d.gecerlilik_tarihi)+gecWarn:'—'}</span></div>
+      <div class="td td-acts">
+        <select class="st-select" data-id="${id}" onchange="updateStatus(this)">${statOpts}</select>
+        <button class="tb edt" onclick="editRow('${id}')" title="Düzenle">✏️</button>
+        <button class="tb dng" onclick="askDel('${id}')" title="Sil">🗑️</button>
       </div>
     </div>`;
   });
-  area.innerHTML=h;
+
+  area.innerHTML=`<div class="tbl-wrap">
+    <div class="tbl-head">
+      <span>Firma</span><span>Ürün / Kalite</span><span>Fiyat</span><span>Teklif Tar.</span><span>Geçerlilik</span><span></span>
+    </div>
+    ${rows}
+  </div>`;
 }
 
 async function updateStatus(sel) {
