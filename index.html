@@ -347,15 +347,10 @@ body {
 /* Toasts */
 .toasts{position:fixed;bottom:calc(64px + env(safe-area-inset-bottom) + 8px);left:50%;transform:translateX(-50%);z-index:400;display:flex;flex-direction:column;gap:8px;pointer-events:none}
 .toast{padding:10px 18px;border-radius:var(--r);font-size:12px;font-weight:600;box-shadow:var(--shadow-lg);animation:tIn .25s;max-width:90vw;white-space:nowrap}
-
-
-
-
 @keyframes tIn{from{opacity:0;transform:translateY(8px)}}
 @keyframes tOut{to{opacity:0;transform:translateY(8px)}}
 
 /* Splash */
-/* ── Splash ── */
 #splash { position: fixed; inset: 0; background: #0F4C6E; z-index: 99999; display: flex; align-items: center; justify-content: center; transition: opacity .35s ease, transform .35s ease; }
 #splash.hide { opacity: 0; transform: scale(1.04); pointer-events: none; }
 .splash-inner { display: flex; flex-direction: column; align-items: center; gap: 18px; animation: splashIn .55s cubic-bezier(.32,.72,0,1) both; }
@@ -372,8 +367,6 @@ body {
 #ptr-indicator.spin .ptr-icon { animation: ptrSpin .6s linear infinite; }
 @keyframes ptrSpin { to { transform: rotate(360deg); } }
 .ptr-icon { font-size: 14px; transition: transform .3s; }
-@keyframes ptrSpin{to{transform:rotate(360deg)}}
-.ptr-icon{font-size:14px;transition:transform .3s}
 
 @media(max-width:480px){
   .topbar{padding-left:14px;padding-right:14px}
@@ -392,7 +385,6 @@ a,button{-webkit-tap-highlight-color:transparent}
 .toast.bad  { background: #991B1B; color: #fff; }
 .toast.wrn  { background: #EA580C; color: #fff; }
 .toast.info { background: #0F4C6E; color: #fff; }
-
 
 /* ── Bölüm / Firma başlıkları ── */
 .region-head, .client-head {
@@ -575,11 +567,8 @@ const db=supabase.createClient(SU,SK);
 const BUCKET='numune-photos';
 let R=[],curF="Hepsi",curSort="date",sTo,cfCb=null,firmaF='',musList=[];
 let selIds=new Set();
-// Fotoğraf cache: {numune_id: [url1, url2, ...]}
 let photoCache={};
-// Şu an fotoğraf yüklenecek numune id
 let photoTargetId=null;
-// Viewer state
 let pvPhotos=[],pvIdx=0;
 
 const VALID_STATUS=['Beklemede','Takip Et','Gönderildi','Onaylandı','Reddedildi'];
@@ -601,7 +590,6 @@ function hideUpload(){document.getElementById('upload-progress').classList.remov
 // FOTOĞRAF FONKSİYONLARI
 // ═══════════════════════════════════════════════
 
-// Supabase Storage'dan numune'nin fotoğraflarını getir
 async function fetchPhotos(numeneId){
   try{
     const{data,error}=await db.storage.from(BUCKET).list('numune_'+numeneId,{sortBy:{column:'created_at',order:'asc'}});
@@ -613,7 +601,6 @@ async function fetchPhotos(numeneId){
   }catch(e){return[];}
 }
 
-// Görünür numunelerin fotoğraflarını önbelleğe al
 async function preloadPhotos(ids){
   const needed=ids.filter(id=>!(id in photoCache));
   await Promise.all(needed.map(async id=>{
@@ -621,7 +608,6 @@ async function preloadPhotos(ids){
   }));
 }
 
-// Fotoğraf yükleme — file input değiştiğinde
 document.getElementById('photo-input').addEventListener('change',async function(e){
   const files=Array.from(e.target.files||[]);
   if(!files.length||!photoTargetId)return;
@@ -632,7 +618,6 @@ document.getElementById('photo-input').addEventListener('change',async function(
   for(let i=0;i<files.length;i++){
     const file=files[i];
     document.getElementById('up-text').textContent='Yükleniyor ('+(i+1)+'/'+files.length+')';
-    // Resmi sıkıştır
     const compressed=await compressImage(file,1200,0.82);
     const ext=file.name.split('.').pop().toLowerCase()||'jpg';
     const fname=Date.now()+'_'+Math.random().toString(36).slice(2)+'.'+ext;
@@ -640,18 +625,15 @@ document.getElementById('photo-input').addEventListener('change',async function(
     const{error}=await db.storage.from(BUCKET).upload(path,compressed,{contentType:compressed.type||'image/jpeg',upsert:false});
     if(!error)ok++;
   }
-  // Cache'i temizle ve yeniden yükle
   delete photoCache[photoTargetId];
   photoCache[photoTargetId]=await fetchPhotos(photoTargetId);
   hideUpload();dot('ok');
   if(ok)toast(ok+' fotoğraf eklendi','ok');
   else toast('Yükleme başarısız','bad');
-  // Satırı güncelle
   updatePhotoRow(photoTargetId);
   photoTargetId=null;
 });
 
-// Resmi sıkıştır (Canvas ile)
 function compressImage(file,maxSize,quality){
   return new Promise(resolve=>{
     const img=new Image(),url=URL.createObjectURL(file);
@@ -668,19 +650,16 @@ function compressImage(file,maxSize,quality){
   });
 }
 
-// Fotoğraf butonu tıklandı
 function openPhotoInput(numeneId){
   photoTargetId=numeneId;
   document.getElementById('photo-input').click();
 }
 
-// Belirli bir numune satırının fotoğraf şeridini güncelle
 function updatePhotoRow(numeneId){
   const strip=document.querySelector('.photo-strip[data-id="'+numeneId+'"]');
   if(!strip)return;
   const photos=photoCache[numeneId]||[];
   renderPhotoStrip(strip,numeneId,photos);
-  // Butondaki rozeti güncelle
   const btn=document.querySelector('.tb.photo[data-id="'+numeneId+'"]');
   if(btn)btn.classList.toggle('has-photo',photos.length>0);
 }
@@ -697,7 +676,6 @@ function renderPhotoStrip(stripEl,numeneId,photos){
   stripEl.innerHTML=h;
 }
 
-// Fotoğraf sil
 async function deletePhoto(numeneId,idx){
   const photos=photoCache[numeneId]||[];
   const p=photos[idx];if(!p)return;
@@ -708,11 +686,9 @@ async function deletePhoto(numeneId,idx){
   photoCache[numeneId]=photos;
   dot('ok');toast('Fotoğraf silindi','ok');
   updatePhotoRow(numeneId);
-  // Viewer açıksa kapat
   if(document.getElementById('photo-viewer').classList.contains('on'))closePV();
 }
 
-// Fotoğraf viewer
 function openPV(numeneId,idx){
   const photos=photoCache[numeneId]||[];
   if(!photos.length)return;
@@ -735,9 +711,7 @@ async function pvDelete(){
   await deletePhoto(p.numeneId,pvIdx);
   closePV();
 }
-// Viewer kapatma — dışına tıklama
 document.getElementById('photo-viewer').addEventListener('click',e=>{if(e.target===e.currentTarget)closePV();});
-// Swipe desteği
 let pvTouchX=null;
 document.getElementById('photo-viewer').addEventListener('touchstart',e=>{pvTouchX=e.touches[0].clientX;},{passive:true});
 document.getElementById('photo-viewer').addEventListener('touchend',e=>{
@@ -778,7 +752,6 @@ async function sync(){
   R=dataRes.data||[];
   R.sort((a,b)=>{const ta=new Date(a.created_at).getTime(),tb=new Date(b.created_at).getTime();if(ta===tb)return isV(a.numune)?1:-1;return tb-ta;});
   dot('ok');updBanner();render();
-  // Fotoğrafları arka planda yükle
   const ids=R.map(r=>r.id);
   preloadPhotos(ids).then(()=>render());
 }
@@ -787,6 +760,45 @@ function onSearch(){document.getElementById('qc').classList.toggle('on',document
 function clearQ(){document.getElementById('q').value='';document.getElementById('qc').classList.remove('on');render();}
 function setF(f){curF=f;document.querySelectorAll('.ft').forEach(x=>x.classList.toggle('on',x.dataset.f===f));render();}
 function statusClass(st){if(st==='Takip Et')return'st-takip';if(st==='Gönderildi')return'st-gonderildi';if(st==='Onaylandı')return'st-onaylandi';if(st==='Reddedildi')return'st-reddedildi';return'st-beklemede';}
+
+// ═══════════════════════════════════════════════
+// RENDER — Varyantları ana öğenin altına grupla
+// ═══════════════════════════════════════════════
+function groupVariants(items){
+  // Ana öğeler (↳ ile başlamayanlar)
+  const anaItems=items.filter(i=>!isV(i.numune));
+  // Varyantlar (↳ ile başlayanlar)
+  const varItems=items.filter(i=>isV(i.numune));
+
+  const grouped=[];
+  const usedVarIds=new Set();
+
+  anaItems.forEach(ana=>{
+    grouped.push(ana);
+    const anaKod=dName(ana.numune);
+    // Bu ana koda ait varyantları bul:
+    // aciklama alanı "AnaKod|not" veya sadece "AnaKod" şeklinde başlar
+    const altlar=varItems.filter(v=>{
+      if(usedVarIds.has(v.id))return false;
+      const{pc}=parseAc(v);
+      // pc alanı ana kodla eşleşiyor mu?
+      if(pc&&trl(pc)===trl(anaKod))return true;
+      // Ya da aciklama direkt ana kod ile başlıyor mu?
+      const ac=v.aciklama||'';
+      if(ac.startsWith(anaKod+'|')||ac===anaKod)return true;
+      return false;
+    });
+    altlar.forEach(v=>{
+      usedVarIds.add(v.id);
+      grouped.push(v);
+    });
+  });
+
+  // Hiçbir ana öğeye bağlanamayan varyantları sona ekle
+  varItems.filter(v=>!usedVarIds.has(v.id)).forEach(v=>grouped.push(v));
+
+  return grouped;
+}
 
 function render(){
   const area=document.getElementById('list');
@@ -825,9 +837,18 @@ function render(){
     if(bek)st+='<div class="fstat"><div class="fsd x"></div>'+bek+'</div>';
     st+='</div>';
     h+='<div class="client-sec"><div class="client-head"><span class="client-name">🏢 '+ef+'</span>'+st+'<div style="display:flex;align-items:center;gap:6px"><button class="cl-edit" data-act="firma-change" data-firma="'+ef+'" title="Firma değiştir">✏️</button><span class="client-badge">'+items.length+'</span></div></div>';
+
+    // ── DÜZELTME: Önce sırala, sonra varyantları ana öğenin altına grupla ──
     let sItems=[...items];
-    if(curSort==='alpha')sItems.sort((a,b)=>dName(a.numune).localeCompare(dName(b.numune),'tr'));
-    else if(curSort==='status'){const ord=['Beklemede','Takip Et','Gönderildi','Onaylandı','Reddedildi'];sItems.sort((a,b)=>ord.indexOf(a.durum||'Beklemede')-ord.indexOf(b.durum||'Beklemede'));}
+    if(curSort==='alpha'){
+      sItems.sort((a,b)=>dName(a.numune).localeCompare(dName(b.numune),'tr'));
+    } else if(curSort==='status'){
+      const ord=['Beklemede','Takip Et','Gönderildi','Onaylandı','Reddedildi'];
+      sItems.sort((a,b)=>ord.indexOf(a.durum||'Beklemede')-ord.indexOf(b.durum||'Beklemede'));
+    }
+    // Sıralamadan sonra varyantları ana öğelerinin hemen altına taşı
+    sItems=groupVariants(sItems);
+
     sItems.forEach(i=>{
       const v=isV(i.numune),dn=dName(i.numune),{note}=parseAc(i);
       const sc=statusClass(i.durum),id=String(i.id);
@@ -852,7 +873,6 @@ function render(){
         +'<button class="tb dng" data-id="'+id+'" data-act="delete" title="Sil">🗑️</button>'
         +'</div>';
 
-      // Fotoğraf şeridi — her zaman render et, :empty ile gizlenir
       h+='<div class="photo-strip" data-id="'+id+'">';
       photos.forEach((p,pi)=>{
         h+='<div class="photo-wrap">'
@@ -879,7 +899,6 @@ LA.addEventListener('click',e=>{
   if(a==='select'){toggleSelect(id);return;}
   if(e.target.tagName==='INPUT'||e.target.tagName==='SELECT')return;
   if(a==='photo'){
-    // Fotoğraf butonu: varsa viewer, yoksa yükle
     const photos=photoCache[id]||[];
     if(photos.length>0)openPV(id,0);
     else openPhotoInput(id);
