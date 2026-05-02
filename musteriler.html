@@ -106,7 +106,6 @@ letter-spacing: .1em; text-transform: uppercase;
 .sync-dot.err  { background: #FCA5A5; }
 @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:.3} }
 .topbar-actions{display:flex;align-items:center;gap:6px}
-
 .alert-banner{margin:12px 16px 0;border-radius:var(–r);padding:10px 14px;display:flex;align-items:center;gap:10px;font-size:12px;font-weight:600;cursor:pointer;transition:var(–t);border:1px solid;}
 .alert-banner.red{background:var(–red-soft);border-color:rgba(153,27,27,.25);color:var(–red);}
 .alert-banner.amber{background:var(–amber-soft);border-color:rgba(180,83,9,.25);color:var(–amber);}
@@ -546,6 +545,7 @@ async function bulkSt(r,v){const ids=D.filter(m=>(m.bolge||'DİĞER').toUpperCas
 async function askDF(id){const m=D.find(x=>String(x.id)===String(id));if(!m)return;confirm2('Firma Sil','"'+(m.firma_adi||'İsimsiz')+'" silinsin mi?',async()=>{dot('busy');const{error}=await db.from('musteriler').delete().eq('id',id);if(error){dot('err');toast('Silinemedi','bad');return;}dot('ok');toast('Silindi','ok');sync();});}
 async function askDR(r){const c=D.filter(m=>(m.bolge||'DİĞER').toUpperCase()===r).length;confirm2(r+' Sil',c+' firmanın TAMAMI silinecek!',async()=>{dot('busy');await db.from('musteriler').delete().eq('bolge',r);cls.delete(r);dot('ok');toast(c+' firma silindi','ok');sync();});}
 function openAdd(){document.getElementById('dw-id').value='';document.getElementById('dw-t').textContent='🏢 Yeni Firma';document.getElementById('dw-s').textContent='Kaydet';['f-n','f-r','f-d','f-no'].forEach(x=>document.getElementById(x).value='');document.getElementById('f-st').value='ziyaret edilecek';document.querySelectorAll('.field').forEach(f=>f.classList.remove('bad'));closeBolgeDd();document.getElementById('ov').classList.add('on');document.getElementById('dw').classList.add('on');setTimeout(()=>document.getElementById('f-n').focus(),250);}
+// ── DÜZELTME: Nav bar "＋ Yeni" butonu için alias ──
 function openDwNew(){openAdd();}
 function openEd(id){const m=D.find(x=>String(x.id)===String(id));if(!m)return;document.getElementById('dw-id').value=m.id;document.getElementById('dw-t').textContent='✏️ Düzenle: '+esc(m.firma_adi||'');document.getElementById('dw-s').textContent='Güncelle';document.getElementById('f-n').value=m.firma_adi||'';document.getElementById('f-r').value=m.bolge||'';document.getElementById('f-d').value=m.son_ziyaret||'';document.getElementById('f-st').value=m.ziyaret_durumu||'ziyaret edilecek';document.getElementById('f-no').value=m.notlar||'';document.querySelectorAll('.field').forEach(f=>f.classList.remove('bad'));closeBolgeDd();document.getElementById('ov').classList.add('on');document.getElementById('dw').classList.add('on');}
 function clDw(){document.getElementById('ov').classList.remove('on');document.getElementById('dw').classList.remove('on');closeBolgeDd();}
@@ -584,7 +584,6 @@ sync();
 <nav class="bnav">
   <a href="index.html" class="bnav-item"><span class="ni">📦</span><span class="nl">Numune</span></a>
   <a href="musteriler.html" class="bnav-item on"><span class="ni">👥</span><span class="nl">Müşteri</span></a>
-  <a href="#" class="bnav-item"><span class="ni">📝</span><span class="nl">Notlar</span></a>
   <a href="fiyatlar.html" class="bnav-item"><span class="ni">💰</span><span class="nl">Fiyatlar</span></a>
   <a href="fiyatteklifleri.html" class="bnav-item"><span class="ni">📤</span><span class="nl">Teklifler</span></a>
   <a href="#" class="bnav-item bnav-mid" onclick="openDwNew();return false;"><span class="ni">＋</span><span class="nl">Yeni</span></a>
