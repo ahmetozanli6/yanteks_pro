@@ -554,11 +554,13 @@ function render(){
     return;
   }
 
+  // Gruplama
   const firmaMap=new Map();
   fil.forEach(d=>{
     if(!firmaMap.has(d.firma_adi))firmaMap.set(d.firma_adi,[]);
     firmaMap.get(d.firma_adi).push(d);
   });
+  // Her firmanın tekliflerini tarihe göre yeniden eskiye sırala
   firmaMap.forEach(teklifler=>{
     teklifler.sort((a,b)=>{
       const da=a.teklif_tarihi||a.created_at||'';
@@ -566,6 +568,7 @@ function render(){
       return db2.localeCompare(da);
     });
   });
+  // Firmaları son teklif tarihine göre sırala (en yeni üstte)
   const sorted=[...firmaMap.entries()].sort((a,b)=>{
     const da=a[1][0]?.teklif_tarihi||a[1][0]?.created_at||'';
     const db2=b[1][0]?.teklif_tarihi||b[1][0]?.created_at||'';
@@ -594,6 +597,7 @@ function render(){
       const statOpts=['Teklif Verildi','Onaylandı','Onaylanmadı']
         .map(s=>`<option value="${s}"${s===d.durum?' selected':''}>${statusEmoji(s)} ${s}</option>`).join('');
 
+      // Tarih parçala
       let day='—',mon='',yr='';
       if(d.teklif_tarihi){
         const p=d.teklif_tarihi.split('-');
@@ -605,6 +609,7 @@ function render(){
         }
       }
 
+      // Geçerlilik uyarısı
       let gecWarn='';
       if(d.gecerlilik_tarihi&&d.durum==='Teklif Verildi'){
         const diff=Math.floor((new Date(d.gecerlilik_tarihi)-new Date())/(1000*60*60*24));
@@ -655,11 +660,13 @@ function render(){
   });
 
   area.innerHTML=html;
+  // Attach click handlers safely (avoids JSON/HTML escaping issues with firm names)
   area.querySelectorAll('[data-toggle-idx]').forEach(el=>{
     const idx=parseInt(el.getAttribute('data-toggle-idx'));
     const firma=sorted[idx]?sorted[idx][0]:null;
     if(!firma)return;
     el.addEventListener('click',function(e){
+      // Don't trigger if clicking a button/select inside
       if(e.target.closest('button,select'))return;
       toggleFirma(firma);
     });
@@ -691,6 +698,7 @@ async function updateStatus(sel){
   dot('ok');toast('Durum güncellendi','ok');buildStats();render();
 }
 
+// FİRMA DROPDOWN
 let firmaSelected=null;
 function onFirmaInput(val){firmaSelected=null;renderFirmaDd(val)}
 function onFirmaFocus(){
@@ -732,6 +740,7 @@ document.addEventListener('mousedown',e=>{
   if(dd&&inp&&!dd.contains(e.target)&&e.target!==inp)closeFirmaDd();
 });
 
+// KALİTE SATIRLARI
 let kaliteRows=[],kaliteRowId=0;
 const DURUM_OPTS=['Teklif Verildi','Onaylandı','Onaylanmadı'];
 function addKaliteRow(urun='',fiyat='',durum='Teklif Verildi'){
@@ -770,6 +779,7 @@ function getKaliteData(){
 }
 function clearKaliteRows(){kaliteRows=[];kaliteRowId=0;document.getElementById('kalite-rows-container').innerHTML='';updateKaliteCount()}
 
+// DRAWER
 function resetFirmaField(){
   firmaSelected=null;
   document.getElementById('f-firma-q').value='';
@@ -850,6 +860,7 @@ async function save(){
   closeDw();sync();
 }
 
+// SİL
 function askDel(id){
   const d=D.find(x=>String(x.id)===String(id));if(!d)return;
   document.getElementById('cf-t').textContent='Teklifi Sil';
@@ -866,6 +877,8 @@ function clM(){document.getElementById('mod-cf').classList.remove('on');cfCb=nul
 document.getElementById('cf-ok').addEventListener('click',()=>{const c=cfCb;clM();if(c)c()});
 document.getElementById('mod-cf').addEventListener('click',e=>{if(e.target===e.currentTarget)clM()});
 
+// EXCEL
+// ── EXCEL EXPORT ──
 let expFirmaSelected=null;
 
 function openExport(){
@@ -896,6 +909,7 @@ function onExpFirmaFocus(){
 function renderExpFirmaDd(val){
   const dd=document.getElementById('exp-firma-dd');
   const q=trl(val||'');
+  // Also include firms from D (actual data), not just M
   const firmsInD=[...new Set(D.map(d=>d.firma_adi))].sort();
   const allFirms=firmsInD;
   const filtered=q?allFirms.filter(f=>trl(f).includes(q)):allFirms;
@@ -967,6 +981,7 @@ async function doExportXL(){
   finally{btn.disabled=false;btn.textContent='📊 İndir'}
 }
 
+// ── EXCEL İMPORT ──
 let impFirmaSelected=null;
 let impRows=[];
 
@@ -1119,7 +1134,6 @@ sync();
 <nav class="bnav">
   <a href="index.html" class="bnav-item"><span class="ni">📦</span><span class="nl">Numune</span></a>
   <a href="musteriler.html" class="bnav-item"><span class="ni">👥</span><span class="nl">Müşteri</span></a>
-  <a href="notlar.html" class="bnav-item"><span class="ni">📝</span><span class="nl">Notlar</span></a>
   <a href="fiyatlar.html" class="bnav-item"><span class="ni">💰</span><span class="nl">Fiyatlar</span></a>
   <a href="fiyatteklifleri.html" class="bnav-item on"><span class="ni">📤</span><span class="nl">Teklifler</span></a>
   <a href="#" class="bnav-item bnav-mid" onclick="openDw();return false;"><span class="ni">＋</span><span class="nl">Yeni</span></a>
