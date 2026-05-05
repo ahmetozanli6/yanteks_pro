@@ -1,5 +1,5 @@
-const CACHE = 'yanteks-v4';
-const DATA_CACHE = 'yanteks-data-v4';
+const CACHE = 'yanteks-v5';
+const DATA_CACHE = 'yanteks-data-v5';
 
 const BASE_PATH = '/yanteks_pro'; // GitHub Pages alt dizin
 const STATIC = [
@@ -82,15 +82,12 @@ self.addEventListener('fetch', e => {
 
   if (url.endsWith('.html') || url.endsWith('/') || url === self.location.origin) {
     e.respondWith(
-      caches.match(e.request).then(cached => {
-        const networkFetch = fetch(e.request)
-          .then(res => {
-            if (res.ok) caches.open(CACHE).then(c => c.put(e.request, res.clone()));
-            return res;
-          })
-          .catch(() => cached);
-        return cached || networkFetch;
-      })
+      fetch(e.request)
+        .then(res => {
+          if (res.ok) caches.open(CACHE).then(c => c.put(e.request, res.clone()));
+          return res;
+        })
+        .catch(() => caches.match(e.request))
     );
     return;
   }
