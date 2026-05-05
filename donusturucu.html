@@ -1,0 +1,345 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+<meta charset="UTF-8">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black">
+<meta name="apple-mobile-web-app-title" content="Yanteks Pro">
+<meta name="theme-color" content="#1E2D3D">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
+<title>Yanteks Pro | Dönüştürücü</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg:         #F3F5F7;
+  --surface:    #FFFFFF;
+  --surface2:   #E8EDEF;
+  --surface3:   #D5E4EE;
+  --text:       #0A1520;
+  --text2:      #1A2D40;
+  --text3:      #4A6880;
+  --accent:     #1E2D3D;
+  --accent2:    #162332;
+  --accent3:    #2A4055;
+  --teal:       #0891B2;
+  --teal-light: #38BDF8;
+  --teal-soft:  rgba(8,145,178,.1);
+  --teal-glow:  rgba(8,145,178,.2);
+  --green:      #15803D;
+  --green-soft: rgba(21,128,61,.1);
+  --amber:      #B45309;
+  --amber-soft: rgba(180,83,9,.1);
+  --red:        #991B1B;
+  --red-soft:   rgba(153,27,27,.1);
+  --border:     rgba(30,45,61,.1);
+  --border2:    rgba(30,45,61,.16);
+  --shadow:     0 1px 8px rgba(10,20,35,.07), 0 4px 16px rgba(10,20,35,.05);
+  --shadow-lg:  0 4px 24px rgba(10,20,35,.12), 0 12px 40px rgba(10,20,35,.08);
+  --r: 12px; --r2: 16px; --r3: 20px;
+  --t: .18s cubic-bezier(.4,0,.2,1);
+}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+html{scroll-behavior:smooth}
+body{background:var(--bg);font-family:'Inter',sans-serif;color:var(--text);font-size:14px;-webkit-font-smoothing:antialiased;line-height:1.5;
+background-image:radial-gradient(ellipse at 80% -10%,rgba(8,145,178,.06) 0%,transparent 55%),radial-gradient(ellipse at 10% 100%,rgba(8,145,178,.04) 0%,transparent 50%);}
+input,button{font-family:'Inter',sans-serif;color:var(--text);-webkit-appearance:none;appearance:none}
+a,button{-webkit-tap-highlight-color:transparent}
+
+.topbar{position:sticky;top:0;z-index:100;background:linear-gradient(135deg,#131E2B 0%,#1E2D3D 60%,#253545 100%);border-bottom:2px solid rgba(8,145,178,.7);padding:calc(14px + env(safe-area-inset-top)) 20px 14px;display:flex;justify-content:space-between;align-items:center;box-shadow:0 2px 20px rgba(8,18,32,.35)}
+.topbar-brand{display:flex;align-items:center;gap:11px}
+.topbar-logo{width:34px;height:34px;border-radius:8px;background:linear-gradient(135deg,#0672A0,#0891B2);color:#fff;display:flex;align-items:center;justify-content:center;font-weight:800;font-size:16px;box-shadow:0 2px 8px rgba(0,0,0,.3)}
+.topbar-title{font-size:13px;font-weight:800;color:rgba(255,255,255,.95);letter-spacing:.1em;text-transform:uppercase}
+.topbar-title span{color:#38BDF8}
+
+.content{padding:16px 16px calc(80px + env(safe-area-inset-bottom));max-width:600px;margin:0 auto}
+
+/* ── Converter Card ── */
+.conv-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--r2);box-shadow:var(--shadow);overflow:hidden;margin-bottom:14px}
+.conv-card-head{padding:14px 18px;background:linear-gradient(135deg,#131E2B,#1E2D3D);display:flex;align-items:center;gap:10px}
+.conv-card-icon{width:36px;height:36px;border-radius:10px;background:rgba(8,145,178,.25);display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0}
+.conv-card-title{font-size:14px;font-weight:800;color:#fff;letter-spacing:.04em}
+.conv-card-sub{font-size:10px;color:rgba(255,255,255,.5);margin-top:1px}
+.conv-body{padding:18px}
+
+/* Input row */
+.inp-row{display:flex;align-items:center;gap:10px;margin-bottom:14px}
+.inp-group{flex:1;position:relative}
+.inp-label{font-size:9px;font-weight:800;color:var(--text3);text-transform:uppercase;letter-spacing:.1em;margin-bottom:5px;display:block}
+.inp-unit{display:flex;align-items:center;gap:0}
+.inp-unit input{flex:1;min-width:0;padding:12px 50px 12px 14px;border-radius:var(--r);border:1.5px solid var(--border2);background:var(--surface2);font-family:'JetBrains Mono',monospace;font-size:18px;font-weight:700;color:var(--text);transition:var(--t)}
+.inp-unit input:focus{border-color:#0891B2;box-shadow:0 0 0 3px rgba(8,145,178,.15);outline:none;background:#fff}
+.inp-unit input.result{background:rgba(8,145,178,.06);border-color:rgba(8,145,178,.3);color:#0891B2}
+.inp-badge{position:absolute;right:10px;top:50%;transform:translateY(-50%);font-size:10px;font-weight:800;color:var(--text3);background:var(--surface3);padding:3px 8px;border-radius:6px;pointer-events:none;font-family:'JetBrains Mono',monospace;letter-spacing:.04em}
+.inp-arrow{font-size:20px;color:var(--text3);flex-shrink:0;margin-top:18px;user-select:none}
+
+.swap-btn{width:100%;padding:11px;border-radius:var(--r);border:1.5px solid rgba(8,145,178,.3);background:rgba(8,145,178,.07);color:#0891B2;font-size:12px;font-weight:700;cursor:pointer;font-family:inherit;transition:var(--t);display:flex;align-items:center;justify-content:center;gap:7px;letter-spacing:.03em}
+.swap-btn:hover{background:rgba(8,145,178,.14);border-color:#0891B2}
+.swap-btn:active{transform:scale(.97)}
+
+.result-row{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:16px}
+.res-box{background:var(--surface2);border:1px solid var(--border);border-radius:var(--r);padding:12px 14px;text-align:center}
+.res-box.highlight{background:rgba(8,145,178,.08);border-color:rgba(8,145,178,.3)}
+.res-label{font-size:9px;font-weight:800;color:var(--text3);text-transform:uppercase;letter-spacing:.1em;margin-bottom:4px}
+.res-val{font-size:22px;font-weight:900;font-family:'JetBrains Mono',monospace;color:var(--text);line-height:1}
+.res-val.teal{color:#0891B2}
+.res-unit{font-size:10px;color:var(--text3);margin-top:3px;font-weight:600}
+
+.formula-note{font-size:11px;color:var(--text3);margin-top:14px;padding:10px 14px;border-radius:8px;background:var(--surface2);border:1px solid var(--border);line-height:1.6}
+.formula-note strong{color:var(--text2);font-weight:700}
+
+/* ── Section title ── */
+.sec-title{font-size:11px;font-weight:800;color:var(--text3);text-transform:uppercase;letter-spacing:.1em;margin:20px 0 10px;display:flex;align-items:center;gap:8px}
+.sec-title::after{content:'';flex:1;height:1px;background:var(--border)}
+
+/* ── Reference Table ── */
+.ref-table{background:var(--surface);border:1px solid var(--border);border-radius:var(--r2);box-shadow:var(--shadow);overflow:hidden}
+.ref-table-head{display:grid;grid-template-columns:1fr 1fr 1fr 1fr;background:linear-gradient(135deg,#131E2B,#1E2D3D);padding:10px 14px;gap:4px}
+.ref-th{font-size:9px;font-weight:800;color:rgba(255,255,255,.7);text-transform:uppercase;letter-spacing:.08em;text-align:center}
+.ref-th:first-child{text-align:left}
+.ref-row{display:grid;grid-template-columns:1fr 1fr 1fr 1fr;padding:9px 14px;gap:4px;border-bottom:1px solid var(--border);transition:background var(--t);align-items:center}
+.ref-row:last-child{border-bottom:none}
+.ref-row:hover{background:var(--surface2)}
+.ref-row.cat{background:rgba(8,145,178,.06);border-bottom:1px solid rgba(8,145,178,.2)}
+.ref-td{font-size:12px;font-weight:600;font-family:'JetBrains Mono',monospace;color:var(--text);text-align:center}
+.ref-td:first-child{text-align:left;font-weight:800;color:var(--text2);font-family:'Inter',sans-serif;font-size:11px}
+.ref-td.teal{color:#0891B2;font-weight:800}
+.ref-cat-label{font-size:9px;font-weight:800;color:#0891B2;text-transform:uppercase;letter-spacing:.08em;grid-column:1/-1;padding:2px 0 0}
+
+/* ── Nav ── */
+.bnav{position:fixed;bottom:0;left:0;right:0;height:calc(56px + env(safe-area-inset-bottom));background:linear-gradient(to top,#0F1A25,#1E2D3D);border-top:1px solid rgba(8,145,178,.55);display:flex;align-items:stretch;z-index:200;padding-bottom:env(safe-area-inset-bottom);box-shadow:0 -2px 20px rgba(8,18,32,.3)}
+.bnav-item{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;text-decoration:none;color:rgba(255,255,255,.4);font-size:9px;font-weight:700;letter-spacing:.04em;text-transform:uppercase;-webkit-tap-highlight-color:transparent;cursor:pointer;border:none;background:none;font-family:inherit;padding:0}
+.bnav-item.on{color:#38BDF8}
+.bnav-item .ni{font-size:17px;line-height:1}
+.bnav-item .nl{font-size:7px}
+.bnav-mid{color:#fff !important;background:linear-gradient(135deg,#0672A0,#0891B2);border-radius:10px;margin:6px 1px;padding:2px 6px;flex:1.1;font-weight:800;box-shadow:0 2px 8px rgba(0,0,0,.25)}
+.bnav-spacer{height:calc(58px + env(safe-area-inset-bottom));flex-shrink:0;display:block}
+
+/* ── Splash ── */
+#splash{position:fixed;inset:0;background:linear-gradient(135deg,#0A1520,#1E2D3D);z-index:99999;display:flex;align-items:center;justify-content:center;transition:opacity .35s ease,transform .35s ease}
+#splash.hide{opacity:0;transform:scale(1.04);pointer-events:none}
+.splash-inner{display:flex;flex-direction:column;align-items:center;gap:18px;animation:splashIn .5s cubic-bezier(.32,.72,0,1) both}
+.splash-svg{width:260px;height:auto}
+.splash-tagline{font-size:10px;font-weight:700;color:rgba(255,255,255,.5);letter-spacing:.3em;text-transform:uppercase}
+.splash-bar{width:120px;height:2px;background:rgba(255,255,255,.15);border-radius:2px;overflow:hidden}
+.splash-fill{height:100%;background:#0891B2;border-radius:2px;animation:splashSlide .5s ease forwards}
+@keyframes splashIn{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:translateY(0)}}
+@keyframes splashSlide{from{width:0}to{width:100%}}
+
+@media(max-width:400px){.result-row{grid-template-columns:1fr 1fr}.inp-unit input{font-size:15px;padding:11px 46px 11px 11px}}
+</style>
+</head>
+<body>
+
+<div id="splash">
+  <div class="splash-inner">
+    <svg class="splash-svg" viewBox="0 0 340 110" xmlns="http://www.w3.org/2000/svg">
+      <text x="170" y="78" font-family="'Inter',sans-serif" font-weight="800" font-size="72" text-anchor="middle" fill="white" letter-spacing="-2" opacity="0.95">Yanteks</text>
+      <line x1="30" y1="92" x2="310" y2="92" stroke="#0EA5C9" stroke-width="2.5" stroke-linecap="round"/>
+    </svg>
+    <div class="splash-tagline">YÖNETİM SİSTEMİ</div>
+    <div class="splash-bar"><div class="splash-fill"></div></div>
+  </div>
+</div>
+
+<header class="topbar">
+  <div class="topbar-brand">
+    <div class="topbar-logo">⇄</div>
+    <div class="topbar-title">YANTEKS <span>DÖNÜŞTÜRÜCÜ</span></div>
+  </div>
+</header>
+
+<div class="content">
+
+  <!-- Denye ↔ Nm Converter -->
+  <div class="conv-card">
+    <div class="conv-card-head">
+      <div class="conv-card-icon">🧵</div>
+      <div>
+        <div class="conv-card-title">Denye ↔ Nm Dönüştürücü</div>
+        <div class="conv-card-sub">İplik numarası çevirici</div>
+      </div>
+    </div>
+    <div class="conv-body">
+      <div class="inp-row">
+        <div class="inp-group">
+          <span class="inp-label">Denye (den)</span>
+          <div class="inp-unit" style="position:relative">
+            <input type="number" id="inp-den" inputmode="decimal" placeholder="0" oninput="fromDen(this.value)">
+            <span class="inp-badge">den</span>
+          </div>
+        </div>
+        <div class="inp-arrow">⇄</div>
+        <div class="inp-group">
+          <span class="inp-label">Nm (Metrik No)</span>
+          <div class="inp-unit" style="position:relative">
+            <input type="number" id="inp-nm" inputmode="decimal" placeholder="0" oninput="fromNm(this.value)">
+            <span class="inp-badge">Nm</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="result-row" id="results">
+        <div class="res-box">
+          <div class="res-label">Tex</div>
+          <div class="res-val" id="r-tex">—</div>
+          <div class="res-unit">g / 1000m</div>
+        </div>
+        <div class="res-box">
+          <div class="res-label">Ne (Pamuk)</div>
+          <div class="res-val" id="r-ne">—</div>
+          <div class="res-unit">ingiliz no</div>
+        </div>
+        <div class="res-box highlight">
+          <div class="res-label">Denye</div>
+          <div class="res-val teal" id="r-den">—</div>
+          <div class="res-unit">g / 9000m</div>
+        </div>
+        <div class="res-box highlight">
+          <div class="res-label">Nm</div>
+          <div class="res-val teal" id="r-nm">—</div>
+          <div class="res-unit">1000m / g</div>
+        </div>
+      </div>
+
+      <button class="swap-btn" style="margin-top:14px" onclick="clearAll()">✕ Temizle</button>
+
+      <div class="formula-note">
+        <strong>Formüller:</strong><br>
+        Nm = 9000 ÷ Denye &nbsp;|&nbsp; Denye = 9000 ÷ Nm<br>
+        Tex = Denye ÷ 9 &nbsp;|&nbsp; Ne = Nm ÷ 1.6935
+      </div>
+    </div>
+  </div>
+
+  <!-- Reference Table -->
+  <div class="sec-title">Hızlı Referans Tablosu</div>
+
+  <div class="ref-table">
+    <div class="ref-table-head">
+      <div class="ref-th">Açıklama</div>
+      <div class="ref-th">Denye</div>
+      <div class="ref-th">Nm</div>
+      <div class="ref-th">Tex</div>
+    </div>
+
+    <div class="ref-row cat"><div class="ref-cat-label">İnce İplikler</div></div>
+    <div class="ref-row" onclick="fillRow(20,450,2.22)">
+      <div class="ref-td">Çok İnce</div>
+      <div class="ref-td teal">20</div><div class="ref-td">450</div><div class="ref-td">2.2</div>
+    </div>
+    <div class="ref-row" onclick="fillRow(40,225,4.44)">
+      <div class="ref-td">İnce</div>
+      <div class="ref-td teal">40</div><div class="ref-td">225</div><div class="ref-td">4.4</div>
+    </div>
+    <div class="ref-row" onclick="fillRow(70,128.6,7.78)">
+      <div class="ref-td">İnce-Orta</div>
+      <div class="ref-td teal">70</div><div class="ref-td">128.6</div><div class="ref-td">7.8</div>
+    </div>
+
+    <div class="ref-row cat"><div class="ref-cat-label">Orta İplikler</div></div>
+    <div class="ref-row" onclick="fillRow(100,90,11.11)">
+      <div class="ref-td">Standart</div>
+      <div class="ref-td teal">100</div><div class="ref-td">90</div><div class="ref-td">11.1</div>
+    </div>
+    <div class="ref-row" onclick="fillRow(150,60,16.67)">
+      <div class="ref-td">Orta</div>
+      <div class="ref-td teal">150</div><div class="ref-td">60</div><div class="ref-td">16.7</div>
+    </div>
+    <div class="ref-row" onclick="fillRow(200,45,22.22)">
+      <div class="ref-td">Orta-Kalın</div>
+      <div class="ref-td teal">200</div><div class="ref-td">45</div><div class="ref-td">22.2</div>
+    </div>
+
+    <div class="ref-row cat"><div class="ref-cat-label">Kalın İplikler</div></div>
+    <div class="ref-row" onclick="fillRow(300,30,33.33)">
+      <div class="ref-td">Kalın</div>
+      <div class="ref-td teal">300</div><div class="ref-td">30</div><div class="ref-td">33.3</div>
+    </div>
+    <div class="ref-row" onclick="fillRow(450,20,50)">
+      <div class="ref-td">Çok Kalın</div>
+      <div class="ref-td teal">450</div><div class="ref-td">20</div><div class="ref-td">50</div>
+    </div>
+    <div class="ref-row" onclick="fillRow(600,15,66.67)">
+      <div class="ref-td">Halat Tipi</div>
+      <div class="ref-td teal">600</div><div class="ref-td">15</div><div class="ref-td">66.7</div>
+    </div>
+  </div>
+
+  <div style="font-size:10px;color:var(--text3);text-align:center;margin-top:12px;padding-bottom:4px">
+    Tablodaki satıra dokun → otomatik doldurur
+  </div>
+
+</div>
+
+<nav class="bnav">
+  <a href="index.html" class="bnav-item"><span class="ni">📦</span><span class="nl">Numune</span></a>
+  <a href="musteriler.html" class="bnav-item"><span class="ni">👥</span><span class="nl">Müşteri</span></a>
+  <a href="fiyatlar.html" class="bnav-item"><span class="ni">💰</span><span class="nl">Fiyatlar</span></a>
+  <a href="fiyatteklifleri.html" class="bnav-item"><span class="ni">📤</span><span class="nl">Teklifler</span></a>
+  <a href="donusturucu.html" class="bnav-item on"><span class="ni">⇄</span><span class="nl">Dönüştür</span></a>
+</nav>
+<div class="bnav-spacer"></div>
+
+<script>
+function fmt(v) {
+  if (v === null || isNaN(v) || !isFinite(v)) return '—';
+  if (v >= 1000) return v.toFixed(0);
+  if (v >= 100)  return v.toFixed(1);
+  if (v >= 10)   return v.toFixed(2);
+  return v.toFixed(3);
+}
+
+function calc(den, nm) {
+  const tex = den / 9;
+  const ne  = nm / 1.6935;
+  document.getElementById('r-den').textContent = fmt(den);
+  document.getElementById('r-nm').textContent  = fmt(nm);
+  document.getElementById('r-tex').textContent = fmt(tex);
+  document.getElementById('r-ne').textContent  = fmt(ne);
+}
+
+function fromDen(val) {
+  const den = parseFloat(val);
+  if (!val || isNaN(den) || den <= 0) { reset(); return; }
+  const nm = 9000 / den;
+  document.getElementById('inp-nm').value = '';
+  document.getElementById('inp-nm').classList.add('result');
+  document.getElementById('inp-den').classList.remove('result');
+  calc(den, nm);
+}
+
+function fromNm(val) {
+  const nm = parseFloat(val);
+  if (!val || isNaN(nm) || nm <= 0) { reset(); return; }
+  const den = 9000 / nm;
+  document.getElementById('inp-den').value = '';
+  document.getElementById('inp-den').classList.add('result');
+  document.getElementById('inp-nm').classList.remove('result');
+  calc(den, nm);
+}
+
+function reset() {
+  ['r-den','r-nm','r-tex','r-ne'].forEach(id => document.getElementById(id).textContent = '—');
+}
+
+function clearAll() {
+  document.getElementById('inp-den').value = '';
+  document.getElementById('inp-nm').value  = '';
+  document.getElementById('inp-den').classList.remove('result');
+  document.getElementById('inp-nm').classList.remove('result');
+  reset();
+}
+
+function fillRow(den, nm, tex) {
+  clearAll();
+  document.getElementById('inp-den').value = den;
+  fromDen(den);
+}
+
+// Splash
+window.addEventListener('load', () => {
+  setTimeout(() => document.getElementById('splash').classList.add('hide'), 400);
+});
+</script>
+</body>
+</html>
