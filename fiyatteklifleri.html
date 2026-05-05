@@ -1143,5 +1143,17 @@ sync();
   <a href="donusturucu.html" class="bnav-item"><span class="ni">⇄</span><span class="nl">Dönüştür</span></a>
 </nav>
 <div class="bnav-spacer"></div>
+
+<script>
+// iOS PWA: sayfalar arası geçişte standalone moddan çıkmasın
+document.addEventListener('click', function(e) {
+  var a = e.target.closest('a[href]');
+  if (!a) return;
+  var href = a.getAttribute('href');
+  if (!href || href === '#' || href.startsWith('javascript:') || href.startsWith('http') || a.target) return;
+  e.preventDefault();
+  window.location.href = href;
+});
+</script>
 </body>
 </html>
