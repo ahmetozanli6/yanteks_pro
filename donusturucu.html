@@ -341,5 +341,6 @@ window.addEventListener('load', () => {
   setTimeout(() => document.getElementById('splash').classList.add('hide'), 400);
 });
 </script>
+<script>if('serviceWorker' in navigator){window.addEventListener('load',()=>{navigator.serviceWorker.register('/sw.js').catch(()=>{});});}</script>
 </body>
 </html>

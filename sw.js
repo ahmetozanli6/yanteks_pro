@@ -1,13 +1,13 @@
-const CACHE = 'yanteks-v3';
-const DATA_CACHE = 'yanteks-data-v3';
+const CACHE = 'yanteks-v4';
+const DATA_CACHE = 'yanteks-data-v4';
 
 const BASE_PATH = '/yanteks_pro'; // GitHub Pages alt dizin
 const STATIC = [
   BASE_PATH + '/index.html',
   BASE_PATH + '/musteriler.html',
-  BASE_PATH + '/notlar.html',
   BASE_PATH + '/fiyatlar.html',
-  BASE_PATH + '/asistan.html',
+  BASE_PATH + '/fiyatteklifleri.html',
+  BASE_PATH + '/donusturucu.html',
   BASE_PATH + '/manifest.json'
 ];
 
