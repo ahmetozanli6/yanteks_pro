@@ -1,5 +1,5 @@
-const CACHE = 'yanteks-v2';
-const DATA_CACHE = 'yanteks-data-v2';
+const CACHE = 'yanteks-v3';
+const DATA_CACHE = 'yanteks-data-v3';
 
 const BASE_PATH = '/yanteks_pro'; // GitHub Pages alt dizin
 const STATIC = [
@@ -37,7 +37,7 @@ self.addEventListener('install', e => {
 self.addEventListener('activate', e => {
   e.waitUntil(
     caches.keys().then(keys =>
-      Promise.all(keys.filter(k => k !== CACHE && k !== DATA_CACHE).map(k => caches.delete(k)))
+      Promise.all(keys.map(k => caches.delete(k)))  // tüm eski cache'leri sil
     )
   );
   self.clients.claim();
