@@ -525,8 +525,6 @@ function buildStats(){
   const onayTutar=D.filter(d=>d.durum==='Onaylandı'&&d.fiyat).reduce((s,d)=>s+parseFloat(d.fiyat||0),0);
   const onayRate=all>0?Math.round(onay/all*100):0;
   document.getElementById('mini-stats').innerHTML=
-    '<div class="ms"><span class="ms-icon">✅</span><div class="ms-info"><span class="ms-label">Onaylı Tutar</span><span class="ms-val grn">'+onayTutar.toLocaleString('tr-TR',{minimumFractionDigits:2})+'$</span></div></div>'+
-    '<div class="ms"><span class="ms-icon">📊</span><div class="ms-info"><span class="ms-label">Onay Oranı</span><span class="ms-val blu">%'+onayRate+'</span></div></div>'+
     '<div class="ms"><span class="ms-icon">🏢</span><div class="ms-info"><span class="ms-label">Firma Sayısı</span><span class="ms-val">'+(new Set(D.map(d=>d.firma_adi)).size)+'</span></div></div>';
 }
 
