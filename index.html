@@ -96,6 +96,11 @@ letter-spacing: .1em; text-transform: uppercase;
 }
 .topbar-title span { color: #38BDF8; }
 .topbar-actions { display: flex; align-items: center; gap: 8px; }
+.chip{display:inline-flex;align-items:center;gap:5px;padding:7px 13px;border-radius:8px;border:1px solid rgba(255,255,255,.2);background:rgba(255,255,255,.1);font-size:11px;font-weight:700;color:#fff;cursor:pointer;font-family:inherit;white-space:nowrap;transition:var(–t)}
+.chip.pri{background:linear-gradient(135deg,#0672A0,#0891B2);border-color:transparent;box-shadow:0 2px 8px rgba(0,0,0,.2)}
+.chip.pri:hover{background:linear-gradient(135deg,#0681B5,#0EA5C9)}
+.chip:active{transform:scale(.96)}
+.chip:disabled{opacity:.4;pointer-events:none}
 .sync-dot { width: 7px; height: 7px; border-radius: 50%; background: rgba(255,255,255,.3); transition: var(–t); }
 .sync-dot.ok   { background: #7DD3FC; box-shadow: 0 0 6px rgba(125,211,252,.5); }
 .sync-dot.busy { background: #FCD34D; animation: pulse 1.2s infinite; }
@@ -404,6 +409,7 @@ border-bottom: 1px solid rgba(8,145,178,.5) !important;
   </div>
   <div class="topbar-actions">
     <span class="sync-dot" id="sd"></span>
+    <button class="chip pri" onclick="openDw()">＋ Yeni</button>
     <button class="chip pri" onclick="exportData()" id="xbtn">📊 Excel</button>
   </div>
 </header>
@@ -931,7 +937,6 @@ sync();
   <a href="fiyatlar.html" class="bnav-item"><span class="ni">💰</span><span class="nl">Fiyatlar</span></a>
   <a href="fiyatteklifleri.html" class="bnav-item"><span class="ni">📤</span><span class="nl">Teklifler</span></a>
   <a href="donusturucu.html" class="bnav-item"><span class="ni">⇄</span><span class="nl">Dönüştür</span></a>
-  <a href="#" class="bnav-item bnav-mid" onclick="openDw();return false;"><span class="ni">＋</span><span class="nl">Yeni</span></a>
 </nav>
 <div class="bnav-spacer"></div>
 </body>
