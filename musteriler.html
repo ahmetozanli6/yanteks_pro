@@ -106,6 +106,12 @@ letter-spacing: .1em; text-transform: uppercase;
 .sync-dot.err  { background: #FCA5A5; }
 @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:.3} }
 .topbar-actions{display:flex;align-items:center;gap:6px}
+.chip{display:inline-flex;align-items:center;gap:5px;padding:7px 12px;border-radius:8px;border:1px solid rgba(255,255,255,.25);background:rgba(255,255,255,.12);font-size:11px;font-weight:700;color:#fff;cursor:pointer;font-family:inherit;white-space:nowrap;transition:.18s;flex-shrink:0}
+.chip:hover{background:rgba(255,255,255,.22)}
+.chip:active{transform:scale(.96)}
+.chip.pri{background:linear-gradient(135deg,#0672A0,#0891B2);border-color:transparent;box-shadow:0 2px 8px rgba(0,0,0,.2)}
+.chip.pri:hover{background:linear-gradient(135deg,#0681B5,#0EA5C9)}
+.chip:disabled{opacity:.4;pointer-events:none}
 .alert-banner{margin:12px 16px 0;border-radius:var(–r);padding:10px 14px;display:flex;align-items:center;gap:10px;font-size:12px;font-weight:600;cursor:pointer;transition:var(–t);border:1px solid;}
 .alert-banner.red{background:var(–red-soft);border-color:rgba(153,27,27,.25);color:var(–red);}
 .alert-banner.amber{background:var(–amber-soft);border-color:rgba(180,83,9,.25);color:var(–amber);}
@@ -343,7 +349,7 @@ border-bottom: 1px solid rgba(8,145,178,.5) !important;
     <span class="sync-dot" id="sd"></span>
     <button class="chip pri" onclick="openDwNew()">＋ Yeni</button>
     <button class="chip" onclick="openSortModal()" title="Bölge sırasını değiştir">⇅ Sırala</button>
-    <button class="chip primary" onclick="exportExcel()" id="xb">📊 Excel</button>
+    <button class="chip" onclick="exportExcel()" id="xb">📊 Excel</button>
   </div>
 </header>
 <div id="alert-banners"></div>
