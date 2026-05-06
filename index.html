@@ -930,7 +930,7 @@ sync();
 </script>
 
 <link rel="manifest" href="manifest.json">
-<script>if('serviceWorker' in navigator){window.addEventListener('load',()=>{navigator.serviceWorker.register('/sw.js').then(reg=>console.log('SW Aktif',reg.scope)).catch(err=>console.log('SW Hatası:',err));});}</script>
+<script>if('serviceWorker' in navigator){window.addEventListener('load',()=>{navigator.serviceWorker.register('./sw.js').then(reg=>console.log('SW Aktif',reg.scope)).catch(err=>console.log('SW Hatası:',err));});}</script>
 
 <nav class="bnav">
   <a href="index.html" class="bnav-item on" onclick="event.preventDefault();window.location.href='index.html';return false;"><span class="ni">📦</span><span class="nl">Numune</span></a>

@@ -4,8 +4,8 @@
   "start_url": "/yanteks_pro/index.html",
   "scope": "/yanteks_pro/",
   "display": "standalone",
-  "background_color": "#0F4C6E",
-  "theme_color": "#0F4C6E",
+  "background_color": "#1E2D3D",
+  "theme_color": "#1E2D3D",
   "orientation": "portrait-primary",
   "icons": [
     {
