@@ -800,6 +800,8 @@ function openDw(){
   document.getElementById('f-gecerlilik').value='';
   document.getElementById('f-not').value='';
   document.getElementById('kalite-err').style.display='none';
+  document.querySelector('.add-kalite-btn').style.display='';
+  document.getElementById('field-kaliteler').querySelector('label').firstChild.textContent='Kaliteler & Fiyatlar * ';
   document.querySelectorAll('.field').forEach(f=>f.classList.remove('bad'));
   document.getElementById('ov').classList.add('on');
   document.getElementById('dw').classList.add('on');
@@ -820,6 +822,8 @@ function editRow(id){
   document.getElementById('firma-selected-name').textContent=d.firma_adi||'';
   closeFirmaDd();
   clearKaliteRows();addKaliteRow(d.urun,d.fiyat,d.durum);
+  document.querySelector('.add-kalite-btn').style.display='none';
+  document.getElementById('field-kaliteler').querySelector('label').firstChild.textContent='Ürün / Fiyat ';
   document.getElementById('f-tarih').value=d.teklif_tarihi||'';
   document.getElementById('f-gecerlilik').value=d.gecerlilik_tarihi||'';
   document.getElementById('f-not').value=d.notlar||'';
@@ -860,7 +864,7 @@ async function save(){
   btn.disabled=false;btn.textContent=id?'Güncelle':'Kaydet';
   if(error){dot('err');toast('Hata: '+error.message,'bad');return}
   if(firmaSelected)openFirmalar.add(firmaSelected.firma_adi);
-  dot('ok');toast(id?'Güncellendi ✓':`${gecerli.length} teklif eklendi ✓`,'ok');
+  dot('ok');toast(id?'Teklif güncellendi ✓':`${gecerli.length} teklif eklendi ✓`,'ok');
   closeDw();sync();
 }
 
