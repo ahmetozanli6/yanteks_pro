@@ -1,17 +1,20 @@
 const CACHE = 'yanteks-v7';
 const DATA_CACHE = 'yanteks-data-v7';
 
-const BASE_PATH = '/yanteks_pro';
+const BASE_PATH = '/yanteks_pro'; // GitHub Pages alt dizin
 const STATIC = [
   BASE_PATH + '/index.html',
+  BASE_PATH + '/musteriler.html',
+  BASE_PATH + '/fiyatlar.html',
+  BASE_PATH + '/fiyatteklifleri.html',
+  BASE_PATH + '/donusturucu.html',
   BASE_PATH + '/manifest.json'
 ];
 
 const CDN = [
   'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2',
   'https://cdnjs.cloudflare.com/ajax/libs/exceljs/4.3.0/exceljs.min.js',
-  'https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js',
-  'https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap'
+  'https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;600;700&display=swap'
 ];
 
 self.addEventListener('install', e => {
@@ -34,7 +37,7 @@ self.addEventListener('install', e => {
 self.addEventListener('activate', e => {
   e.waitUntil(
     caches.keys().then(keys =>
-      Promise.all(keys.map(k => caches.delete(k)))
+      Promise.all(keys.map(k => caches.delete(k)))  // tüm eski cache'leri sil
     )
   );
   self.clients.claim();
@@ -89,7 +92,7 @@ self.addEventListener('fetch', e => {
     return;
   }
 
-  if (url.includes('cdn.jsdelivr') || url.includes('cdnjs.cloudflare') || url.includes('fonts.g') || url.includes('chart.js')) {
+  if (url.includes('cdn.jsdelivr') || url.includes('cdnjs.cloudflare') || url.includes('fonts.g')) {
     e.respondWith(
       caches.match(e.request).then(cached => {
         if (cached) return cached;
