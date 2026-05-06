@@ -1,0 +1,322 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+<meta charset="UTF-8">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black">
+<meta name="apple-mobile-web-app-title" content="Yanteks Pro">
+<meta name="theme-color" content="#1E2D3D">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
+<title>Yanteks Pro | Notlar</title>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#F3F5F7;--surface:#FFFFFF;--surface2:#E8EDEF;--surface3:#D5E4EE;
+  --text:#0A1520;--text2:#1A2D40;--text3:#4A6880;
+  --accent:#1E2D3D;--border:rgba(30,45,61,.1);--border2:rgba(30,45,61,.16);
+  --shadow:0 1px 8px rgba(10,20,35,.07),0 4px 16px rgba(10,20,35,.05);
+  --shadow-lg:0 4px 24px rgba(10,20,35,.12),0 12px 40px rgba(10,20,35,.08);
+  --r:12px;--r2:16px;--t:.18s cubic-bezier(.4,0,.2,1);--t2:.32s cubic-bezier(.32,.72,0,1);
+}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+body{background:var(--bg);font-family:'Inter',sans-serif;color:var(--text);font-size:14px;-webkit-font-smoothing:antialiased;line-height:1.5}
+input,textarea,select,button{font-family:'Inter',sans-serif;color:var(--text);-webkit-appearance:none;appearance:none}
+
+.topbar{position:sticky;top:0;z-index:100;background:linear-gradient(135deg,#131E2B 0%,#1E2D3D 60%,#253545 100%);border-bottom:2px solid rgba(8,145,178,.7);padding:calc(14px + env(safe-area-inset-top)) 16px 14px;display:flex;justify-content:space-between;align-items:center;box-shadow:0 2px 20px rgba(8,18,32,.35)}
+.topbar-left{display:flex;align-items:center;gap:10px}
+.back-btn{width:32px;height:32px;border-radius:8px;border:1px solid rgba(255,255,255,.2);background:rgba(255,255,255,.1);color:#fff;display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:14px;flex-shrink:0;transition:var(--t)}
+.back-btn:active{background:rgba(255,255,255,.22)}
+.topbar-info{display:flex;flex-direction:column;gap:1px}
+.topbar-label{font-size:9px;font-weight:700;color:rgba(255,255,255,.5);letter-spacing:.12em;text-transform:uppercase}
+.topbar-firma{font-size:14px;font-weight:800;color:#fff;max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.topbar-firma span{color:#38BDF8}
+.sync-dot{width:7px;height:7px;border-radius:50%;background:rgba(255,255,255,.3);transition:var(--t)}
+.sync-dot.ok{background:#7DD3FC;box-shadow:0 0 6px rgba(125,211,252,.5)}
+.sync-dot.busy{background:#FCD34D;animation:pulse 1.2s infinite}
+.sync-dot.err{background:#FCA5A5}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.3}}
+
+.add-section{padding:14px 16px 8px}
+.add-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--r2);box-shadow:var(--shadow);padding:14px;border-top:3px solid #0891B2}
+.add-card label{display:block;font-size:10px;font-weight:800;color:var(--text3);text-transform:uppercase;letter-spacing:.08em;margin-bottom:7px}
+.add-card textarea{width:100%;padding:12px 14px;border-radius:10px;border:1.5px solid var(--border2);background:#EEF4FB;font-family:inherit;font-size:14px;color:#0A1520;resize:none;min-height:80px;line-height:1.5;transition:var(--t)}
+.add-card textarea:focus{border-color:#0891B2;background:#E0F2FE;box-shadow:0 0 0 3px rgba(8,145,178,.12);outline:none}
+.add-card textarea::placeholder{color:var(--text3)}
+.char-count{font-size:10px;color:var(--text3);text-align:right;margin-top:4px;font-family:'JetBrains Mono',monospace}
+.char-count.warn{color:#991B1B}
+.add-row{display:flex;justify-content:flex-end;margin-top:10px;gap:8px}
+.btn{padding:10px 18px;border-radius:8px;font-weight:700;font-size:13px;cursor:pointer;border:none;font-family:inherit;transition:var(--t)}
+.btn.pri{background:linear-gradient(135deg,#0672A0,#0891B2);color:#fff;box-shadow:0 2px 8px rgba(8,145,178,.25)}
+.btn.pri:active{background:linear-gradient(135deg,#055980,#0672A0)}
+.btn.pri:disabled{opacity:.4;cursor:not-allowed}
+.btn.gho{background:var(--surface2);color:var(--text2);border:1px solid var(--border2)}
+
+.section-head{padding:8px 16px 4px;display:flex;align-items:center;justify-content:space-between}
+.section-label{font-size:10px;font-weight:800;color:var(--text3);text-transform:uppercase;letter-spacing:.1em}
+.note-count-badge{font-size:10px;font-weight:800;padding:2px 8px;border-radius:10px;background:rgba(8,145,178,.1);color:#0891B2;font-family:'JetBrains Mono',monospace}
+
+.notes-list{padding:0 16px calc(80px + env(safe-area-inset-bottom))}
+@keyframes fadeUp{from{opacity:0;transform:translateY(4px)}to{opacity:1;transform:translateY(0)}}
+.note-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--r2);margin-bottom:8px;box-shadow:var(--shadow);animation:fadeUp .2s both;overflow:hidden;transition:box-shadow var(--t)}
+.note-card:hover{box-shadow:var(--shadow-lg)}
+.note-card-body{padding:12px 14px 10px}
+.note-text{font-size:13px;color:var(--text);line-height:1.6;word-break:break-word;white-space:pre-wrap}
+.note-footer{display:flex;align-items:center;justify-content:space-between;margin-top:8px;padding-top:8px;border-top:1px solid var(--border)}
+.note-time{font-size:10px;color:var(--text3);font-family:'JetBrains Mono',monospace}
+.note-del{width:28px;height:28px;border-radius:7px;border:1px solid rgba(153,27,27,.2);background:rgba(153,27,27,.06);color:#991B1B;cursor:pointer;font-size:11px;display:flex;align-items:center;justify-content:center;transition:var(--t);font-family:inherit}
+.note-del:active{background:rgba(153,27,27,.18)}
+
+.empty{text-align:center;padding:60px 20px;color:var(--text3)}
+.empty .ei{font-size:44px;opacity:.25;margin-bottom:14px}
+.empty h3{font-size:16px;font-weight:700;color:var(--text2);margin-bottom:4px}
+.empty p{font-size:12px;max-width:260px;margin:0 auto}
+.skel{padding:0 16px}
+.sk{height:80px;border-radius:var(--r2);background:linear-gradient(90deg,var(--surface) 25%,var(--surface3) 50%,var(--surface) 75%);background-size:200%;animation:shimmer 1.5s infinite;margin-bottom:8px}
+@keyframes shimmer{0%{background-position:200% 0}100%{background-position:-200% 0}}
+
+.modal{position:fixed;inset:0;z-index:300;display:none;align-items:center;justify-content:center;padding:20px;background:rgba(8,18,32,.5);backdrop-filter:blur(4px)}
+.modal.on{display:flex}
+.m-card{background:var(--surface);border:1px solid var(--border2);border-radius:20px;max-width:340px;width:100%;padding:24px;box-shadow:var(--shadow-lg);border-top:3px solid #991B1B;animation:pop .2s}
+@keyframes pop{from{opacity:0;transform:scale(.94)}to{opacity:1;transform:scale(1)}}
+.m-card h3{font-size:16px;font-weight:800;margin-bottom:8px}
+.m-card p{font-size:13px;color:var(--text2);margin-bottom:18px;line-height:1.5}
+.btn-r{display:flex;gap:8px}
+.btn-r .btn{flex:1}
+
+.toasts{position:fixed;bottom:calc(64px + env(safe-area-inset-bottom) + 8px);left:50%;transform:translateX(-50%);z-index:400;display:flex;flex-direction:column;gap:8px;pointer-events:none}
+.toast{padding:10px 18px;border-radius:var(--r);font-size:12px;font-weight:600;box-shadow:var(--shadow-lg);animation:tIn .25s;max-width:90vw;white-space:nowrap}
+.toast.ok{background:#1E2D3D;color:#fff}.toast.bad{background:#991B1B;color:#fff}
+@keyframes tIn{from{opacity:0;transform:translateY(8px)}}
+@keyframes tOut{to{opacity:0;transform:translateY(8px)}}
+
+.bnav{position:fixed;bottom:0;left:0;right:0;height:calc(56px + env(safe-area-inset-bottom));background:linear-gradient(to top,#0F1A25,#1E2D3D);border-top:1px solid rgba(8,145,178,.55);display:flex;align-items:stretch;z-index:300;padding-bottom:env(safe-area-inset-bottom);box-shadow:0 -2px 20px rgba(8,18,32,.3)}
+.bnav-item{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;text-decoration:none;color:rgba(255,255,255,.4);font-size:9px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;-webkit-tap-highlight-color:transparent;cursor:pointer;border:none;background:none;font-family:inherit;padding:0}
+.bnav-item.on{color:#38BDF8}
+.bnav-item .ni{font-size:18px;line-height:1}
+.bnav-item .nl{font-size:7px}
+.bnav-spacer{height:calc(58px + env(safe-area-inset-bottom));display:block}
+
+#splash{position:fixed;inset:0;background:linear-gradient(135deg,#0A1520,#1E2D3D);z-index:99999;display:flex;align-items:center;justify-content:center;transition:opacity .35s,transform .35s}
+#splash.hide{opacity:0;transform:scale(1.04);pointer-events:none}
+.splash-inner{display:flex;flex-direction:column;align-items:center;gap:18px;animation:splashIn .55s cubic-bezier(.32,.72,0,1) both}
+.splash-svg{width:260px;height:auto}
+.splash-tagline{font-size:10px;font-weight:700;color:rgba(255,255,255,.5);letter-spacing:.3em;text-transform:uppercase}
+.splash-bar{width:120px;height:2px;background:rgba(255,255,255,.15);border-radius:2px;overflow:hidden}
+.splash-fill{height:100%;background:#0EA5C9;animation:splashSlide .55s ease forwards}
+@keyframes splashIn{from{opacity:0;transform:translateY(14px)}to{opacity:1;transform:translateY(0)}}
+@keyframes splashSlide{from{width:0}to{width:100%}}
+*{-webkit-overflow-scrolling:touch}
+a,button{-webkit-tap-highlight-color:transparent}
+</style>
+</head>
+<body>
+
+<div id="splash">
+  <div class="splash-inner">
+    <svg class="splash-svg" viewBox="0 0 340 110" xmlns="http://www.w3.org/2000/svg">
+      <text x="170" y="78" font-family="'Inter',sans-serif" font-weight="800" font-size="72" text-anchor="middle" fill="white" letter-spacing="-2" opacity="0.95">Yanteks</text>
+      <line x1="30" y1="92" x2="310" y2="92" stroke="#0EA5C9" stroke-width="2.5" stroke-linecap="round"/>
+    </svg>
+    <div class="splash-tagline">YÖNETİM SİSTEMİ</div>
+    <div class="splash-bar"><div class="splash-fill"></div></div>
+  </div>
+</div>
+
+<header class="topbar">
+  <div class="topbar-left">
+    <button class="back-btn" onclick="goBack()">←</button>
+    <div class="topbar-info">
+      <div class="topbar-label">Müşteri Notları</div>
+      <div class="topbar-firma" id="topbar-firma">—</div>
+    </div>
+  </div>
+  <span class="sync-dot" id="sd"></span>
+</header>
+
+<section class="add-section">
+  <div class="add-card">
+    <label>Yeni Not</label>
+    <textarea id="note-input" placeholder="Ziyaret notu, fiyat bilgisi, özel istek..." maxlength="2000" oninput="onInput(this)"></textarea>
+    <div class="char-count" id="char-count">0 / 2000</div>
+    <div class="add-row">
+      <button class="btn pri" onclick="saveNote()" id="sv-btn" disabled>Kaydet</button>
+    </div>
+  </div>
+</section>
+
+<div class="section-head">
+  <span class="section-label">Geçmiş Notlar</span>
+  <span class="note-count-badge" id="note-count">0</span>
+</div>
+
+<div id="list" class="notes-list">
+  <div class="skel"><div class="sk"></div><div class="sk"></div></div>
+</div>
+
+<div class="modal" id="mod-cf">
+  <div class="m-card">
+    <h3>🗑️ Notu Sil?</h3>
+    <p>Bu not kalıcı olarak silinecek.</p>
+    <div class="btn-r">
+      <button class="btn gho" onclick="clM()">İptal</button>
+      <button class="btn pri" style="background:#991B1B" id="cf-ok">Sil</button>
+    </div>
+  </div>
+</div>
+
+<div class="toasts" id="toasts"></div>
+
+<script>
+const SU="https://zmlbdpjcergcvcurihuy.supabase.co";
+const SK="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InptbGJkcGpjZXJnY3ZjdXJpaHV5Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzU1MTA2MzIsImV4cCI6MjA5MTA4NjYzMn0.Jh4e_UXSL7CH7EzLBhhXtQYM0-iQwrFU3GHnoe-njBM";
+const db=supabase.createClient(SU,SK);
+
+const params=new URLSearchParams(location.search);
+const FIRMA=(params.get('firma')||'').toUpperCase().trim();
+let N=[],cfCb=null;
+
+const esc=s=>s==null?'':String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+
+function goBack(){
+  const ref=document.referrer;
+  if(ref&&ref.includes('musteriler')){history.back();}
+  else{window.location.href='musteriler.html';}
+}
+
+function dot(s){const e=document.getElementById('sd');e.classList.remove('ok','busy','err');if(s)e.classList.add(s)}
+function toast(m,t='ok'){
+  const c=document.getElementById('toasts'),el=document.createElement('div');
+  el.className='toast '+t;el.textContent=m;c.appendChild(el);
+  setTimeout(()=>{el.style.animation='tOut .25s forwards';setTimeout(()=>el.remove(),250)},2600);
+}
+
+function fmtTime(iso){
+  if(!iso)return'';
+  try{
+    const d=new Date(iso);
+    const now=new Date();
+    const diffMs=now-d;
+    const diffMin=Math.floor(diffMs/60000);
+    const diffH=Math.floor(diffMin/60);
+    const diffD=Math.floor(diffH/24);
+    if(diffMin<1)return'Az önce';
+    if(diffMin<60)return diffMin+' dk önce';
+    if(diffH<24)return diffH+' saat önce';
+    if(diffD<7)return diffD+' gün önce';
+    return d.toLocaleDateString('tr-TR',{day:'2-digit',month:'short',year:'numeric',hour:'2-digit',minute:'2-digit'});
+  }catch{return''}
+}
+
+async function sync(){
+  if(!FIRMA){
+    document.getElementById('list').innerHTML='<div class="empty"><div class="ei">⚠️</div><h3>Firma belirtilmedi</h3><p>Müşteriler sayfasından bir firmaya tıklayın.</p></div>';
+    return;
+  }
+  dot('busy');
+  const{data,error}=await db.from('notlar').select('*').eq('firma',FIRMA).order('updated_at',{ascending:false});
+  if(error){dot('err');document.getElementById('list').innerHTML='<div class="empty"><div class="ei">⚠️</div><h3>Bağlantı hatası</h3><p>'+esc(error.message)+'</p></div>';return}
+  N=data||[];
+  dot('ok');render();
+}
+
+function render(){
+  const el=document.getElementById('list');
+  document.getElementById('note-count').textContent=N.length;
+  if(!N.length){
+    el.innerHTML='<div class="empty"><div class="ei">📝</div><h3>Henüz not yok</h3><p>Yukarıdaki alandan ilk notu ekleyin.</p></div>';
+    return;
+  }
+  el.innerHTML=N.map((n,i)=>`
+    <div class="note-card" style="animation-delay:${i*0.04}s">
+      <div class="note-card-body">
+        <div class="note-text">${esc(n.icerik)}</div>
+        <div class="note-footer">
+          <span class="note-time">${fmtTime(n.updated_at||n.created_at)}</span>
+          <button class="note-del" data-id="${n.id}" title="Sil">🗑️</button>
+        </div>
+      </div>
+    </div>`).join('');
+  el.querySelectorAll('.note-del').forEach(btn=>{
+    btn.addEventListener('click',()=>askDel(btn.dataset.id));
+  });
+}
+
+function onInput(ta){
+  const len=ta.value.length;
+  const cc=document.getElementById('char-count');
+  cc.textContent=len+' / 2000';
+  cc.classList.toggle('warn',len>1800);
+  document.getElementById('sv-btn').disabled=ta.value.trim().length===0;
+}
+
+async function saveNote(){
+  const ta=document.getElementById('note-input');
+  const icerik=ta.value.trim();
+  if(!icerik||!FIRMA)return;
+  const btn=document.getElementById('sv-btn');
+  btn.disabled=true;btn.textContent='Kaydediliyor...';dot('busy');
+  const now=new Date().toISOString();
+  const{error}=await db.from('notlar').insert([{firma:FIRMA,icerik,updated_at:now}]);
+  btn.textContent='Kaydet';
+  if(error){dot('err');toast('Hata: '+error.message,'bad');btn.disabled=false;return}
+  ta.value='';
+  document.getElementById('char-count').textContent='0 / 2000';
+  dot('ok');toast('Not kaydedildi ✓');
+  sync();
+}
+
+function askDel(id){
+  cfCb=async()=>{
+    dot('busy');
+    const{error}=await db.from('notlar').delete().eq('id',id);
+    if(error){dot('err');toast('Silinemedi','bad');return}
+    dot('ok');toast('Silindi');sync();
+  };
+  document.getElementById('mod-cf').classList.add('on');
+}
+function clM(){document.getElementById('mod-cf').classList.remove('on');cfCb=null}
+document.getElementById('cf-ok').addEventListener('click',()=>{const c=cfCb;clM();if(c)c()});
+document.getElementById('mod-cf').addEventListener('click',e=>{if(e.target===e.currentTarget)clM()});
+
+document.addEventListener('keydown',e=>{
+  if((e.ctrlKey||e.metaKey)&&e.key==='Enter'){e.preventDefault();saveNote()}
+  if(e.key==='Escape')clM();
+});
+
+// Firma adını topbar'da göster
+if(FIRMA){
+  document.getElementById('topbar-firma').textContent=FIRMA;
+  document.title='Yanteks Pro | '+FIRMA+' Notları';
+}
+
+sync();
+</script>
+
+<script>
+(function(){var sp=document.getElementById('splash');if(!sp)return;setTimeout(function(){sp.classList.add('hide');setTimeout(function(){sp.remove()},400)},600)})();
+</script>
+
+<nav class="bnav">
+  <a href="index.html" class="bnav-item" onclick="event.preventDefault();window.location.href='index.html';return false;"><span class="ni">📦</span><span class="nl">Numune</span></a>
+  <a href="musteriler.html" class="bnav-item on" onclick="event.preventDefault();window.location.href='musteriler.html';return false;"><span class="ni">👥</span><span class="nl">Müşteri</span></a>
+  <a href="fiyatlar.html" class="bnav-item" onclick="event.preventDefault();window.location.href='fiyatlar.html';return false;"><span class="ni">💰</span><span class="nl">Fiyatlar</span></a>
+  <a href="fiyatteklifleri.html" class="bnav-item" onclick="event.preventDefault();window.location.href='fiyatteklifleri.html';return false;"><span class="ni">📤</span><span class="nl">Teklifler</span></a>
+  <a href="donusturucu.html" class="bnav-item" onclick="event.preventDefault();window.location.href='donusturucu.html';return false;"><span class="ni">⇄</span><span class="nl">Dönüştür</span></a>
+</nav>
+<div class="bnav-spacer"></div>
+
+<script>
+document.addEventListener('click',function(e){
+  var a=e.target.closest('a[href]');
+  if(!a)return;
+  var href=a.getAttribute('href');
+  if(!href||href==='#'||href.startsWith('javascript:')||href.startsWith('http')||a.target)return;
+  e.preventDefault();
+  window.location.href=href;
+});
+</script>
+<link rel="manifest" href="manifest.json">
+<script>if('serviceWorker' in navigator){window.addEventListener('load',()=>{navigator.serviceWorker.register('./sw.js').catch(()=>{});});}</script>
+</body>
+</html>

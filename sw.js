@@ -1,5 +1,5 @@
-const CACHE = 'yanteks-v8';
-const DATA_CACHE = 'yanteks-data-v7';
+const CACHE = 'yanteks-v9';
+const DATA_CACHE = 'yanteks-data-v9';
 
 const BASE_PATH = '/yanteks_pro'; // GitHub Pages alt dizin
 const STATIC = [
@@ -8,6 +8,7 @@ const STATIC = [
   BASE_PATH + '/fiyatlar.html',
   BASE_PATH + '/fiyatteklifleri.html',
   BASE_PATH + '/donusturucu.html',
+  BASE_PATH + '/notlar.html',
   BASE_PATH + '/manifest.json'
 ];
 
