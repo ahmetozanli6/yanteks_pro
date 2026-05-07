@@ -132,7 +132,7 @@ input,textarea,button,select{font-family:'Inter',sans-serif;color:var(--text);-w
 .cbar-label{font-size:10px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.07em;margin-right:2px}
 
 /* Müşteri satırı */
-.ed-musteri{display:flex;align-items:center;gap:10px;padding:10px 16px;background:var(--surface);border-bottom:2px solid var(--border2)}
+.ed-musteri{display:flex;align-items:center;gap:10px;padding:10px 16px;background:var(--surface);border-bottom:2px solid var(--border2);position:relative;z-index:10}
 .ed-musteri-icon{font-size:18px;flex-shrink:0}
 .ed-musteri-field{flex:1;position:relative}
 .ed-musteri-field input{width:100%;border:1.5px solid var(--border2);border-radius:10px;padding:10px 36px 10px 12px;font-size:14px;font-weight:600;color:var(--text);background:var(--bg);outline:none;transition:var(--t);font-family:inherit}
@@ -140,6 +140,12 @@ input,textarea,button,select{font-family:'Inter',sans-serif;color:var(--text);-w
 .ed-musteri-field input::placeholder{color:var(--text3);font-weight:400}
 .ed-musteri-clr{position:absolute;right:10px;top:50%;transform:translateY(-50%);width:22px;height:22px;border-radius:50%;background:var(--surface3);border:1px solid var(--border2);color:var(--text3);font-size:11px;cursor:pointer;display:none;align-items:center;justify-content:center;font-family:inherit}
 .ed-musteri-clr.on{display:flex}
+.musteri-dd{position:absolute;top:calc(100% + 4px);left:0;right:0;z-index:999;background:var(--surface);border:1.5px solid var(--border2);border-radius:12px;box-shadow:0 8px 32px rgba(10,20,35,.18);overflow:hidden;display:none}
+.musteri-dd.on{display:block}
+.musteri-dd-item{padding:13px 16px;font-size:14px;font-weight:600;color:var(--text2);cursor:pointer;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:10px}
+.musteri-dd-item:last-child{border-bottom:none}
+.musteri-dd-item:active{background:var(--surface2)}
+.mdi-av{width:28px;height:28px;border-radius:50%;background:linear-gradient(135deg,#0672A0,#0891B2);color:#fff;font-size:10px;font-weight:800;display:flex;align-items:center;justify-content:center;flex-shrink:0;letter-spacing:-.5px}
 
 /* Editör yazı alanı */
 .ed-area{flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch;background:var(--surface)}
@@ -277,9 +283,10 @@ a,button{-webkit-tap-highlight-color:transparent}
   <div class="ed-musteri">
     <span class="ed-musteri-icon">👤</span>
     <div class="ed-musteri-field">
-      <input type="text" id="musteri-inp" list="musteri-list" placeholder="Müşteri seç veya yaz..." autocomplete="off" oninput="onMusteriInput()">
+      <input type="text" id="musteri-inp" placeholder="Müşteri seç veya yaz..." autocomplete="off"
+        oninput="onMusteriInput()" onfocus="onMusteriFocus()" onblur="onMusteriBlur()">
       <button class="ed-musteri-clr" id="musteri-clr" type="button" onclick="clearMusteri()">✕</button>
-      <datalist id="musteri-list"></datalist>
+      <div class="musteri-dd" id="musteri-dd"></div>
     </div>
   </div>
 
@@ -360,7 +367,6 @@ function wordCount(s){return(s||'').trim().split(/\s+/).filter(Boolean).length}
 async function loadMusteriler(){
   const{data}=await db.from('musteriler').select('firma').order('firma');
   MUSTERILER=(data||[]).map(r=>r.firma).filter(Boolean);
-  fillDatalist();
 }
 
 async function sync(){
@@ -545,26 +551,66 @@ function setColorBar(color){
 }
 
 // ── MÜŞTERİ ──
-function fillDatalist(){
-  const dl=document.getElementById('musteri-list');
-  dl.innerHTML=MUSTERILER.map(m=>`<option value="${esc(m)}">`).join('');
+let _mBlurTimer=null;
+
+function renderMusteriDd(q){
+  const dd=document.getElementById('musteri-dd');
+  const fil=q?MUSTERILER.filter(m=>trl(m).includes(trl(q))):MUSTERILER;
+  if(!fil.length){dd.classList.remove('on');return}
+  dd.innerHTML=fil.slice(0,10).map(m=>{
+    const av=(m.trim().split(/\s+/).map(w=>w[0]||'').join('').substring(0,2)).toUpperCase();
+    return`<div class="musteri-dd-item"><div class="mdi-av">${esc(av)}</div>${esc(m)}</div>`;
+  }).join('');
+  dd.querySelectorAll('.musteri-dd-item').forEach((item,i)=>{
+    const m=fil[i];
+    item.addEventListener('pointerdown',function(e){
+      e.preventDefault(); // blur'u engelle
+      selectMusteri(m);
+    });
+  });
+  dd.classList.add('on');
+}
+
+function onMusteriFocus(){
+  clearTimeout(_mBlurTimer);
+  renderMusteriDd(document.getElementById('musteri-inp').value.trim());
+}
+
+function onMusteriBlur(){
+  _mBlurTimer=setTimeout(()=>document.getElementById('musteri-dd').classList.remove('on'),150);
 }
 
 function onMusteriInput(){
   const v=document.getElementById('musteri-inp').value;
   document.getElementById('musteri-clr').classList.toggle('on',v.trim().length>0);
+  renderMusteriDd(v.trim());
   clearTimeout(saveTimer);
   saveTimer=setTimeout(async()=>{
     if(!curNote)return;
     const val=document.getElementById('editor-ta').value;
     const musteri=v.trim()||null;
-    if(curNote.musteri!==musteri)await doSave(val,musteri);
-  },800);
+    await doSave(val,musteri);
+  },1000);
+}
+
+function selectMusteri(m){
+  clearTimeout(_mBlurTimer);
+  document.getElementById('musteri-inp').value=m;
+  document.getElementById('musteri-clr').classList.add('on');
+  document.getElementById('musteri-dd').classList.remove('on');
+  if(curNote)curNote.musteri=m;
+  clearTimeout(saveTimer);
+  saveTimer=setTimeout(async()=>{
+    if(!curNote)return;
+    const val=document.getElementById('editor-ta').value;
+    await doSave(val,m);
+  },300);
 }
 
 function clearMusteri(){
   document.getElementById('musteri-inp').value='';
   document.getElementById('musteri-clr').classList.remove('on');
+  document.getElementById('musteri-dd').classList.remove('on');
   if(curNote)curNote.musteri=null;
   clearTimeout(saveTimer);
   saveTimer=setTimeout(async()=>{
