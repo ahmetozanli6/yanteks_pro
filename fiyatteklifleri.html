@@ -1133,6 +1133,32 @@ document.addEventListener('keydown',e=>{
 });
 
 sync();
+
+// Canlı güncelleme (Supabase Realtime)
+(function(){
+  let _ch;
+  function connect(){
+    _ch = db.channel('rt-fiyat_teklifleri')
+      .on('postgres_changes', {event:'*', schema:'public', table:'fiyat_teklifleri'}, ()=>{
+        clearTimeout(window._rtT);
+        window._rtT = setTimeout(sync, 600);
+      })
+      .subscribe(status=>{
+        if(status==='SUBSCRIBED'){
+          let li=document.getElementById('_live');
+          if(!li){li=document.createElement('span');li.id='_live';
+            li.style.cssText='font-size:9px;font-weight:800;color:#86EFAC;letter-spacing:.04em;display:flex;align-items:center;gap:3px';
+            li.innerHTML='<span style="width:6px;height:6px;border-radius:50%;background:#86EFAC;display:inline-block;animation:pulse 1.8s infinite"></span>CANLI';
+            const ta=document.querySelector('.topbar-actions');if(ta)ta.prepend(li);
+          }
+        } else if(status==='CLOSED'||status==='CHANNEL_ERROR'){
+          const li=document.getElementById('_live');if(li)li.remove();
+        }
+      });
+  }
+  connect();
+  window.addEventListener('beforeunload',()=>{if(_ch)db.removeChannel(_ch);});
+})();
 </script>
 
 <script>

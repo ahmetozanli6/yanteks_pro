@@ -589,6 +589,32 @@ document.getElementById('f-n').addEventListener('keydown',e=>{if(e.key==='Enter'
 async function exportExcel(){if(!D.length){toast('Veri yok','wrn');return;}const btn=document.getElementById('xb');btn.disabled=true;btn.textContent='⏳...';try{const wb=new ExcelJS.Workbook();wb.creator='Yanteks Pro';const sh=wb.addWorksheet('Müşteriler',{pageSetup:{paperSize:9,orientation:'landscape'}});sh.mergeCells('A1:G1');const tc=sh.getCell('A1'),d=new Date().toLocaleDateString('tr-TR');tc.value='YANTEKS MÜŞTERİ LİSTESİ · '+d;tc.font={bold:true,size:14,color:{argb:'FFFFFFFF'}};tc.fill={type:'pattern',pattern:'solid',fgColor:{argb:'FF14532D'}};tc.alignment={horizontal:'center',vertical:'middle'};sh.getRow(1).height=30;sh.mergeCells('A2:G2');const sc=sh.getCell('A2');sc.value='Toplam: '+D.length+' · Gidilen: '+D.filter(m=>m.ziyaret_durumu==='ziyaret edildi').length;sc.font={size:11,color:{argb:'FF2D5A3A'}};sc.alignment={horizontal:'center'};sh.addRow([]);const hr=sh.addRow(['FİRMA ADI','BÖLGE','SON ZİYARET','GÜN GEÇEN','DURUM','NUMUNE','NOT','NOTLAR']);hr.font={bold:true,color:{argb:'FFFFFFFF'},size:11};hr.height=24;hr.eachCell(c=>{c.fill={type:'pattern',pattern:'solid',fgColor:{argb:'FF166534'}};c.alignment={horizontal:'center',vertical:'middle'};});sh.columns=[{width:30},{width:16},{width:14},{width:12},{width:14},{width:10},{width:8},{width:40}];[...D].sort((a,b)=>{const bA=(a.bolge||'').toUpperCase(),bB=(b.bolge||'').toUpperCase();return bA!==bB?bA.localeCompare(bB,'tr'):(a.firma_adi||'').localeCompare(b.firma_adi||'','tr');}).forEach(m=>{const done=m.ziyaret_durumu==='ziyaret edildi';const ns=getNumStats(m.firma_adi),nc=getNotCount(m.firma_adi),ds=daysSince(m.son_ziyaret),lv=getLateLevel(m);const row=sh.addRow([m.firma_adi||'',m.bolge||'',fD(m.son_ziyaret)||'-',ds!==null?ds:'-',done?'GİDİLDİ':'BEKLİYOR',ns.total,nc,m.notlar||'-']);row.getCell(4).font={color:{argb:lv==='red'?'FF991B1B':lv==='amber'?'FFB45309':'FF6B9478'},bold:!!lv};row.getCell(5).font={color:{argb:done?'FF15803D':'FFB45309'},bold:true};row.getCell(5).alignment={horizontal:'center'};[5,6,7].forEach(ci=>row.getCell(ci).alignment={horizontal:'center'});});sh.autoFilter={from:'A4',to:'H4'};const buf=await wb.xlsx.writeBuffer(),blob=new Blob([buf],{type:'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'});const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='Yanteks_Musteri_'+d.replace(/\./g,'-')+'.xlsx';a.click();URL.revokeObjectURL(a.href);toast('Excel indirildi ✓','ok');}catch(e){toast('Excel hatası','bad');console.error(e);}finally{btn.disabled=false;btn.textContent='📊 Excel';}}
 document.addEventListener('keydown',e=>{if((e.ctrlKey||e.metaKey)&&e.key==='n'){e.preventDefault();openAdd();}if((e.ctrlKey||e.metaKey)&&e.key==='k'){e.preventDefault();document.getElementById('q').focus();}if(e.key==='Escape'){clDw();clM('m-rn');clM('m-cf');clM('m-sort');clM('m-late');clM('m-newbolge');closeBolgeDd();}});
 sync();
+
+// Canlı güncelleme (Supabase Realtime)
+(function(){
+  let _ch;
+  function connect(){
+    _ch = db.channel('rt-musteriler')
+      .on('postgres_changes', {event:'*', schema:'public', table:'musteriler'}, ()=>{
+        clearTimeout(window._rtT);
+        window._rtT = setTimeout(sync, 600);
+      })
+      .subscribe(status=>{
+        if(status==='SUBSCRIBED'){
+          let li=document.getElementById('_live');
+          if(!li){li=document.createElement('span');li.id='_live';
+            li.style.cssText='font-size:9px;font-weight:800;color:#86EFAC;letter-spacing:.04em;display:flex;align-items:center;gap:3px';
+            li.innerHTML='<span style="width:6px;height:6px;border-radius:50%;background:#86EFAC;display:inline-block;animation:pulse 1.8s infinite"></span>CANLI';
+            const ta=document.querySelector('.topbar-actions');if(ta)ta.prepend(li);
+          }
+        } else if(status==='CLOSED'||status==='CHANNEL_ERROR'){
+          const li=document.getElementById('_live');if(li)li.remove();
+        }
+      });
+  }
+  connect();
+  window.addEventListener('beforeunload',()=>{if(_ch)db.removeChannel(_ch);});
+})();
 </script>
 <script>
 (function(){var sp=document.getElementById('splash');if(!sp)return;setTimeout(function(){sp.classList.add('hide');setTimeout(function(){sp.remove();},400);},600);})();
