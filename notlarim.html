@@ -118,40 +118,32 @@ input,textarea,button,select{font-family:'Inter',sans-serif;color:var(--text);-w
 .ea-btn:active{background:rgba(255,255,255,.22)}
 .ea-btn.dng:active{background:rgba(252,165,165,.22);color:#FCA5A5}
 
-/* Müşteri + renk bar */
-.ed-toolbar{display:flex;align-items:center;gap:0;background:var(--surface);border-bottom:1px solid var(--border2)}
-.color-bar{display:flex;align-items:center;gap:7px;padding:10px 14px;flex-shrink:0}
-.color-bar-sep{width:1px;height:26px;background:var(--border2);flex-shrink:0}
-.cbar-dot{width:24px;height:24px;border-radius:50%;cursor:pointer;transition:transform .12s,box-shadow .12s;border:2px solid rgba(0,0,0,.08);flex-shrink:0}
+/* Renk bar */
+.ed-colors{display:flex;align-items:center;gap:8px;padding:10px 16px;background:var(--surface);border-bottom:1px solid var(--border)}
+.cbar-dot{width:26px;height:26px;border-radius:50%;cursor:pointer;transition:transform .12s,box-shadow .12s;border:2px solid rgba(0,0,0,.08);flex-shrink:0}
 .cbar-dot:active{transform:scale(.88)}
-.cbar-dot.active{box-shadow:0 0 0 3px rgba(8,145,178,.45),0 2px 6px rgba(0,0,0,.2);transform:scale(1.12)}
+.cbar-dot.active{box-shadow:0 0 0 3px rgba(8,145,178,.5),0 2px 6px rgba(0,0,0,.2);transform:scale(1.15)}
 .cb-default{background:#1E2D3D}
 .cb-sari{background:#EAB308}
 .cb-mavi{background:#0891B2}
 .cb-yesil{background:#15803D}
 .cb-pembe{background:#DB2777}
 .cb-turuncu{background:#EA580C}
+.cbar-label{font-size:10px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.07em;margin-right:2px}
 
-/* Müşteri seçici */
-.musteri-wrap{flex:1;position:relative;padding:8px 14px 8px 8px;min-width:0}
-.musteri-input-row{display:flex;align-items:center;gap:7px;padding:7px 10px;border-radius:9px;border:1.5px solid var(--border2);background:var(--bg);cursor:text;transition:var(--t)}
-.musteri-input-row:focus-within{border-color:var(--accent);box-shadow:0 0 0 3px rgba(8,145,178,.1)}
-.musteri-icon{font-size:15px;flex-shrink:0;opacity:.6}
-.musteri-input{flex:1;border:none;background:transparent;outline:none;font-size:13px;font-weight:600;color:var(--text);min-width:0}
-.musteri-input::placeholder{color:var(--text3);font-weight:400}
-.musteri-clr{width:18px;height:18px;border-radius:50%;background:var(--surface3);border:none;color:var(--text3);font-size:10px;cursor:pointer;display:none;align-items:center;justify-content:center;font-family:inherit;flex-shrink:0}
-.musteri-clr.on{display:flex}
-
-.musteri-dd{position:absolute;top:100%;left:14px;right:14px;z-index:200;background:var(--surface);border:1.5px solid var(--border2);border-radius:11px;box-shadow:var(--shadow-lg);max-height:200px;overflow-y:auto;display:none}
-.musteri-dd.on{display:block}
-.musteri-dd-item{padding:11px 14px;font-size:13px;font-weight:600;color:var(--text2);cursor:pointer;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:9px;transition:.1s}
-.musteri-dd-item:last-child{border-bottom:none}
-.musteri-dd-item:active{background:var(--surface2)}
-.mdi-av{width:24px;height:24px;border-radius:50%;background:linear-gradient(135deg,#0672A0,#0891B2);color:#fff;font-size:10px;font-weight:800;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+/* Müşteri satırı */
+.ed-musteri{display:flex;align-items:center;gap:10px;padding:10px 16px;background:var(--surface);border-bottom:2px solid var(--border2)}
+.ed-musteri-icon{font-size:18px;flex-shrink:0}
+.ed-musteri-field{flex:1;position:relative}
+.ed-musteri-field input{width:100%;border:1.5px solid var(--border2);border-radius:10px;padding:10px 36px 10px 12px;font-size:14px;font-weight:600;color:var(--text);background:var(--bg);outline:none;transition:var(--t);font-family:inherit}
+.ed-musteri-field input:focus{border-color:var(--accent);background:#fff;box-shadow:0 0 0 3px rgba(8,145,178,.12)}
+.ed-musteri-field input::placeholder{color:var(--text3);font-weight:400}
+.ed-musteri-clr{position:absolute;right:10px;top:50%;transform:translateY(-50%);width:22px;height:22px;border-radius:50%;background:var(--surface3);border:1px solid var(--border2);color:var(--text3);font-size:11px;cursor:pointer;display:none;align-items:center;justify-content:center;font-family:inherit}
+.ed-musteri-clr.on{display:flex}
 
 /* Editör yazı alanı */
 .ed-area{flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch;background:var(--surface)}
-#editor-ta{width:100%;min-height:100%;padding:20px 18px calc(100px + env(safe-area-inset-bottom));border:none;outline:none;font-family:'Inter',sans-serif;font-size:16px;line-height:1.75;color:var(--text);background:transparent;resize:none}
+#editor-ta{width:100%;min-height:100%;padding:18px 18px calc(100px + env(safe-area-inset-bottom));border:none;outline:none;font-family:'Inter',sans-serif;font-size:16px;line-height:1.75;color:var(--text);background:transparent;resize:none}
 #editor-ta::placeholder{color:var(--text3)}
 
 /* ── MODAL ── */
@@ -273,24 +265,21 @@ a,button{-webkit-tap-highlight-color:transparent}
     </div>
   </div>
 
-  <div class="ed-toolbar">
-    <div class="color-bar">
-      <div class="cbar-dot cb-default active" data-color="default" title="Varsayılan" onclick="setColor('default',this)"></div>
-      <div class="cbar-dot cb-sari" data-color="sari" title="Sarı" onclick="setColor('sari',this)"></div>
-      <div class="cbar-dot cb-mavi" data-color="mavi" title="Mavi" onclick="setColor('mavi',this)"></div>
-      <div class="cbar-dot cb-yesil" data-color="yesil" title="Yeşil" onclick="setColor('yesil',this)"></div>
-      <div class="cbar-dot cb-pembe" data-color="pembe" title="Pembe" onclick="setColor('pembe',this)"></div>
-      <div class="cbar-dot cb-turuncu" data-color="turuncu" title="Turuncu" onclick="setColor('turuncu',this)"></div>
-    </div>
-    <div class="color-bar-sep"></div>
-    <div class="musteri-wrap">
-      <div class="musteri-input-row">
-        <span class="musteri-icon">👤</span>
-        <input type="text" class="musteri-input" id="musteri-inp" placeholder="Müşteri seç..." autocomplete="off"
-          oninput="onMusteriInput()" onfocus="showMusteriDd()" onblur="hideMusteriDd()">
-        <button class="musteri-clr" id="musteri-clr" onclick="clearMusteri()">✕</button>
-      </div>
-      <div class="musteri-dd" id="musteri-dd"></div>
+  <div class="ed-colors">
+    <span class="cbar-label">Renk</span>
+    <div class="cbar-dot cb-default active" data-color="default" onclick="setColor('default',this)"></div>
+    <div class="cbar-dot cb-sari" data-color="sari" onclick="setColor('sari',this)"></div>
+    <div class="cbar-dot cb-mavi" data-color="mavi" onclick="setColor('mavi',this)"></div>
+    <div class="cbar-dot cb-yesil" data-color="yesil" onclick="setColor('yesil',this)"></div>
+    <div class="cbar-dot cb-pembe" data-color="pembe" onclick="setColor('pembe',this)"></div>
+    <div class="cbar-dot cb-turuncu" data-color="turuncu" onclick="setColor('turuncu',this)"></div>
+  </div>
+  <div class="ed-musteri">
+    <span class="ed-musteri-icon">👤</span>
+    <div class="ed-musteri-field">
+      <input type="text" id="musteri-inp" list="musteri-list" placeholder="Müşteri seç veya yaz..." autocomplete="off" oninput="onMusteriInput()">
+      <button class="ed-musteri-clr" id="musteri-clr" type="button" onclick="clearMusteri()">✕</button>
+      <datalist id="musteri-list"></datalist>
     </div>
   </div>
 
@@ -371,6 +360,7 @@ function wordCount(s){return(s||'').trim().split(/\s+/).filter(Boolean).length}
 async function loadMusteriler(){
   const{data}=await db.from('musteriler').select('firma').order('firma');
   MUSTERILER=(data||[]).map(r=>r.firma).filter(Boolean);
+  fillDatalist();
 }
 
 async function sync(){
@@ -455,10 +445,8 @@ function render(){
 
 // ── EDİTÖR ──
 function setMusteriField(val){
-  const inp=document.getElementById('musteri-inp');
-  const clr=document.getElementById('musteri-clr');
-  inp.value=val||'';
-  clr.classList.toggle('on',!!(val&&val.trim()));
+  document.getElementById('musteri-inp').value=val||'';
+  document.getElementById('musteri-clr').classList.toggle('on',!!(val&&val.trim()));
 }
 
 function openNote(id){
@@ -556,69 +544,34 @@ function setColorBar(color){
   document.querySelectorAll('.cbar-dot').forEach(d=>d.classList.toggle('active',d.dataset.color===color));
 }
 
-// ── MÜŞTERİ DROPDOWN ──
-let ddTimer=null;
+// ── MÜŞTERİ ──
+function fillDatalist(){
+  const dl=document.getElementById('musteri-list');
+  dl.innerHTML=MUSTERILER.map(m=>`<option value="${esc(m)}">`).join('');
+}
+
 function onMusteriInput(){
   const v=document.getElementById('musteri-inp').value;
   document.getElementById('musteri-clr').classList.toggle('on',v.trim().length>0);
-  showMusteriDd();
-  // müşteri değişti → auto-save tetikle
   clearTimeout(saveTimer);
   saveTimer=setTimeout(async()=>{
     if(!curNote)return;
     const val=document.getElementById('editor-ta').value;
     const musteri=v.trim()||null;
-    await doSave(val,musteri);
-  },1200);
-}
-
-function showMusteriDd(){
-  const inp=document.getElementById('musteri-inp');
-  const dd=document.getElementById('musteri-dd');
-  const q=trl(inp.value.trim());
-  const fil=q?MUSTERILER.filter(m=>trl(m).includes(q)):MUSTERILER;
-  if(!fil.length){dd.classList.remove('on');return}
-  dd.innerHTML=fil.slice(0,8).map(m=>
-    `<div class="musteri-dd-item" data-m="${esc(m)}">
-      <div class="mdi-av">${esc(avatar(m).toUpperCase())}</div>
-      <span>${esc(m)}</span>
-    </div>`).join('');
-  dd.querySelectorAll('.musteri-dd-item').forEach(item=>{
-    item.addEventListener('mousedown',e=>{e.preventDefault();selectMusteri(item.dataset.m);});
-    item.addEventListener('touchstart',e=>{e.preventDefault();selectMusteri(item.dataset.m);},{passive:false});
-  });
-  dd.classList.add('on');
-}
-
-function hideMusteriDd(){
-  clearTimeout(ddTimer);
-  ddTimer=setTimeout(()=>document.getElementById('musteri-dd').classList.remove('on'),150);
-}
-
-function selectMusteri(m){
-  document.getElementById('musteri-inp').value=m;
-  document.getElementById('musteri-clr').classList.add('on');
-  document.getElementById('musteri-dd').classList.remove('on');
-  if(curNote)curNote.musteri=m;
-  clearTimeout(saveTimer);
-  saveTimer=setTimeout(async()=>{
-    if(!curNote)return;
-    const val=document.getElementById('editor-ta').value;
-    await doSave(val,m);
-  },400);
+    if(curNote.musteri!==musteri)await doSave(val,musteri);
+  },800);
 }
 
 function clearMusteri(){
   document.getElementById('musteri-inp').value='';
   document.getElementById('musteri-clr').classList.remove('on');
-  document.getElementById('musteri-dd').classList.remove('on');
   if(curNote)curNote.musteri=null;
   clearTimeout(saveTimer);
   saveTimer=setTimeout(async()=>{
     if(!curNote)return;
     const val=document.getElementById('editor-ta').value;
     await doSave(val,null);
-  },400);
+  },300);
 }
 
 // ── PAYLAŞ / SİL ──
