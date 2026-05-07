@@ -30,6 +30,7 @@
 
   // 4. Kurulum rehberi (standalone değilse)
   function showInstallBanner(){
+    return; // banner devre dışı
     if(isStandalone)return;
     if(sessionStorage.getItem('_inst_ok'))return;
     var isIOS=/iphone|ipad|ipod/i.test(navigator.userAgent);
