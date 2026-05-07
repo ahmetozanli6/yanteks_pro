@@ -555,6 +555,7 @@ const urlP=new URLSearchParams(location.search);
 if(urlP.get('firma'))firmaF=urlP.get('firma').toUpperCase();
 const esc=s=>s==null?'':String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#039;');
 const trl=s=>(s||'').toString().replaceAll('İ','i').replaceAll('I','ı').toLowerCase();
+const matchAll=(q,...fields)=>{const ts=q.split(/\s+/).filter(Boolean);return ts.every(t=>fields.some(f=>trl(f||'').includes(t)));}
 const isV=n=>(n||'').toString().startsWith('↳');
 const dName=n=>(n||'').replace(/^↳\s*/,'').trim();
 function parseAc(item){const a=item.aciklama||'';if(isV(item.numune)&&a.includes('|')){const i=a.indexOf('|');return{pc:a.substring(0,i),note:a.substring(i+1)};}return{pc:'',note:a};}
@@ -793,7 +794,7 @@ function render(){
   let fil=curF==='Arşiv'?R.filter(i=>i.arsiv===true):R.filter(i=>i.arsiv!==true);
   if(curF!=='Hepsi'&&curF!=='Arşiv')fil=fil.filter(i=>i.durum===curF);
   if(firmaF)fil=fil.filter(i=>(i.firma||'').toUpperCase()===firmaF);
-  if(q)fil=fil.filter(i=>trl(i.firma).includes(q)||trl(i.numune).includes(q)||trl(i.aciklama).includes(q));
+  if(q)fil=fil.filter(i=>matchAll(q,i.firma,i.numune,i.aciklama));
   const G={};fil.forEach(i=>{const f=(i.firma||'BELİRSİZ').toUpperCase();if(!G[f])G[f]=[];G[f].push(i);});
   if(!Object.keys(G).length){area.innerHTML=R.length===0?'<div class="empty"><div class="ei">📦</div><h3>Henüz numune yok</h3><p>＋ Yeni ile başlayın.</p></div>':'<div class="empty"><div class="ei">🔍</div><h3>Sonuç yok</h3><p>'+(q?'"'+esc(q)+'" bulunamadı.':'Bu filtre için kayıt yok.')+'</p></div>';return;}
   let fKeys=Object.keys(G);

@@ -591,6 +591,7 @@ let bulkType='pct',bulkDir='up';
 
 const esc=s=>s==null?'':String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#039;');
 const trl=s=>(s||'').toString().replaceAll('İ','i').replaceAll('I','ı').toLowerCase();
+const matchAll=(q,...fields)=>{const ts=q.split(/\s+/).filter(Boolean);return ts.every(t=>fields.some(f=>trl(f||'').includes(t)));}
 const isHdr=p=>!p.denye&&!p.bolum_adi;
 function dot(s){const e=document.getElementById('sd');e.classList.remove('ok','busy','err');if(s)e.classList.add(s);}
 function toast(m,t='info'){const c=document.getElementById('toasts'),el=document.createElement('div');el.className='toast '+t;const icons={ok:'✓',bad:'✕',wrn:'⚠',info:'·'};el.innerHTML='<span>'+icons[t]+'</span><span>'+m+'</span>';c.appendChild(el);setTimeout(()=>{el.style.animation='tOut .25s forwards';setTimeout(()=>el.remove(),250)},2800);}
@@ -698,7 +699,7 @@ function render(){
   cats.forEach((cn,ci)=>{
     const g=G[cn],cl=closed.has(cn),ce=esc(cn),hid=esc(String(g.hdr.id));
     let fi=g.items;
-    if(term){fi=fi.filter(p=>trl(p.urun_kodu).includes(term)||trl(p.denye).includes(term));if(!fi.length&&!trl(cn).includes(term))return;}
+    if(term){fi=fi.filter(p=>matchAll(term,p.urun_kodu,p.denye));if(!fi.length&&!matchAll(term,cn))return;}
     yc+=fi.length;mc+=fi.filter(p=>!p.pesin_fiyat).length;
     const delay=(ci*0.04).toFixed(2);
     h+='<div class="cat '+(cl?'closed':'')+'" data-cat="'+ce+'" style="animation-delay:'+delay+'s">'

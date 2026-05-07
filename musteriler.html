@@ -469,6 +469,7 @@ const db=supabase.createClient(SU,SK);
 let D=[],cF="Hepsi",cls=new Set(),aCl=false,cfCb=null,numData=[],notData=[],rOrd=[],cSort='bolge',lateFilterOn=false;
 const esc=s=>s==null?'':String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#039;');
 const trl=s=>(s||'').toString().replaceAll('İ','i').replaceAll('I','ı').toLowerCase();
+const matchAll=(q,...fields)=>{const ts=q.split(/\s+/).filter(Boolean);return ts.every(t=>fields.some(f=>trl(f||'').includes(t)));}
 const tdy=()=>{const d=new Date();return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');};
 const fD=d=>{if(!d||!d.includes('-'))return'';const p=d.split('-');return p.length===3?p[2]+'.'+p[1]+'.'+p[0]:'';};
 function daysSince(isoDate){if(!isoDate)return null;const d=new Date(isoDate),now=new Date();now.setHours(0,0,0,0);d.setHours(0,0,0,0);return Math.floor((now-d)/86400000);}
@@ -503,7 +504,7 @@ function clrQ(){document.getElementById('q').value='';document.getElementById('q
 function togAll(){aCl=!aCl;document.getElementById('cb').textContent=aCl?'↕ Genişlet':'↕ Daralt';if(aCl)rOrd.forEach(r=>cls.add(r));else cls.clear();render();}
 function render(){
   const a=document.getElementById('list'),q=trl(document.getElementById('q').value.trim());
-  let mt=D.filter(m=>trl(m.firma_adi).includes(q)||trl(m.bolge).includes(q)||trl(m.notlar).includes(q));
+  let mt=D.filter(m=>matchAll(q,m.firma_adi,m.bolge,m.notlar||''));
   const tot=mt.length,dn=mt.filter(m=>m.ziyaret_durumu==='ziyaret edildi').length,wt=tot-dn;
   const nv=mt.filter(m=>!m.son_ziyaret).length,nt=mt.filter(m=>getNotCount(m.firma_adi)>0).length;
   document.getElementById('k-t').textContent=tot;document.getElementById('k-d').textContent=dn;document.getElementById('k-w').textContent=wt;
