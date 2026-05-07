@@ -400,8 +400,8 @@ function wordCount(s){return(s||'').trim().split(/\s+/).filter(Boolean).length}
 
 // ── VERİ ──
 async function loadMusteriler(){
-  const{data}=await db.from('musteriler').select('firma').order('firma');
-  MUSTERILER=(data||[]).map(r=>r.firma).filter(Boolean);
+  const{data}=await db.from('musteriler').select('firma_adi').order('firma_adi');
+  MUSTERILER=(data||[]).map(r=>r.firma_adi).filter(Boolean);
 }
 
 async function sync(){
