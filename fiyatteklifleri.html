@@ -10,6 +10,7 @@
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
 <title>Yanteks Pro | Fiyat Teklifleri</title>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="offline.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/exceljs/4.3.0/exceljs.min.js"></script>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
 <style>
@@ -694,10 +695,16 @@ function render(){
 async function updateStatus(sel){
   const id=sel.dataset.id,st=sel.value;
   sel.className='st-select '+statusSelectClass(st);
-  dot('busy');
-  const {error}=await db.from('fiyat_teklifleri').update({durum:st,updated_at:new Date().toISOString()}).eq('id',id);
-  if(error){dot('err');toast('Hata','bad');return}
+  const pay={durum:st,updated_at:new Date().toISOString()};
   const it=D.find(x=>String(x.id)===String(id));
+  if(!navigator.onLine){
+    window._offQ.enqueue({table:'fiyat_teklifleri',type:'update',payload:pay,eq:['id',id]});
+    if(it)it.durum=st;
+    toast('Çevrimdışı — durum sıraya alındı');buildStats();render();return;
+  }
+  dot('busy');
+  const {error}=await db.from('fiyat_teklifleri').update(pay).eq('id',id);
+  if(error){dot('err');toast('Hata','bad');return}
   if(it)it.durum=st;
   dot('ok');toast('Durum güncellendi','ok');buildStats();render();
 }

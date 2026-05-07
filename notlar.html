@@ -9,6 +9,7 @@
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
 <title>Yanteks Pro | Notlar</title>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="offline.js"></script>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
 <style>
 :root{
@@ -255,19 +256,32 @@ async function saveNote(){
   const icerik=ta.value.trim();
   if(!icerik||!FIRMA)return;
   const btn=document.getElementById('sv-btn');
-  btn.disabled=true;btn.textContent='Kaydediliyor...';dot('busy');
+  btn.disabled=true;btn.textContent='Kaydediliyor...';
   const now=new Date().toISOString();
-  const{error}=await db.from('notlar').insert([{firma:FIRMA,icerik,updated_at:now}]);
+  const payload={firma:FIRMA,icerik,updated_at:now};
+  if(!navigator.onLine){
+    window._offQ.enqueue({table:'notlar',type:'insert',payload:[payload]});
+    ta.value='';document.getElementById('char-count').textContent='0 / 2000';
+    btn.textContent='Kaydet';
+    toast('Çevrimdışı — not sıraya alındı');
+    return;
+  }
+  dot('busy');
+  const{error}=await db.from('notlar').insert([payload]);
   btn.textContent='Kaydet';
   if(error){dot('err');toast('Hata: '+error.message,'bad');btn.disabled=false;return}
-  ta.value='';
-  document.getElementById('char-count').textContent='0 / 2000';
+  ta.value='';document.getElementById('char-count').textContent='0 / 2000';
   dot('ok');toast('Not kaydedildi ✓');
   sync();
 }
 
 function askDel(id){
   cfCb=async()=>{
+    if(!navigator.onLine){
+      window._offQ.enqueue({table:'notlar',type:'delete',eq:['id',id]});
+      N=N.filter(n=>String(n.id)!==String(id));
+      toast('Çevrimdışı — silme sıraya alındı');render();return;
+    }
     dot('busy');
     const{error}=await db.from('notlar').delete().eq('id',id);
     if(error){dot('err');toast('Silinemedi','bad');return}
