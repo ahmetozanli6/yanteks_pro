@@ -194,7 +194,7 @@ input,textarea,button,select{font-family:'Inter',sans-serif;color:var(--text);-w
 #editor-ta::placeholder{color:var(–text3)}
 
 /* ── FIRMA PICKER ── */
-.picker-overlay{position:fixed;inset:0;z-index:700;display:none;flex-direction:column;background:var(–bg)}
+.picker-overlay{position:fixed;inset:0;z-index:700;display:none;flex-direction:column;background:#F0F2F5}
 .picker-overlay.on{display:flex}
 .picker-head{background:linear-gradient(135deg,#0F1C28,#1E2D3D);padding:calc(12px + env(safe-area-inset-top)) 16px 12px;display:flex;align-items:center;gap:12px;border-bottom:2px solid rgba(8,145,178,.6)}
 .picker-cancel{color:#38BDF8;font-size:14px;font-weight:700;border:none;background:none;cursor:pointer;font-family:inherit;padding:4px 0;flex-shrink:0}
@@ -493,10 +493,20 @@ async function loadMusteriler(){
 
 async function sync(){
   dot('busy');
-  const{data,error}=await db.from('genel_notlar').select('*').order('updated_at',{ascending:false});
-  if(error){dot('err');return}
-  N=data||[];dot('ok');
-  updateCounts();render();
+  const[genelRes,notlarRes]=await Promise.all([
+    db.from('genel_notlar').select('*').order('updated_at',{ascending:false}),
+    db.from('notlar').select('*').order('updated_at',{ascending:false})
+  ]);
+  if(genelRes.error){dot('err');return;}
+  const genel=(genelRes.data||[]).map(n=>({...n,_tablo:'genel'}));
+  const firmaNotlar=(notlarRes.data||[]).map(n=>({
+    id:'fn_'+n.id,_origId:n.id,_tablo:'notlar',
+    icerik:n.icerik||'',renk:n.renk||'default',
+    musteri:n.firma||null,hatirlatici:null,
+    updated_at:n.updated_at,created_at:n.created_at
+  }));
+  N=[...genel,...firmaNotlar];
+  dot('ok');updateCounts();render();
 }
 
 function updateCounts(){
@@ -581,19 +591,25 @@ function renderFirma(items){
         ${getPreview(n.icerik)?`<div class="fg-note-preview">${esc(getPreview(n.icerik))}</div>`:''}
       </div>`).join('');
     return`<div class="fg${isOpen?'':' closed'}" data-firma="${esc(firma)}" style="animation-delay:${fi*0.04}s">
-      <div class="fg-head" onclick="toggleFirma('${esc(firma)}')">
+      <div class="fg-head" data-toggle-firma="${esc(firma)}">
         <div class="fg-av">${esc(av)}</div>
         <span class="fg-name">${esc(firma)}</span>
         <span class="fg-cnt">${notes.length}</span>
         <span class="fg-chev">▼</span>
       </div>
       <div class="fg-body">${notesHtml}</div>
-      <button class="fg-add" onclick="newNoteForFirma('${esc(firma)}')">＋ Bu firmaya not ekle</button>
+      <button class="fg-add" data-add-firma="${esc(firma)}">＋ Bu firmaya not ekle</button>
     </div>`;
   }).join('');
 
   el.querySelectorAll('.fg-note').forEach(el2=>{
     el2.addEventListener('click',()=>openNote(el2.dataset.id));
+  });
+  el.querySelectorAll('[data-toggle-firma]').forEach(btn=>{
+    btn.addEventListener('click',()=>toggleFirma(btn.dataset.toggleFirma));
+  });
+  el.querySelectorAll('[data-add-firma]').forEach(btn=>{
+    btn.addEventListener('click',()=>newNoteForFirma(btn.dataset.addFirma));
   });
 }
 
@@ -604,13 +620,13 @@ function toggleFirma(firma){
 }
 
 function noteCard(n,i){
-  const clr=COLORS[n.renk||'default']||'c-default';
+  const clr=COLORS[n.renk||'default']||'';const clrClass=clr||'c-default';
   const bg=BGTXT[n.renk||'default']||'';
   const preview=getPreview(n.icerik);
   const rem=n.hatirlatici?fmtReminder(n.hatirlatici):null;
   const firmaHtml=n.musteri?`<div class="nc-firma"><div class="nc-firma-av">${esc(avatar(n.musteri))}</div><span class="nc-firma-name">${esc(n.musteri)}</span></div>`:'';
   return`<div class="note-card" data-id="${n.id}" style="animation-delay:${i*0.03}s">
-    <div class="nc-color-bar ${clr}"></div>
+    <div class="nc-color-bar ${clrClass}"></div>
     <div class="nc-body ${bg}">
       ${firmaHtml}
       <div class="nc-title">${esc(getTitle(n.icerik))}</div>
@@ -626,7 +642,7 @@ function noteCard(n,i){
 
 // ── EDITOR ──
 function newNote(musteriPreset){
-  curNote={id:null,icerik:'',renk:'default',musteri:musteriPreset||null,hatirlatici:null};
+  curNote={id:null,_tablo:'new',icerik:'',renk:'default',musteri:musteriPreset||null,hatirlatici:null};
   document.getElementById('editor-ta').value='';
   setEdFirma(musteriPreset||null);
   setEdReminder(null);
@@ -643,6 +659,15 @@ function newNoteForFirma(firma){
 
 function openNote(id){
   const n=N.find(x=>String(x.id)===String(id));if(!n)return;
+  if(n._tablo==='notlar'){
+    // Musteri sayfasindan gelen notlar: sadece goruntule
+    curNote={...n};
+    document.getElementById('editor-ta').value=n.icerik||'';
+    setEdFirma(n.musteri||null);setEdReminder(null);setEdStatus('');setColorBar(n.renk||'default');
+    document.getElementById('editor').classList.add('on');
+    toast('Bu not müşteri sayfasından düzenlenebilir','wrn');
+    return;
+  }
   curNote={...n};
   document.getElementById('editor-ta').value=n.icerik||'';
   setEdFirma(n.musteri||null);
@@ -655,18 +680,19 @@ function openNote(id){
 
 async function closeEditor(){
   clearTimeout(saveTimer);
+  let needsSync=false;
   if(curNote){
     const val=document.getElementById('editor-ta').value;
     if(curNote.id){
-      if(val!==curNote.icerik||curNote.musteri!==curNote._origMusteri)await doSave(val);
+      await doSave(val);needsSync=true;
     } else if(val.trim()){
-      await doSave(val);
+      await doSave(val);needsSync=true;
     }
   }
   curNote=null;
-  stopVoice();
+  stopVoice();stopEdVoice();
   document.getElementById('editor').classList.remove('on');
-  sync();
+  if(needsSync)sync();else render();
 }
 
 function onEdit(){
@@ -678,7 +704,8 @@ function onEdit(){
 
 async function doSave(val){
   const now=new Date().toISOString();
-  const payload={icerik:val,renk:curNote.renk||'default',musteri:curNote.musteri||null,hatirlatici:curNote.hatirlatici||null,updated_at:now};
+  const payload={icerik:val,renk:curNote.renk||'default',musteri:curNote.musteri||null,updated_at:now};
+  try{if('hatirlatici' in curNote)payload.hatirlatici=curNote.hatirlatici||null;}catch(e){}
   if(curNote.id){
     const{error}=await db.from('genel_notlar').update(payload).eq('id',curNote.id);
     if(!error){curNote.icerik=val;setEdStatus('saved');}
@@ -808,14 +835,16 @@ function stopVoice(){
   if(voiceRec){try{voiceRec.stop();}catch(e){}voiceRec=null;}
   const btn=document.getElementById('voice-btn');
   if(btn){btn.classList.remove('rec');btn.textContent='🎙';}
+}
+function stopEdVoice(){
+  if(edVoiceRec){try{edVoiceRec.stop();}catch(e){}edVoiceRec=null;}
   const bar=document.getElementById('voice-bar');
   if(bar)bar.classList.remove('on');
-  if(edVoiceRec){try{edVoiceRec.stop();}catch(e){}edVoiceRec=null;}
   const eb=document.getElementById('ed-voice-btn');
   if(eb)eb.textContent='🎙';
 }
 function toggleEditorVoice(){
-  if(edVoiceRec){stopVoice();return;}
+  if(edVoiceRec){stopEdVoice();return;}
   if(!('webkitSpeechRecognition' in window||'SpeechRecognition' in window)){
     toast('Tarayıcınız sesli notu desteklemiyor','bad');return;
   }
@@ -838,6 +867,8 @@ function toggleEditorVoice(){
 
 // ── DELETE ──
 function confirmDel(id){
+  const nCheck=N.find(x=>String(x.id)===String(id));
+  if(nCheck&&nCheck._tablo==='notlar'){toast('Bu not müşteri sayfasından silinebilir','wrn');return;}
   delCb=async()=>{
     const{error}=await db.from('genel_notlar').delete().eq('id',id);
     if(error){toast('Silinemedi','bad');return;}
