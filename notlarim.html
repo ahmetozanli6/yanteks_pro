@@ -965,6 +965,23 @@ window.addEventListener('popstate',()=>{
   window.addEventListener('beforeunload',()=>db.removeChannel(ch));
 })();
 
+// ── PULL TO REFRESH ──
+(function(){
+  const main=document.getElementById("main");
+  let sY=0,pulling=false,triggered=false;
+  const THRESH=65;
+  const ind=document.createElement("div");
+  ind.style.cssText="position:fixed;top:calc(env(safe-area-inset-top)+120px);left:50%;transform:translateX(-50%) translateY(-80px);z-index:400;background:#1E2D3D;border:1px solid rgba(255,255,255,.15);border-radius:100px;padding:7px 16px;display:flex;align-items:center;gap:8px;font-size:12px;font-weight:600;color:#fff;transition:transform .22s,opacity .22s;opacity:0;pointer-events:none;box-shadow:0 4px 20px rgba(0,0,0,.3)";
+  ind.innerHTML="<span id='ptr-ico' style='font-size:14px'>&#8635;</span><span id='ptr-txt'>Yenilemek icin cekin</span>";
+  document.body.appendChild(ind);
+  const st=document.createElement("style");
+  st.textContent="@keyframes ptrSpin{to{transform:rotate(360deg)}}";
+  document.head.appendChild(st);
+  main.addEventListener("touchstart",function(e){if(main.scrollTop===0)sY=e.touches[0].clientY;else sY=0;},{passive:true});
+  main.addEventListener("touchmove",function(e){if(!sY)return;const dy=e.touches[0].clientY-sY;if(dy>10){pulling=true;ind.style.transform="translateX(-50%) translateY(0)";ind.style.opacity="1";if(dy>THRESH&&!triggered){triggered=true;document.getElementById("ptr-txt").textContent="Birakin...";}}},{passive:true});
+  main.addEventListener("touchend",function(){if(!pulling){sY=0;return;}if(triggered){document.getElementById("ptr-ico").style.animation="ptrSpin .6s linear infinite";document.getElementById("ptr-txt").textContent="Yenileniyor...";const done=()=>{ind.style.transform="translateX(-50%) translateY(-80px)";ind.style.opacity="0";document.getElementById("ptr-ico").style.animation="";document.getElementById("ptr-txt").textContent="Yenilemek icin cekin";};sync().finally(done);}else{ind.style.transform="translateX(-50%) translateY(-80px)";ind.style.opacity="0";}sY=0;pulling=false;triggered=false;},{passive:true});
+})();
+
 // ── INIT ──
 Promise.all([sync(),loadMusteriler()]);
 </script>
