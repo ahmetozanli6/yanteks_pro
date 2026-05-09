@@ -433,6 +433,7 @@ const db=supabase.createClient(SU,SK);
 let N=[],MUSTERILER=[],curNote=null,saveTimer=null,delCb=null;
 let curTab='genel',curColorF='all',voiceRec=null,edVoiceRec=null;
 let openFirmalar=new Set();
+let isSaving = false, pendingSave = false;
 
 const esc=s=>s==null?'':String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
 const trl=s=>(s||'').toString().replaceAll('İ','i').replaceAll('I','ı').replaceAll('Ş','ş').replaceAll('Ğ','ğ').replaceAll('Ü','ü').replaceAll('Ö','ö').replaceAll('Ç','ç').toLowerCase();
@@ -682,12 +683,15 @@ async function closeEditor(){
   let needsSync=false;
   if(curNote){
     const val=document.getElementById('editor-ta').value;
-    if(curNote.id){
-      await doSave(val);needsSync=true;
-    } else if(val.trim()){
+    if(curNote.id || val.trim()){
       await doSave(val);needsSync=true;
     }
   }
+  
+  while(isSaving) {
+    await new Promise(r => setTimeout(r, 50));
+  }
+
   curNote=null;
   stopVoice();stopEdVoice();
   document.getElementById('editor').classList.remove('on');
@@ -703,8 +707,22 @@ function onEdit(){
 
 async function doSave(val){
   if(!curNote||curNote._tablo==='notlar')return;
-  const now=new Date().toISOString();
+  
   const isNew=!curNote.id||curNote._tablo==='new';
+  
+  if(isNew && !val.trim()) {
+    if(curNote) curNote.icerik = val;
+    return; 
+  }
+
+  if(isSaving) {
+    pendingSave = true;
+    return;
+  }
+  isSaving = true;
+
+  const now=new Date().toISOString();
+  
   const payload={
     icerik:val,
     renk:curNote.renk||'default',
@@ -712,17 +730,25 @@ async function doSave(val){
     hatirlatici:curNote.hatirlatici||null,
     updated_at:now
   };
+
   if(isNew){
     payload.created_at=now;
     const{data,error}=await db.from('genel_notlar').insert([payload]).select().single();
-    if(error){console.error('Insert error:',error);setEdStatus('');toast('Kayıt hatası','bad');return;}
+    if(error){console.error('Insert error:',error);setEdStatus('');toast('Kayıt hatası','bad');isSaving=false;return;}
     if(data){curNote.id=data.id;curNote._tablo='genel';}
   } else {
     const{error}=await db.from('genel_notlar').update(payload).eq('id',curNote.id);
-    if(error){console.error('Update error:',error);setEdStatus('');toast('Güncelleme hatası','bad');return;}
+    if(error){console.error('Update error:',error);setEdStatus('');toast('Güncelleme hatası','bad');isSaving=false;return;}
   }
-  curNote.icerik=val;
+  
+  if(curNote) curNote.icerik = val;
   setEdStatus('saved');
+  isSaving = false;
+
+  if(pendingSave && curNote) {
+    pendingSave = false;
+    doSave(document.getElementById('editor-ta').value);
+  }
 }
 
 function setEdStatus(s){
