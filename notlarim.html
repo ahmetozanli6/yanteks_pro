@@ -151,8 +151,8 @@ input,textarea,button,select{font-family:'Inter',sans-serif;color:var(--text);-w
 @keyframes shimmer{0%{background-position:200% 0}100%{background-position:-200% 0}}
 
 /* ── EDITOR ── */
-.editor-overlay{position:fixed;inset:0;z-index:600;display:none;flex-direction:column;background:var(–surface)}
-.editor-overlay.on{display:flex}
+.editor-overlay{position:fixed;top:0;left:0;right:0;bottom:0;z-index:2000;display:none;flex-direction:column;background:#fff;}
+.editor-overlay.on{display:flex;background:#fff;}
 .ed-head{background:linear-gradient(135deg,#0F1C28,#1E2D3D);padding:calc(12px + env(safe-area-inset-top)) 14px 12px;display:flex;align-items:center;gap:10px;border-bottom:2px solid rgba(8,145,178,.55);flex-shrink:0}
 .ed-back{display:flex;align-items:center;gap:5px;color:#38BDF8;font-size:13px;font-weight:700;cursor:pointer;padding:7px 11px;border-radius:9px;border:none;background:rgba(56,189,248,.12);transition:var(–t);font-family:inherit;flex-shrink:0}
 .ed-back:active{background:rgba(56,189,248,.22)}
@@ -705,48 +705,22 @@ function onEdit(){
 async function doSave(val){
   if(!curNote||curNote._tablo==='notlar')return;
   const now=new Date().toISOString();
-
-  // Önce sadece zorunlu alanla dene, hata varsa sütunları daralt
-  async function trySave(payload, isNew){
-    if(isNew){
-      const{data,error}=await db.from('genel_notlar').insert([payload]).select().single();
-      return{data,error};
-    } else {
-      const{data,error}=await db.from('genel_notlar').update(payload).eq('id',curNote.id).select().single();
-      return{data,error};
-    }
-  }
-
   const isNew=!curNote.id||curNote._tablo==='new';
-
-  // Tam payload dene
-  let payload={icerik:val,updated_at:now};
-  try{payload.renk=curNote.renk||'default';}catch(e){}
-  try{if(curNote.musteri!==undefined)payload.musteri=curNote.musteri||null;}catch(e){}
-  try{if(curNote.hatirlatici!==undefined)payload.hatirlatici=curNote.hatirlatici||null;}catch(e){}
-  if(isNew)payload.created_at=now;
-
-  let{data,error}=await trySave(payload,isNew);
-
-  // Hata varsa sütunları azalt ve tekrar dene
-  if(error){
-    console.warn('Full payload failed:',error.message,'Retrying minimal...');
-    const minimal={icerik:val,updated_at:now};
-    if(isNew)minimal.created_at=now;
-    const res2=await trySave(minimal,isNew);
-    data=res2.data;error=res2.error;
-  }
-
-  if(error){
-    console.error('Save error:',error);
-    setEdStatus('');
-    toast('Kayıt hatası: '+error.message,'bad');
-    return;
-  }
-
-  if(isNew&&data){
-    curNote.id=data.id;
-    curNote._tablo='genel';
+  const payload={
+    icerik:val,
+    renk:curNote.renk||'default',
+    musteri:curNote.musteri||null,
+    hatirlatici:curNote.hatirlatici||null,
+    updated_at:now
+  };
+  if(isNew){
+    payload.created_at=now;
+    const{data,error}=await db.from('genel_notlar').insert([payload]).select().single();
+    if(error){console.error('Insert error:',error);setEdStatus('');toast('Kayıt hatası','bad');return;}
+    if(data){curNote.id=data.id;curNote._tablo='genel';}
+  } else {
+    const{error}=await db.from('genel_notlar').update(payload).eq('id',curNote.id);
+    if(error){console.error('Update error:',error);setEdStatus('');toast('Güncelleme hatası','bad');return;}
   }
   curNote.icerik=val;
   setEdStatus('saved');
