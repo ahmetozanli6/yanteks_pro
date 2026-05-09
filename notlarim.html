@@ -441,6 +441,13 @@ const matchAll=(q,...f)=>q.split(/\s+/).filter(Boolean).every(t=>f.some(x=>trl(x
 const COLORS={default:'',sari:'c-sari',mavi:'c-mavi',yesil:'c-yesil',pembe:'c-pembe',turuncu:'c-turuncu'};
 const BGTXT={default:'',sari:'bg-sari',mavi:'bg-mavi',yesil:'bg-yesil',pembe:'bg-pembe',turuncu:'bg-turuncu'};
 
+// HTML etiketlerini temizleyip sadece metni çıkaran yardımcı fonksiyon
+function stripHTML(html) {
+  const tmp = document.createElement('div');
+  tmp.innerHTML = html;
+  return tmp.textContent || tmp.innerText || '';
+}
+
 function dot(s){const e=document.getElementById('sd');e.classList.remove('ok','busy','err');if(s)e.classList.add(s)}
 function toast(m,t='ok'){
   const c=document.getElementById('toasts'),el=document.createElement('div');
@@ -472,13 +479,17 @@ function fmtReminder(iso){
 
 function getTitle(txt){
   if(!txt||!txt.trim())return'Boş not';
-  return(txt.trim().split('\n')[0]||'').trim().substring(0,80)||'Boş not';
+  const cleanTxt = stripHTML(txt); // HTML kodlarını temizle
+  return(cleanTxt.trim().split('\n')[0]||'').trim().substring(0,80)||'Boş not';
 }
+
 function getPreview(txt){
   if(!txt)return'';
-  const lines=txt.trim().split('\n').filter(l=>l.trim());
+  const cleanTxt = stripHTML(txt); // HTML kodlarını temizle
+  const lines=cleanTxt.trim().split('\n').filter(l=>l.trim());
   return lines.length<=1?'':lines.slice(1).join('\n').substring(0,200);
 }
+
 function avatar(name){
   if(!name)return'';
   const w=name.trim().split(/\s+/);
@@ -614,9 +625,15 @@ function renderFirma(items){
 }
 
 function toggleFirma(firma){
-  if(openFirmalar.has(firma))openFirmalar.delete(firma);
+  if(openFirmalar.has(firma)) openFirmalar.delete(firma);
   else openFirmalar.add(firma);
-  render();
+  
+  document.querySelectorAll('.fg').forEach(el => {
+    if (el.dataset.firma === firma) {
+      if(openFirmalar.has(firma)) el.classList.remove('closed');
+      else el.classList.add('closed');
+    }
+  });
 }
 
 function noteCard(n,i){
@@ -659,17 +676,8 @@ function newNoteForFirma(firma){
 
 function openNote(id){
   const n=N.find(x=>String(x.id)===String(id));if(!n)return;
-  if(n._tablo==='notlar'){
-    // Musteri sayfasindan gelen notlar: sadece goruntule
-    curNote={...n};
-    document.getElementById('editor-ta').value=n.icerik||'';
-    setEdFirma(n.musteri||null);setEdReminder(null);setEdStatus('');setColorBar(n.renk||'default');
-    document.getElementById('editor').classList.add('on');
-    toast('Bu not müşteri sayfasından düzenlenebilir','wrn');
-    return;
-  }
   curNote={...n};
-  document.getElementById('editor-ta').value=n.icerik||'';
+  document.getElementById('editor-ta').value=stripHTML(n.icerik||'');
   setEdFirma(n.musteri||null);
   setEdReminder(n.hatirlatici||null);
   setEdStatus('saved');
@@ -706,7 +714,7 @@ function onEdit(){
 }
 
 async function doSave(val){
-  if(!curNote||curNote._tablo==='notlar')return;
+  if(!curNote)return;
   
   const isNew=!curNote.id||curNote._tablo==='new';
   
@@ -723,22 +731,40 @@ async function doSave(val){
 
   const now=new Date().toISOString();
   
-  const payload={
-    icerik:val,
-    renk:curNote.renk||'default',
-    musteri:curNote.musteri||null,
-    hatirlatici:curNote.hatirlatici||null,
-    updated_at:now
-  };
-
   if(isNew){
-    payload.created_at=now;
+    const payload={
+      icerik:val,
+      renk:curNote.renk||'default',
+      musteri:curNote.musteri||null,
+      hatirlatici:curNote.hatirlatici||null,
+      updated_at:now,
+      created_at:now
+    };
     const{data,error}=await db.from('genel_notlar').insert([payload]).select().single();
     if(error){console.error('Insert error:',error);setEdStatus('');toast('Kayıt hatası','bad');isSaving=false;return;}
     if(data){curNote.id=data.id;curNote._tablo='genel';}
   } else {
-    const{error}=await db.from('genel_notlar').update(payload).eq('id',curNote.id);
-    if(error){console.error('Update error:',error);setEdStatus('');toast('Güncelleme hatası','bad');isSaving=false;return;}
+    if (curNote._tablo === 'notlar') {
+       const payload={
+         icerik:val,
+         renk:curNote.renk||'default',
+         firma:curNote.musteri||null,
+         hatirlatici:curNote.hatirlatici||null,
+         updated_at:now
+       };
+       const{error}=await db.from('notlar').update(payload).eq('id',curNote._origId);
+       if(error){console.error('Update error:',error);setEdStatus('');toast('Güncelleme hatası','bad');isSaving=false;return;}
+    } else {
+       const payload={
+         icerik:val,
+         renk:curNote.renk||'default',
+         musteri:curNote.musteri||null,
+         hatirlatici:curNote.hatirlatici||null,
+         updated_at:now
+       };
+       const{error}=await db.from('genel_notlar').update(payload).eq('id',curNote.id);
+       if(error){console.error('Update error:',error);setEdStatus('');toast('Güncelleme hatası','bad');isSaving=false;return;}
+    }
   }
   
   if(curNote) curNote.icerik = val;
@@ -818,7 +844,6 @@ function setEdReminder(iso){
   const inp=document.getElementById('ed-reminder-input');
   const clr=document.getElementById('ed-reminder-clr');
   if(iso){
-    // convert to local datetime-local format
     try{
       const d=new Date(iso);
       const local=new Date(d-d.getTimezoneOffset()*60000).toISOString().slice(0,16);
@@ -856,7 +881,6 @@ function toggleVoice(){
   voiceRec.lang='tr-TR';voiceRec.continuous=true;voiceRec.interimResults=false;
   voiceRec.onresult=e=>{
     const t=Array.from(e.results).slice(e.resultIndex).map(r=>r[0].transcript).join(' ');
-    // Open new note with voice text
     newNote();
     document.getElementById('editor-ta').value=t;
     onEdit();
@@ -903,10 +927,19 @@ function toggleEditorVoice(){
 
 // ── DELETE ──
 function confirmDel(id){
-  const nCheck=N.find(x=>String(x.id)===String(id));
-  if(nCheck&&nCheck._tablo==='notlar'){toast('Bu not müşteri sayfasından silinebilir','wrn');return;}
+  const nCheck = N.find(x => String(x.id) === String(id));
+  if(!nCheck) return;
+  
   delCb=async()=>{
-    const{error}=await db.from('genel_notlar').delete().eq('id',id);
+    let error = null;
+    if(nCheck._tablo === 'notlar'){
+       const res = await db.from('notlar').delete().eq('id', nCheck._origId);
+       error = res.error;
+    } else {
+       const res = await db.from('genel_notlar').delete().eq('id', id);
+       error = res.error;
+    }
+
     if(error){toast('Silinemedi','bad');return;}
     N=N.filter(n=>String(n.id)!==String(id));
     updateCounts();render();toast('Not silindi','ok');
