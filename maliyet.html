@@ -37,7 +37,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;b
 .nav-tabs::-webkit-scrollbar{display:none}
 .nav-btn{display:flex;align-items:center;gap:5px;padding:0 12px;border:none;background:none;font-size:13px;font-weight:500;color:var(--txt2);cursor:pointer;position:relative;white-space:nowrap;flex-shrink:0;height:52px;-webkit-tap-highlight-color:transparent}
 .nav-btn.active{color:var(--blue)}
-.nav-btn.active::after{content:’’;position:absolute;bottom:0;left:12px;right:12px;height:2px;background:var(--blue);border-radius:2px 2px 0 0}
+.nav-btn.active::after{content:'';position:absolute;bottom:0;left:12px;right:12px;height:2px;background:var(--blue);border-radius:2px 2px 0 0}
 .nav-badge{font-size:10px;background:var(--blue);color:#fff;padding:1px 6px;border-radius:99px;font-weight:600}
 .hdr-end{display:flex;align-items:center;padding-left:8px;flex-shrink:0}
 .status-pill{font-size:11px;padding:4px 10px;border-radius:99px;background:var(--amber-lt);color:var(--amber);font-weight:500;white-space:nowrap;transition:all .3s}
@@ -76,7 +76,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;b
 .search-inp{width:100%;padding:12px 14px;border:1.5px solid var(--brd2);border-radius:var(--r);font-size:14px;color:var(--txt);background:var(--surf);-webkit-appearance:none;transition:border-color .15s;display:block}
 .search-inp:focus{outline:none;border-color:var(--blue);box-shadow:0 0 0 3px rgba(24,95,165,.12)}
 
-/* DROPDOWN — sayfanın içinde, search-wrap altında, fixed değil absolute */
+/* DROPDOWN */
 #dd-portal{
 position:fixed;
 z-index:9999;
@@ -229,7 +229,7 @@ hr{border:none;border-top:1px solid var(--brd);margin:12px 0}
 .sales-val{font-size:20px}
 }
 
-/* ── YANTEKS PRO NAV ── */
+/* YANTEKS PRO NAV */
 .bnav{position:fixed;bottom:0;left:0;right:0;height:calc(56px + env(safe-area-inset-bottom));background:linear-gradient(to top,#0F1A25,#1E2D3D);border-top:1px solid rgba(8,145,178,.55);display:flex;align-items:stretch;z-index:300;padding-bottom:env(safe-area-inset-bottom);box-shadow:0 -2px 20px rgba(8,18,32,.3)}
 .bnav-item{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;text-decoration:none;color:rgba(255,255,255,.4);font-size:9px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;-webkit-tap-highlight-color:transparent;cursor:pointer;border:none;background:none;font-family:inherit;padding:0}
 .bnav-item.on{color:#38BDF8}.bnav-item .ni{font-size:18px;line-height:1}.bnav-item .nl{font-size:7px}
@@ -290,7 +290,6 @@ hr{border:none;border-top:1px solid var(--brd);margin:12px 0}
                autocomplete="off" spellcheck="false">
       </div>
 
-```
   <div class="card card-blue">
     <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
       <div class="card-title" style="margin-bottom:0">Üretim Parametreleri</div>
@@ -415,7 +414,6 @@ hr{border:none;border-top:1px solid var(--brd);margin:12px 0}
   </div>
   <button class="kaydet-btn" onclick="hesabiKaydet()">💾 Bu Hesabı Geçmişe Kaydet</button>
 </div>
-```
 
   </div>
 </div>
@@ -557,8 +555,8 @@ function hesapla(){
   st('o-dgr',f(diger));st('o-fab',Math.round(fabAylik).toLocaleString('tr-TR'));
   st('o-kar-lbl','%'+Math.round(kar*100)+' kar ile');
   const hmd2=gv('v-hmd'),kdv2=gv('v-kdv');
-  if(hmd2>0){const kdvT=hmd2*(kdv2/100);st('o-kdv-dahil',(hmd2+kdvT).toFixed(3));st('o-kdv-tutar','+ $'+kdvT.toFixed(3)+' KDV (%'+Math.round(kdv2)+')');}
-  if(net>0){setSeg('seg-hmd',hammadde/net*100);setSeg('seg-isc',iscilik/net*100);setSeg('seg-enj',enerji/net*100);setSeg('seg-dgr',diger/net*100);}
+  if(hmd2>0){const kdvT=hmd2*(kdv2/100);st('o-kdv-dahil',(hmd2+kdvT).toFixed(3));st('o-kdv-tutar','+ $'+kdvT.toFixed(3)+' KDV (%'+Math.round(kdv2)+')');
+  }if(net>0){setSeg('seg-hmd',hammadde/net*100);setSeg('seg-isc',iscilik/net*100);setSeg('seg-enj',enerji/net*100);setSeg('seg-dgr',diger/net*100);}
   const hedef=gv('v-hedef'),bobinGr=gv('v-bobin-gr');
   const sc=document.getElementById('sure-card');
   if(hedef>0&&hiz>0&&denye>0&&ig>0){
@@ -659,10 +657,11 @@ function onDrop(e){e.preventDefault();document.getElementById('upload-zone').cla
 function onFilePick(e){const file=e.target.files[0];if(file)handleFile(file);}
 async function handleFile(file){if(uploadMode==='excel')await parseExcel(file);else await parsePdf(file);}
 async function parseExcel(file){toast('Excel okunuyor...','ok');try{const buf=await file.arrayBuffer();const wb=XLSX.read(buf,{type:'array'});const ws=wb.Sheets[wb.SheetNames[0]];const rows=XLSX.utils.sheet_to_json(ws,{header:1,defval:''});const HEADERS=new Set(['cins','kod','iplik','tip','ad','name','price','fiyat']);const records=[];for(const row of rows){if(!row||row.length<2)continue;if(HEADERS.has(String(row[0]).toLowerCase().trim()))continue;const cins=String(row[0]).trim().toUpperCase();const fiyat=parseFloat(String(row[1]).replace(',','.'));if(cins&&!isNaN(fiyat)&&fiyat>0)records.push({cins,fiyat});}if(!records.length){toast('Uygun veri bulunamadı','err');return;}await bulkInsert(records);}catch(e){toast('Excel hatası: '+e.message,'err');}}
-async function parsePdf(file){toast('PDF işleniyor...','ok');if(!window.pdfjsLib){toast('PDF.js yüklenemedi','err');return;}try{pdfjsLib.GlobalWorkerOptions.workerSrc='https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.16.105/pdf.worker.min.js';const buf=await file.arrayBuffer();const pdf=await pdfjsLib.getDocument({data:buf}).promise;let text='';for(let p=1;p<=pdf.numPages;p++){const pg=await pdf.getPage(p);const c=await pg.getTextContent();text+=c.items.map(i=>i.str).join(' ')+'\n';}const records=[];text.split(/[\n\r]+/).forEach(line=>{const m=line.match(/([A-ZÇĞİÖŞÜa-zçğışöü\/\d\s\-\.]{3,60}?)\s+\$?([\d]+[.,][\d]{2,4})\b/);if(m){const cins=m[1].trim().toUpperCase();const fiyat=parseFloat(m[2].replace(',','.'));if(cins.length>2&&!isNaN(fiyat)&&fiyat>0&&fiyat<10000)records.push({cins,fiyat});}});if(!records.length){toast("PDF'ten veri çıkarılamadı",'err');return;}await bulkInsert(records);}catch(e){toast('PDF hatası: '+e.message,'err');}}
+async function parsePdf(file){toast('PDF işleniyor...','ok');if(!window.pdfjsLib){toast('PDF.js yüklenemedi','err');return;}try{pdfjsLib.GlobalWorkerOptions.workerSrc='https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.16.105/pdf.worker.min.js';const buf=await file.arrayBuffer();const pdf=await pdfjsLib.getDocument({data:buf}).promise;let text='';for(let p=1;p<=pdf.numPages;p++){const pg=await pdf.getPage(p);const c=await pg.getTextContent();text+=c.items.map(i=>i.str).join(' ')+'
+';}const records=[];text.split(/[\n\r]+/).forEach(line=>{const m=line.match(/([A-ZÇĞİÖŞÜa-zçğışöü\/\d\s\-\.]{3,60}?)\s+\$?([\d]+[.,][\d]{2,4})\b/);if(m){const cins=m[1].trim().toUpperCase();const fiyat=parseFloat(m[2].replace(',','.'));if(cins.length>2&&!isNaN(fiyat)&&fiyat>0&&fiyat<10000)records.push({cins,fiyat});}});if(!records.length){toast("PDF'ten veri çıkarılamadı",'err');return;}await bulkInsert(records);}catch(e){toast('PDF hatası: '+e.message,'err');}}
 async function bulkInsert(records){if(!sb){toast('Supabase bağlı değil','err');return;}try{const {error}=await sb.from('iplik_fiyatlari').insert(records);if(error)throw error;closeUpload();await refreshIplikler();toast(`✅ ${records.length} kayıt eklendi`);}catch(e){toast('Yükleme hatası: '+e.message,'err');}}
 
-/* ── DROPDOWN — fixed konumlandırma ── */
+/* DROPDOWN */
 const searchInp=document.getElementById('search-inp');
 const ddPortal=document.getElementById('dd-portal');
 const ddScroll=document.getElementById('dd-scroll');
@@ -671,11 +670,9 @@ function closeDd(){ddPortal.classList.remove('open');ddScroll.innerHTML='';}
 
 function positionDd(){
   const r=searchInp.getBoundingClientRect();
-  ddPortal.style.top=(r.bottom+window.scrollY+4)+'px';
+  ddPortal.style.top=(r.bottom+4)+'px';
   ddPortal.style.left=r.left+'px';
   ddPortal.style.width=r.width+'px';
-  // fixed pozisyon için scroll'u dikkate alma
-  ddPortal.style.top=(r.bottom+4)+'px';
 }
 
 searchInp.addEventListener('input',function(){
