@@ -207,6 +207,31 @@ export default function App() {
         .yp-spin { animation: spin .9s linear infinite; }
         @keyframes spin { to { transform:rotate(360deg); } }
         .mono { font-family: 'JetBrains Mono', monospace; }
+
+        /* Sidebar — mobil: fixed, gizli başlar; masaüstü: her zaman görünür */
+        .yp-sidebar {
+          position: fixed;
+          top: 0; left: 0; bottom: 0;
+          transform: translateX(-100%);
+          transition: transform .28s cubic-bezier(.32,.72,0,1);
+          z-index: 30;
+        }
+        .yp-sidebar.open { transform: translateX(0); }
+
+        @media (min-width: 1024px) {
+          .yp-sidebar {
+            position: relative !important;
+            transform: translateX(0) !important;
+            transition: none !important;
+            flex-shrink: 0;
+          }
+          .yp-menu-btn { display: none !important; }
+          .yp-sidebar-close { display: none !important; }
+          .yp-search { display: flex !important; }
+        }
+        @media (max-width: 1023px) {
+          .yp-search { display: none !important; }
+        }
       `}</style>
 
       <div style={{ display:'flex', height:'100vh', background: T.pageBg, color: T.textPrimary, fontFamily:'Inter,sans-serif' }}>
@@ -220,19 +245,16 @@ export default function App() {
         )}
 
         {/* ════════════════ SIDEBAR ════════════════ */}
-        <aside style={{
-          position: window.innerWidth >= 1024 ? 'relative' : 'fixed',
-          insetBlock: 0, left: 0,
-          zIndex: 30,
-          width: 252,
-          background: T.sidebarBg,
-          borderRight: `1px solid ${T.sidebarBorder}`,
-          boxShadow: '4px 0 24px rgba(0,0,0,0.4)',
-          display: 'flex', flexDirection: 'column',
-          transform: isSidebarOpen || (typeof window !== 'undefined' && window.innerWidth >= 1024) ? 'translateX(0)' : 'translateX(-100%)',
-          transition: 'transform .28s cubic-bezier(.32,.72,0,1)',
-          flexShrink: 0,
-        }} className="yp-sidebar">
+        <aside
+          style={{
+            width: 252,
+            background: T.sidebarBg,
+            borderRight: `1px solid ${T.sidebarBorder}`,
+            boxShadow: '4px 0 24px rgba(0,0,0,0.4)',
+            display: 'flex', flexDirection: 'column',
+          }}
+          className={`yp-sidebar${isSidebarOpen ? ' open' : ''}`}
+        >
 
           {/* Logo alanı */}
           <div style={{
@@ -258,7 +280,8 @@ export default function App() {
             </div>
             <button
               onClick={() => setIsSidebarOpen(false)}
-              style={{ background:'none', border:'none', color:'rgba(255,255,255,0.45)', cursor:'pointer', padding:6, borderRadius:8, display: window.innerWidth >= 1024 ? 'none' : 'flex' }}
+              className="yp-sidebar-close"
+              style={{ background:'none', border:'none', color:'rgba(255,255,255,0.45)', cursor:'pointer', padding:6, borderRadius:8, display:'flex' }}
             >
               <X size={18} />
             </button>
@@ -336,12 +359,12 @@ export default function App() {
             <div style={{ display:'flex', alignItems:'center', gap:14 }}>
               <button
                 onClick={() => setIsSidebarOpen(true)}
+                className="yp-menu-btn"
                 style={{
                   background:'none', border: `1px solid ${T.border}`,
                   borderRadius:10, padding:8, cursor:'pointer',
                   color: T.textSecondary,
-                  display: window.innerWidth >= 1024 ? 'none' : 'flex',
-                  alignItems:'center',
+                  display:'flex', alignItems:'center',
                 }}
               >
                 <Menu size={20} />
@@ -358,7 +381,7 @@ export default function App() {
 
             <div style={{ display:'flex', alignItems:'center', gap:10 }}>
               {/* Arama kutusu */}
-              <div style={{ position:'relative' }}>
+              <div className="yp-search" style={{ position:'relative' }}>
                 <span style={{ position:'absolute', left:12, top:'50%', transform:'translateY(-50%)', color: T.textSecondary, display:'flex' }}>
                   <Search size={15} />
                 </span>
