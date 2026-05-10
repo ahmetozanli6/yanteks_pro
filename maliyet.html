@@ -3,9 +3,15 @@
 <html lang="tr">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
-<title>İplik Maliyet ERP</title>
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black">
+<meta name="apple-mobile-web-app-title" content="Yanteks Pro">
+<meta name="theme-color" content="#1E2D3D">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
+<title>Yanteks Pro | Maliyet</title>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="offline.js"></script>
+<script src="pwa.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.16.105/pdf.min.js"></script>
 <style>
@@ -222,7 +228,30 @@ hr{border:none;border-top:1px solid var(--brd);margin:12px 0}
 .net-val{font-size:28px}
 .sales-val{font-size:20px}
 }
+
+/* ── YANTEKS PRO NAV ── */
+.bnav{position:fixed;bottom:0;left:0;right:0;height:calc(56px + env(safe-area-inset-bottom));background:linear-gradient(to top,#0F1A25,#1E2D3D);border-top:1px solid rgba(8,145,178,.55);display:flex;align-items:stretch;z-index:300;padding-bottom:env(safe-area-inset-bottom);box-shadow:0 -2px 20px rgba(8,18,32,.3)}
+.bnav-item{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;text-decoration:none;color:rgba(255,255,255,.4);font-size:9px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;-webkit-tap-highlight-color:transparent;cursor:pointer;border:none;background:none;font-family:inherit;padding:0}
+.bnav-item.on{color:#38BDF8}.bnav-item .ni{font-size:18px;line-height:1}.bnav-item .nl{font-size:7px}
+.bnav-mid{color:#fff !important;background:linear-gradient(135deg,#0672A0,#0891B2);border-radius:10px;margin:6px 1px;padding:2px 8px;flex:1.2;font-weight:800;box-shadow:0 2px 8px rgba(0,0,0,.25)}
+.bnav-spacer{height:calc(58px + env(safe-area-inset-bottom));flex-shrink:0;display:block}
+.drw-ov{position:fixed;inset:0;z-index:500;background:rgba(0,0,0,0);pointer-events:none;transition:background .25s}
+.drw-ov.on{background:rgba(0,0,0,.55);pointer-events:all}
+.drw{position:fixed;top:0;left:0;bottom:0;width:230px;z-index:501;background:linear-gradient(160deg,#0A1520 0%,#1A2B3C 100%);transform:translateX(-100%);transition:transform .28s cubic-bezier(.32,.72,0,1);display:flex;flex-direction:column;box-shadow:6px 0 30px rgba(0,0,0,.4)}
+.drw.on{transform:translateX(0)}
+.drw-head{padding:calc(env(safe-area-inset-top)+20px) 20px 18px;border-bottom:1px solid rgba(255,255,255,.08)}
+.drw-logo{font-size:18px;font-weight:800;color:#fff;letter-spacing:.05em}.drw-logo span{color:#38BDF8}
+.drw-sub{font-size:9px;color:rgba(255,255,255,.35);font-weight:700;letter-spacing:.15em;text-transform:uppercase;margin-top:3px}
+.drw-nav{flex:1;overflow-y:auto;padding:10px 0}
+.drw-item{display:flex;align-items:center;gap:14px;padding:15px 20px;color:rgba(255,255,255,.6);text-decoration:none;font-size:13px;font-weight:600;transition:.13s;border-left:3px solid transparent;-webkit-tap-highlight-color:transparent}
+.drw-item:active{background:rgba(255,255,255,.07)}
+.drw-item.on{color:#38BDF8;border-left-color:#38BDF8;background:rgba(56,189,248,.07)}
+.drw-item .di{font-size:20px;width:26px;text-align:center;flex-shrink:0}
+.drw-item .dt{line-height:1.2}
+.drw-sep{height:1px;background:rgba(255,255,255,.06);margin:8px 16px}
+.drw-foot{padding:14px 20px calc(env(safe-area-inset-bottom)+14px);border-top:1px solid rgba(255,255,255,.06);font-size:10px;color:rgba(255,255,255,.2);font-weight:600}
 </style>
+<link rel="stylesheet" href="theme.css">
 
 </head>
 <body>
@@ -695,6 +724,45 @@ function fmtDate(iso){if(!iso)return '—';return new Date(iso).toLocaleString('
   syncHiz();
   updateHistBadge();
 })();
+</script>
+
+<nav class="bnav">
+  <a href="index.html" class="bnav-item" onclick="event.preventDefault();window.location.href='index.html';return false;"><span class="ni">📦</span><span class="nl">Numune</span></a>
+  <a href="musteriler.html" class="bnav-item" onclick="event.preventDefault();window.location.href='musteriler.html';return false;"><span class="ni">👥</span><span class="nl">Müşteri</span></a>
+  <a href="fiyatlar.html" class="bnav-item" onclick="event.preventDefault();window.location.href='fiyatlar.html';return false;"><span class="ni">💰</span><span class="nl">Fiyatlar</span></a>
+  <a href="fiyatteklifleri.html" class="bnav-item" onclick="event.preventDefault();window.location.href='fiyatteklifleri.html';return false;"><span class="ni">📤</span><span class="nl">Teklifler</span></a>
+  <button class="bnav-item" onclick="openDrawer()"><span class="ni">☰</span><span class="nl">Menü</span></button>
+</nav>
+<div class="bnav-spacer"></div>
+
+<link rel="manifest" href="manifest.json">
+<script>if('serviceWorker' in navigator){window.addEventListener('load',()=>{navigator.serviceWorker.register('./sw.js').catch(()=>{});});}</script>
+
+<div class="drw-ov" id="drw-ov" onclick="closeDrawer()"></div>
+<div class="drw" id="drw">
+  <div class="drw-head">
+    <div class="drw-logo">YANTEKS <span>PRO</span></div>
+    <div class="drw-sub">Yönetim Sistemi</div>
+  </div>
+  <nav class="drw-nav">
+    <a href="index.html" class="drw-item"><span class="di">📦</span><span class="dt">Numune</span></a>
+    <a href="musteriler.html" class="drw-item"><span class="di">👥</span><span class="dt">Müşteri</span></a>
+    <a href="fiyatlar.html" class="drw-item"><span class="di">💰</span><span class="dt">Fiyatlar</span></a>
+    <a href="fiyatteklifleri.html" class="drw-item"><span class="di">📤</span><span class="dt">Teklifler</span></a>
+    <a href="notlarim.html" class="drw-item"><span class="di">📝</span><span class="dt">Notlarım</span></a>
+    <a href="donusturucu.html" class="drw-item"><span class="di">⇄</span><span class="dt">Dönüştür</span></a>
+    <a href="maliyet.html" class="drw-item on"><span class="di">🧮</span><span class="dt">Maliyet</span></a>
+    <div class="drw-sep"></div>
+  </nav>
+  <div class="drw-foot">Yanteks Pro v1.0</div>
+</div>
+<script>
+function openDrawer(){document.getElementById('drw-ov').classList.add('on');document.getElementById('drw').classList.add('on');history.pushState({drawer:true},'')}
+function closeDrawer(){document.getElementById('drw-ov').classList.remove('on');document.getElementById('drw').classList.remove('on')}
+window.addEventListener('popstate',function(){if(document.getElementById('drw').classList.contains('on'))closeDrawer()});
+document.getElementById('drw').querySelectorAll('.drw-item').forEach(function(a){
+  a.addEventListener('click',function(e){e.preventDefault();closeDrawer();var href=a.getAttribute('href');setTimeout(function(){window.location.href=href},180)});
+});
 </script>
 
 </body>
