@@ -190,7 +190,7 @@ function KpiCard({ title, value, Icon, grad, glow, badge }) {
 }
 
 // ── ÖZET PANELİ ──────────────────────────────────────────────────────────
-function DashboardView({ customers, samples, prices, notes, onNav }) {
+function DashboardView({ customers, samples, prices, notes, offers, onNav }) {
   return (
     <div style={{ display:'flex', flexDirection:'column', gap:24 }}>
 
@@ -198,8 +198,8 @@ function DashboardView({ customers, samples, prices, notes, onNav }) {
       <div style={{ display:'grid', gridTemplateColumns:'repeat(auto-fill,minmax(200px,1fr))', gap:16 }}>
         <KpiCard title="Toplam Müşteri"  value={customers.length || 0} Icon={IcoUsers}   grad="linear-gradient(135deg,#0672A0,#0891B2)" glow="rgba(8,145,178,.3)" />
         <KpiCard title="Numune Kaydı"    value={samples.length   || 0} Icon={IcoPkg}     grad="linear-gradient(135deg,#C2410C,#EA580C)" glow="rgba(234,88,12,.3)" />
-        <KpiCard title="Fiyat Kalemi"    value={prices.length    || 0} Icon={IcoDollar}  grad="linear-gradient(135deg,#15803D,#16A34A)" glow="rgba(22,163,74,.3)" />
-        <KpiCard title="Bağlantı"        value="Aktif"                 Icon={IcoCheck}   grad="linear-gradient(135deg,#162332,#1E2D3D)" glow="rgba(30,45,61,.35)" badge="Supabase Bağlı" />
+        <KpiCard title="Fiyat Kalemi"    value={prices.filter(p=>p.denye||p.bolum_adi).length || 0} Icon={IcoDollar}  grad="linear-gradient(135deg,#15803D,#16A34A)" glow="rgba(22,163,74,.3)" />
+        <KpiCard title="Aktif Teklif"    value={(offers||[]).filter(t=>t.durum==='Teklif Verildi').length || 0} Icon={IcoSend} grad="linear-gradient(135deg,#7C3AED,#8B5CF6)" glow="rgba(124,58,237,.3)" />
       </div>
 
       {/* Alt iki panel */}
@@ -234,14 +234,10 @@ function DashboardView({ customers, samples, prices, notes, onNav }) {
                   </div>
                   <div>
                     <p style={{ fontWeight:700, fontSize:13, color:C.txt }}>
-                      {getVal(s,['musteri','müşteri','firma','firmaadi','firmaadı','customer','isim','alici','alıcı','kime'])}
+                      {s.firma || getVal(s,['musteri','müşteri','firmaadi','customer','isim'])}
                     </p>
                     <p style={{ fontSize:11, color:C.txt2, marginTop:2 }}>
-                      {debugVal(s,['cinsi','cins','urun','ürün','type','iplik','kalite','detay'])}
-                      <span style={{ margin:'0 5px', color:C.border2 }}>•</span>
-                      <span style={{ color:C.teal, fontWeight:600 }}>
-                        {debugVal(s,['miktar','quantity','kg','adet','agirlik','ağırlık','gramaj','kilo'])}
-                      </span>
+                      {s.numune || getVal(s,['cinsi','urun','iplik','kalite','type'],'—')}
                     </p>
                   </div>
                 </div>
@@ -279,17 +275,18 @@ function DashboardView({ customers, samples, prices, notes, onNav }) {
                   <div style={{ position:'absolute', left:-1, top:4, width:14, height:14,
                     borderRadius:'50%', background:C.surface,
                     border:`3px solid ${C.teal}`, boxShadow:`0 0 0 2px ${C.tealG}` }} />
+                  {n.musteri && <div style={{ fontSize:10,fontWeight:700,color:C.teal,marginBottom:3 }}>🏢 {n.musteri}</div>}
                   <h4 style={{ fontSize:13, fontWeight:700, color:C.txt }}>
-                    {getVal(n,['baslik','başlık','title','konu'])}
+                    {(() => { const { body } = typeof parseTags === 'function' ? parseTags(n.icerik||'') : { body:n.icerik||'' }; return body.split('\n').find(l=>l.trim())||'Not'; })()}
                   </h4>
                   <p style={{ fontSize:12, color:C.txt2, marginTop:4, lineHeight:1.5,
                     overflow:'hidden', display:'-webkit-box',
                     WebkitLineClamp:2, WebkitBoxOrient:'vertical' }}>
-                    {getVal(n,['icerik','içerik','content','not','detay'])}
+                    {n.icerik||''}
                   </p>
                   <span style={{ fontSize:10, color:C.txt2, display:'block', marginTop:6,
                     fontWeight:600, textTransform:'uppercase', letterSpacing:'.06em', fontFamily:'monospace' }}>
-                    {fmtDate(getVal(n,['tarih','date','created_at']))}
+                    {fmtDate(n.updated_at||n.created_at)}
                   </span>
                 </div>
               ))
@@ -3179,7 +3176,7 @@ function App() {
               </div>
             ) : (
               <>
-                {tab === 'dashboard'  && <DashboardView customers={customers} samples={samples} prices={prices} notes={notes} onNav={goTo} />}
+                {tab === 'dashboard'  && <DashboardView customers={customers} samples={samples} prices={prices} notes={notes} offers={offers} onNav={goTo} />}
                 {tab === 'customers'  && <CustomersView data={customers} onRefresh={loadData} />}
                 {tab === 'samples'    && <SamplesView   data={samples} tbl={samplesTbl} onRefresh={loadData} />}
                 {tab === 'prices'     && <PricesView    data={prices}    onRefresh={loadData} />}
