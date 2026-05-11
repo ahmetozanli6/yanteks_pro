@@ -674,9 +674,9 @@ function SamplesView({ data, tbl, onRefresh }) {
 
   // DB'deki gerçek değerler
   const STATUSES    = ['Beklemede','Takip Et','Gönderildi','Onaylandı','Reddedildi','Arşiv'];
-  const LABELS = { Beklemede:'⏳ Bekle', 'Takip Et':'👀 Takip', Gönderildi:'🚀 Gitti', Onaylandı:'✅ Onay', Reddedildi:'❌ Red', Arşiv:'🗂️ Arşiv' };
+  const LABELS = { Beklemede:'Beklemede', 'Takip Et':'Takip Et', Gönderildi:'Gönderildi', Onaylandı:'Onaylandı', Reddedildi:'Reddedildi', Arşiv:'Arşiv' };
   const SHORT  = { Beklemede:'Bekle', 'Takip Et':'Takip', Gönderildi:'Gitti', Onaylandı:'Onay', Reddedildi:'Red', Arşiv:'Arşiv' };
-  const EMO    = { Beklemede:'⏳', 'Takip Et':'👀', Gönderildi:'🚀', Onaylandı:'✅', Reddedildi:'❌', Arşiv:'🗂️' };
+  const EMO    = { Beklemede:'', 'Takip Et':'', Gönderildi:'', Onaylandı:'', Reddedildi:'', Arşiv:'' };
   // Chip renkleri (filtre çubukları için — alpha arka plan)
   const CLRS = {
     Beklemede:  ['rgba(217,119,6,.12)','#B45309'],  'Takip Et': ['rgba(8,145,178,.12)','#0891B2'],
@@ -816,7 +816,7 @@ function SamplesView({ data, tbl, onRefresh }) {
               <label style={{ fontSize:10, fontWeight:700, color:C.txt2, display:'block', marginBottom:5, textTransform:'uppercase', letterSpacing:'.08em' }}>Durum</label>
               <select value={form.durum} onChange={e=>setForm(f=>({...f,durum:e.target.value}))}
                 style={{ width:'100%', padding:'9px 12px', border:`1px solid ${C.border2}`, borderRadius:9, fontSize:13, fontFamily:'Inter,sans-serif', outline:'none', color:C.txt, background:'#fff', cursor:'pointer' }}>
-                {STATUSES.map(s=><option key={s} value={s}>{EMO[s]} {LABELS[s]||s}</option>)}
+                {STATUSES.map(s=><option key={s} value={s}>{LABELS[s]||s}</option>)}
               </select>
             </div>
             <div style={{ display:'flex', gap:10 }}>
