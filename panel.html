@@ -190,7 +190,7 @@ function KpiCard({ title, value, Icon, grad, glow, badge }) {
 }
 
 // ── ÖZET PANELİ ──────────────────────────────────────────────────────────
-function DashboardView({ customers, samples, prices, notes, onNav }) {
+function DashboardView({ customers, samples, prices, notes, offers, onNav }) {
   return (
     <div style={{ display:'flex', flexDirection:'column', gap:24 }}>
 
@@ -198,8 +198,8 @@ function DashboardView({ customers, samples, prices, notes, onNav }) {
       <div style={{ display:'grid', gridTemplateColumns:'repeat(auto-fill,minmax(200px,1fr))', gap:16 }}>
         <KpiCard title="Toplam Müşteri"  value={customers.length || 0} Icon={IcoUsers}   grad="linear-gradient(135deg,#0672A0,#0891B2)" glow="rgba(8,145,178,.3)" />
         <KpiCard title="Numune Kaydı"    value={samples.length   || 0} Icon={IcoPkg}     grad="linear-gradient(135deg,#C2410C,#EA580C)" glow="rgba(234,88,12,.3)" />
-        <KpiCard title="Fiyat Kalemi"    value={prices.length    || 0} Icon={IcoDollar}  grad="linear-gradient(135deg,#15803D,#16A34A)" glow="rgba(22,163,74,.3)" />
-        <KpiCard title="Bağlantı"        value="Aktif"                 Icon={IcoCheck}   grad="linear-gradient(135deg,#162332,#1E2D3D)" glow="rgba(30,45,61,.35)" badge="Supabase Bağlı" />
+        <KpiCard title="Fiyat Kalemi"    value={prices.filter(p=>p.denye||p.bolum_adi).length || 0} Icon={IcoDollar}  grad="linear-gradient(135deg,#15803D,#16A34A)" glow="rgba(22,163,74,.3)" />
+        <KpiCard title="Aktif Teklif"    value={(offers||[]).filter(t=>t.durum==='Teklif Verildi').length || 0} Icon={IcoSend} grad="linear-gradient(135deg,#7C3AED,#8B5CF6)" glow="rgba(124,58,237,.3)" />
       </div>
 
       {/* Alt iki panel */}
@@ -220,7 +220,7 @@ function DashboardView({ customers, samples, prices, notes, onNav }) {
           </div>
           {samples.length === 0
             ? <div style={{ padding:24, textAlign:'center', color:C.txt2, fontSize:13 }}>Henüz numune kaydı yok.</div>
-            : samples.slice(0,5).map((s, i) => (
+            : [...samples].sort((a,b) => new Date(b.created_at||b.tarih||0) - new Date(a.created_at||a.tarih||0)).slice(0,5).map((s, i) => (
               <div key={s.id || i} style={{ padding:'13px 24px',
                 borderBottom: i < 4 ? `1px solid ${C.border}` : 'none',
                 display:'flex', justifyContent:'space-between', alignItems:'center',
@@ -234,14 +234,10 @@ function DashboardView({ customers, samples, prices, notes, onNav }) {
                   </div>
                   <div>
                     <p style={{ fontWeight:700, fontSize:13, color:C.txt }}>
-                      {getVal(s,['musteri','müşteri','firma','firmaadi','firmaadı','customer','isim','alici','alıcı','kime'])}
+                      {s.firma || getVal(s,['musteri','müşteri','firmaadi','customer','isim'])}
                     </p>
                     <p style={{ fontSize:11, color:C.txt2, marginTop:2 }}>
-                      {debugVal(s,['cinsi','cins','urun','ürün','type','iplik','kalite','detay'])}
-                      <span style={{ margin:'0 5px', color:C.border2 }}>•</span>
-                      <span style={{ color:C.teal, fontWeight:600 }}>
-                        {debugVal(s,['miktar','quantity','kg','adet','agirlik','ağırlık','gramaj','kilo'])}
-                      </span>
+                      {s.numune || getVal(s,['cinsi','urun','iplik','kalite','type'],'—')}
                     </p>
                   </div>
                 </div>
@@ -279,17 +275,18 @@ function DashboardView({ customers, samples, prices, notes, onNav }) {
                   <div style={{ position:'absolute', left:-1, top:4, width:14, height:14,
                     borderRadius:'50%', background:C.surface,
                     border:`3px solid ${C.teal}`, boxShadow:`0 0 0 2px ${C.tealG}` }} />
+                  {n.musteri && <div style={{ fontSize:10,fontWeight:700,color:C.teal,marginBottom:3 }}>🏢 {n.musteri}</div>}
                   <h4 style={{ fontSize:13, fontWeight:700, color:C.txt }}>
-                    {getVal(n,['baslik','başlık','title','konu'])}
+                    {(() => { const { body } = typeof parseTags === 'function' ? parseTags(n.icerik||'') : { body:n.icerik||'' }; return body.split('\n').find(l=>l.trim())||'Not'; })()}
                   </h4>
                   <p style={{ fontSize:12, color:C.txt2, marginTop:4, lineHeight:1.5,
                     overflow:'hidden', display:'-webkit-box',
                     WebkitLineClamp:2, WebkitBoxOrient:'vertical' }}>
-                    {getVal(n,['icerik','içerik','content','not','detay'])}
+                    {n.icerik||''}
                   </p>
                   <span style={{ fontSize:10, color:C.txt2, display:'block', marginTop:6,
                     fontWeight:600, textTransform:'uppercase', letterSpacing:'.06em', fontFamily:'monospace' }}>
-                    {fmtDate(getVal(n,['tarih','date','created_at']))}
+                    {fmtDate(n.updated_at||n.created_at)}
                   </span>
                 </div>
               ))
@@ -1243,79 +1240,6 @@ function PricesView({ data, onRefresh }) {
                   background:'linear-gradient(135deg,#15803D,#16A34A)',color:'#fff',fontSize:13,fontWeight:700,
                   opacity:bulkBusy||!bulkVal||parseFloat(bulkVal)<=0?0.5:1 }}>
                 {bulkBusy ? 'Güncelleniyor…' : '✅ Güncelle'}
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* Import Modal */}
-      {impModal && (
-        <div onClick={e=>e.target===e.currentTarget&&setImpModal(false)}
-          style={{ position:'fixed',inset:0,background:'rgba(0,0,0,.55)',zIndex:50,
-            display:'flex',alignItems:'center',justifyContent:'center',padding:16 }}>
-          <div style={{ background:'#fff',borderRadius:20,padding:24,width:'100%',maxWidth:420,
-            boxShadow:'0 20px 60px rgba(0,0,0,.3)', maxHeight:'90vh', overflowY:'auto' }}>
-            <div style={{ display:'flex',justifyContent:'space-between',alignItems:'center',marginBottom:16 }}>
-              <h3 style={{ fontSize:17,fontWeight:800,color:C.txt }}>📥 Excel'den Aktar</h3>
-              <button onClick={()=>setImpModal(false)} style={{ background:'none',border:'none',cursor:'pointer',color:C.txt2,display:'flex' }}><IcoX size={20}/></button>
-            </div>
-            <p style={{ fontSize:12,color:C.txt2,marginBottom:14 }}>
-              Firma seç, ardından Excel yükle.<br/>
-              <span style={{ fontFamily:'monospace',fontSize:11 }}>A=Ürün Adı · B=Fiyat ($) · 3. satırdan başlar</span>
-            </p>
-            {/* Firma */}
-            <div style={{ marginBottom:12 }}>
-              <label style={{ fontSize:10,fontWeight:700,color:C.txt2,display:'block',marginBottom:5,textTransform:'uppercase',letterSpacing:'.08em' }}>Firma *</label>
-              <FirmaInput value={impFirma} onChange={setImpFirma}
-                firmalar={firmalar}
-                style={{ width:'100%',padding:'9px 12px',border:`1px solid ${C.border2}`,borderRadius:9,fontSize:13,fontFamily:'Inter,sans-serif',outline:'none',color:C.txt }} />
-            </div>
-            {/* Tarih + Durum */}
-            <div style={{ display:'grid',gridTemplateColumns:'1fr 1fr',gap:10,marginBottom:12 }}>
-              <div>
-                <label style={{ fontSize:10,fontWeight:700,color:C.txt2,display:'block',marginBottom:5,textTransform:'uppercase',letterSpacing:'.08em' }}>Teklif Tarihi</label>
-                <input type="date" value={impDate} onChange={e=>setImpDate(e.target.value)}
-                  style={{ width:'100%',padding:'9px 12px',border:`1px solid ${C.border2}`,borderRadius:9,fontSize:13,outline:'none',color:C.txt }} />
-              </div>
-              <div>
-                <label style={{ fontSize:10,fontWeight:700,color:C.txt2,display:'block',marginBottom:5,textTransform:'uppercase',letterSpacing:'.08em' }}>Durum</label>
-                <select value={impDurum} onChange={e=>setImpDurum(e.target.value)}
-                  style={{ width:'100%',padding:'9px 12px',border:`1px solid ${C.border2}`,borderRadius:9,fontSize:13,outline:'none',color:C.txt,background:'#fff',cursor:'pointer' }}>
-                  {DURUMLAR.map(d=><option key={d}>{d}</option>)}
-                </select>
-              </div>
-            </div>
-            {/* Excel dosyası */}
-            <div style={{ marginBottom:12 }}>
-              <label style={{ fontSize:10,fontWeight:700,color:C.txt2,display:'block',marginBottom:5,textTransform:'uppercase',letterSpacing:'.08em' }}>Excel Dosyası *</label>
-              <input type="file" accept=".xlsx,.xls" onChange={e=>previewImport(e.target.files[0])}
-                style={{ width:'100%',padding:'9px 12px',border:`1px solid ${C.border2}`,borderRadius:9,fontSize:12,color:C.txt,background:'#F8FAFC' }} />
-            </div>
-            {/* Önizleme */}
-            {impRows.length > 0 && (
-              <div style={{ marginBottom:14 }}>
-                <div style={{ fontSize:10,fontWeight:700,color:C.txt2,textTransform:'uppercase',letterSpacing:'.08em',marginBottom:6 }}>
-                  Önizleme — {impRows.length} satır
-                </div>
-                <div style={{ maxHeight:160,overflowY:'auto',border:`1px solid ${C.border}`,borderRadius:10,background:C.page }}>
-                  {impRows.slice(0,20).map((r,i)=>(
-                    <div key={i} style={{ display:'flex',justifyContent:'space-between',padding:'7px 12px',borderBottom:`1px solid ${C.border}`,fontSize:12 }}>
-                      <span style={{ color:C.txt,fontWeight:600 }}>{r.urun}</span>
-                      <span style={{ color:C.green,fontFamily:'monospace',fontWeight:700 }}>{r.fiyat ? '$'+r.fiyat : '—'}</span>
-                    </div>
-                  ))}
-                  {impRows.length > 20 && <div style={{ padding:'6px 12px',fontSize:11,color:C.txt2 }}>+{impRows.length-20} daha…</div>}
-                </div>
-              </div>
-            )}
-            <div style={{ display:'flex',gap:10 }}>
-              <button onClick={()=>setImpModal(false)} style={{ flex:1,padding:10,border:`1px solid ${C.border2}`,borderRadius:10,cursor:'pointer',background:'none',fontSize:13,fontWeight:600,color:C.txt2 }}>İptal</button>
-              <button onClick={doImport} disabled={impSaving||!impFirma.trim()||!impRows.length}
-                style={{ flex:2,padding:10,border:'none',borderRadius:10,cursor:'pointer',
-                  background:'linear-gradient(135deg,#0672A0,#0891B2)',color:'#fff',fontSize:13,fontWeight:700,
-                  opacity:impSaving||!impFirma.trim()||!impRows.length?0.5:1 }}>
-                {impSaving ? 'Aktarılıyor…' : `📥 ${impRows.length} Teklifi Aktar`}
               </button>
             </div>
           </div>
@@ -3179,7 +3103,7 @@ function App() {
               </div>
             ) : (
               <>
-                {tab === 'dashboard'  && <DashboardView customers={customers} samples={samples} prices={prices} notes={notes} onNav={goTo} />}
+                {tab === 'dashboard'  && <DashboardView customers={customers} samples={samples} prices={prices} notes={notes} offers={offers} onNav={goTo} />}
                 {tab === 'customers'  && <CustomersView data={customers} onRefresh={loadData} />}
                 {tab === 'samples'    && <SamplesView   data={samples} tbl={samplesTbl} onRefresh={loadData} />}
                 {tab === 'prices'     && <PricesView    data={prices}    onRefresh={loadData} />}
