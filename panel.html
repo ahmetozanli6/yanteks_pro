@@ -220,7 +220,7 @@ function DashboardView({ customers, samples, prices, notes, offers, onNav }) {
           </div>
           {samples.length === 0
             ? <div style={{ padding:24, textAlign:'center', color:C.txt2, fontSize:13 }}>Henüz numune kaydı yok.</div>
-            : samples.slice(0,5).map((s, i) => (
+            : [...samples].sort((a,b) => new Date(b.created_at||b.tarih||0) - new Date(a.created_at||a.tarih||0)).slice(0,5).map((s, i) => (
               <div key={s.id || i} style={{ padding:'13px 24px',
                 borderBottom: i < 4 ? `1px solid ${C.border}` : 'none',
                 display:'flex', justifyContent:'space-between', alignItems:'center',
