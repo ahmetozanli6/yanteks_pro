@@ -587,46 +587,58 @@ function SamplesView({ data, tbl, onRefresh }) {
   const [sort, setSort] = React.useState('new');
   const [busy, setBusy] = React.useState(null);
   const [showAdd, setShowAdd] = React.useState(false);
-  const [form, setForm] = React.useState({ musteri:'', cinsi:'', miktar:'', fiyat:'', not:'', durum:'Bekle' });
+  const [form, setForm] = React.useState({ musteri:'', cinsi:'', miktar:'', fiyat:'', not:'', durum:'Beklemede' });
   const [saving, setSaving] = React.useState(false);
 
-  const STATUSES = ['Bekle','Takip','Gitti','Onay','Red','Arşiv'];
-  const EMO = { Bekle:'⏳', Takip:'👀', Gitti:'🚀', Onay:'✅', Red:'❌', Arşiv:'🗂️' };
+  // DB'deki gerçek değerler
+  const STATUSES    = ['Beklemede','Takip Et','Gönderildi','Onaylandı','Reddedildi','Arşiv'];
+  const LABELS      = { Beklemede:'⏳ Bekle', 'Takip Et':'👀 Takip', Gönderildi:'🚀 Gitti', Onaylandı:'✅ Onay', Reddedildi:'❌ Red', Arşiv:'🗂️ Arşiv' };
+  const EMO         = { Beklemede:'⏳', 'Takip Et':'👀', Gönderildi:'🚀', Onaylandı:'✅', Reddedildi:'❌', Arşiv:'🗂️' };
   const CLRS = {
-    Bekle: ['rgba(217,119,6,.12)','#B45309'],  Takip: ['rgba(8,145,178,.12)','#0891B2'],
-    Gitti: ['rgba(29,78,216,.12)','#1D4ED8'],  Onay:  ['rgba(21,128,61,.12)','#15803D'],
-    Red:   ['rgba(153,27,27,.12)','#991B1B'],  Arşiv: ['rgba(71,85,105,.12)','#475569'],
+    Beklemede:  ['rgba(217,119,6,.12)','#B45309'],  'Takip Et': ['rgba(8,145,178,.12)','#0891B2'],
+    Gönderildi: ['rgba(29,78,216,.12)','#1D4ED8'],  Onaylandı:  ['rgba(21,128,61,.12)','#15803D'],
+    Reddedildi: ['rgba(153,27,27,.12)','#991B1B'],  Arşiv:      ['rgba(71,85,105,.12)','#475569'],
   };
+
+  const isArsiv = (s) => s.arsiv === true;
+  const getDur  = (s) => isArsiv(s) ? 'Arşiv' : (getVal(s,['durum','status'],'') || 'Beklemede');
 
   const filtered = data
     .filter(s => {
-      const dur = getVal(s,['durum','status'],'') || '';
-      if (sf !== 'all' && dur !== sf) return false;
+      if (sf === 'Arşiv') return isArsiv(s);
+      if (sf !== 'all') { if (isArsiv(s) || getDur(s) !== sf) return false; }
+      else { if (isArsiv(s)) return false; }
       if (q) {
         const Q = q.toLowerCase();
-        const f1 = String(getVal(s,['musteri','müşteri','firma','firmaadi','firmaadı'],'') || '').toLowerCase();
-        const f2 = String(getVal(s,['cinsi','cins','urun','ürün'],'') || '').toLowerCase();
-        const f3 = String(getVal(s,['not','aciklama','açıklama','note'],'') || '').toLowerCase();
-        const f4 = String(getVal(s,['kod','code','no'],'') || '').toLowerCase();
-        if (!f1.includes(Q) && !f2.includes(Q) && !f3.includes(Q) && !f4.includes(Q)) return false;
+        const f1 = String(getVal(s,['firma','musteri','müşteri','firmaadi','firmaadı'],'') || '').toLowerCase();
+        const f2 = String(getVal(s,['numune','cinsi','cins','urun','ürün'],'') || '').toLowerCase();
+        const f3 = String(getVal(s,['aciklama','not','açıklama','note'],'') || '').toLowerCase();
+        if (!f1.includes(Q) && !f2.includes(Q) && !f3.includes(Q)) return false;
       }
       return true;
     })
     .sort((a,b) => {
       if (sort==='new') return new Date(b.created_at||0)-new Date(a.created_at||0);
       if (sort==='old') return new Date(a.created_at||0)-new Date(b.created_at||0);
-      const fa=String(getVal(a,['musteri','firma'],'') || '');
-      const fb=String(getVal(b,['musteri','firma'],'') || '');
+      const fa=String(getVal(a,['firma','musteri'],'') || '');
+      const fb=String(getVal(b,['firma','musteri'],'') || '');
       return fa.localeCompare(fb,'tr');
     });
 
   const counts = {};
-  STATUSES.forEach(s => { counts[s] = data.filter(i => (getVal(i,['durum','status'],'') || '') === s).length; });
+  STATUSES.forEach(st => {
+    if (st === 'Arşiv') counts[st] = data.filter(i => isArsiv(i)).length;
+    else counts[st] = data.filter(i => !isArsiv(i) && getDur(i) === st).length;
+  });
 
   const setStatus = async (item, ns) => {
     if (!item.id || !tbl) return;
     setBusy(item.id);
-    await db.from(tbl).update({ durum: ns }).eq('id', item.id);
+    if (ns === 'Arşiv') {
+      await db.from(tbl).update({ arsiv: true }).eq('id', item.id);
+    } else {
+      await db.from(tbl).update({ durum: ns, arsiv: false }).eq('id', item.id);
+    }
     await onRefresh(); setBusy(null);
   };
 
@@ -642,9 +654,10 @@ function SamplesView({ data, tbl, onRefresh }) {
   const addSample = async () => {
     if (!tbl || !form.musteri.trim()) return;
     setSaving(true);
-    await db.from(tbl).insert({ musteri:form.musteri, cinsi:form.cinsi, miktar:form.miktar, fiyat:form.fiyat, not:form.not, durum:form.durum, tarih:new Date().toISOString() });
+    const fiyatVal = form.fiyat ? (form.fiyat.startsWith('$') ? form.fiyat : '$'+form.fiyat) : '';
+    await db.from(tbl).insert({ firma:form.musteri.toUpperCase(), numune:form.cinsi, fiyat:fiyatVal, aciklama:form.not, durum:form.durum, arsiv:false });
     setSaving(false); setShowAdd(false);
-    setForm({ musteri:'', cinsi:'', miktar:'', fiyat:'', not:'', durum:'Bekle' });
+    setForm({ musteri:'', cinsi:'', miktar:'', fiyat:'', not:'', durum:'Beklemede' });
     await onRefresh();
   };
 
@@ -687,7 +700,7 @@ function SamplesView({ data, tbl, onRefresh }) {
               <label style={{ fontSize:10, fontWeight:700, color:C.txt2, display:'block', marginBottom:5, textTransform:'uppercase', letterSpacing:'.08em' }}>Durum</label>
               <select value={form.durum} onChange={e=>setForm(f=>({...f,durum:e.target.value}))}
                 style={{ width:'100%', padding:'9px 12px', border:`1px solid ${C.border2}`, borderRadius:9, fontSize:13, fontFamily:'Inter,sans-serif', outline:'none', color:C.txt, background:'#fff', cursor:'pointer' }}>
-                {STATUSES.map(s=><option key={s}>{EMO[s]} {s}</option>)}
+                {STATUSES.map(s=><option key={s} value={s}>{EMO[s]} {LABELS[s]||s}</option>)}
               </select>
             </div>
             <div style={{ display:'flex', gap:10 }}>
@@ -707,7 +720,7 @@ function SamplesView({ data, tbl, onRefresh }) {
       <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', flexWrap:'wrap', gap:10 }}>
         <div>
           <h2 style={{ fontSize:22, fontWeight:900, color:C.txt, letterSpacing:'-.02em' }}>Numune Takibi</h2>
-          <p style={{ fontSize:12, color:C.txt2, marginTop:2 }}>{filtered.length} / {data.length} kayıt</p>
+          <p style={{ fontSize:12, color:C.txt2, marginTop:2 }}>{filtered.length} / {data.filter(i=>!isArsiv(i)).length} kayıt</p>
         </div>
         <div style={{ display:'flex', gap:8 }}>
           <button onClick={exportCSV} style={{ background:'none', border:`1px solid ${C.border2}`, borderRadius:10,
@@ -740,7 +753,7 @@ function SamplesView({ data, tbl, onRefresh }) {
 
       {/* ── Durum Filtreleri ── */}
       <div style={{ display:'flex', gap:7, flexWrap:'wrap' }}>
-        {[['all','Tümü',data.length,'#0891B2','rgba(8,145,178,.1)'],...STATUSES.map(s=>[s,`${EMO[s]} ${s}`,counts[s]||0,...(CLRS[s]||[C.border2,C.txt2]).reverse()])].map(([val,lbl,cnt,col,bg])=>{
+        {[['all','Tümü',data.filter(i=>!isArsiv(i)).length,'#0891B2','rgba(8,145,178,.1)'],...STATUSES.map(s=>[s,LABELS[s]||s,counts[s]||0,...(CLRS[s]||[C.border2,C.txt2]).reverse()])].map(([val,lbl,cnt,col,bg])=>{
           const active = sf === val;
           return (
             <button key={val} onClick={()=>setSf(active&&val!=='all'?'all':val)}
@@ -760,9 +773,11 @@ function SamplesView({ data, tbl, onRefresh }) {
               {q || sf !== 'all' ? 'Filtreye uyan kayıt yok.' : 'Henüz numune kaydı yok.'}
             </div>
           : filtered.map(s => {
-            const dur = getVal(s,['durum','status'],'') || 'Bekle';
+            const dur = getDur(s);
             const [badgeBg, badgeCol] = CLRS[dur] || ['rgba(71,85,105,.12)','#475569'];
             const isBusy = busy === s.id;
+            const rawFiyat = getVal(s,['fiyat','birimfiyat','price'],'');
+            const fiyatStr = rawFiyat ? String(rawFiyat).replace(/^\$/,'') : '';
             return (
               <div key={s.id||Math.random()}
                 style={{ background:C.surface, border:`1px solid ${C.border}`, borderRadius:13,
@@ -775,27 +790,27 @@ function SamplesView({ data, tbl, onRefresh }) {
                 <div style={{ flex:1, minWidth:0 }}>
                   <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', gap:8, flexWrap:'wrap' }}>
                     <h4 style={{ fontWeight:800, fontSize:14, color:C.txt, margin:0 }}>
-                      {getVal(s,['musteri','müşteri','firma','firmaadi','firmaadı','customer','isim','kime']) || '—'}
+                      {getVal(s,['firma','musteri','müşteri','firmaadi','firmaadı','customer','isim','kime']) || '—'}
                     </h4>
                     <select value={dur} disabled={isBusy} onChange={e=>setStatus(s,e.target.value)}
                       style={{ padding:'4px 8px', borderRadius:7, border:`1.5px solid ${badgeCol}`,
                         background:badgeBg, color:badgeCol, fontSize:11, fontWeight:700,
                         cursor:'pointer', fontFamily:'Inter,sans-serif', outline:'none' }}>
-                      {STATUSES.map(st=><option key={st} value={st}>{EMO[st]} {st}</option>)}
+                      {STATUSES.map(st=><option key={st} value={st}>{EMO[st]} {LABELS[st]||st}</option>)}
                     </select>
                   </div>
                   <div style={{ display:'flex', flexWrap:'wrap', gap:'3px 14px', marginTop:5, fontSize:12, color:C.txt2 }}>
-                    {getVal(s,['cinsi','cins','urun','ürün','kalite']) &&
-                      <span><strong style={{color:C.txt}}>{getVal(s,['cinsi','cins','urun','ürün','kalite'])}</strong></span>}
+                    {getVal(s,['numune','cinsi','cins','urun','ürün','kalite']) &&
+                      <span><strong style={{color:C.txt}}>{getVal(s,['numune','cinsi','cins','urun','ürün','kalite'])}</strong></span>}
                     {getVal(s,['miktar','adet','kg','quantity']) &&
                       <span style={{color:C.teal,fontWeight:700}}>{getVal(s,['miktar','adet','kg','quantity'])}</span>}
-                    {getVal(s,['fiyat','birimfiyat','price']) &&
-                      <span style={{color:C.green,fontWeight:700,fontFamily:'monospace'}}>${getVal(s,['fiyat','birimfiyat','price'])}</span>}
+                    {fiyatStr &&
+                      <span style={{color:C.green,fontWeight:700,fontFamily:'monospace'}}>${fiyatStr}</span>}
                     <span style={{fontFamily:'monospace',fontSize:11,color:C.txt2}}>{fmtDate(s.created_at||getVal(s,['tarih','date'],''))}</span>
                   </div>
-                  {getVal(s,['not','aciklama','açıklama','note']) &&
+                  {getVal(s,['aciklama','not','açıklama','note']) &&
                     <p style={{ margin:'5px 0 0', fontSize:11, color:C.txt2, fontStyle:'italic', lineHeight:1.4 }}>
-                      💬 {getVal(s,['not','aciklama','açıklama','note'])}
+                      💬 {getVal(s,['aciklama','not','açıklama','note'])}
                     </p>}
                 </div>
                 <button onClick={()=>delItem(s)} disabled={isBusy}
