@@ -814,57 +814,243 @@ function SamplesView({ data, tbl, onRefresh }) {
 }
 
 // ── FİYATLAR ────────────────────────────────────────────────────────────
-function PricesView({ data }) {
+// ── FİYATLAR (TAM FONKSİYONEL) ──────────────────────────────────────────
+function PricesView({ data, onRefresh }) {
+  const [q, setQ]         = React.useState('');
+  const [bolumF, setBolumF] = React.useState('all');
+  const [sort, setSort]   = React.useState('name');
+  const [busy, setBusy]   = React.useState(null);
+  const [modal, setModal] = React.useState(null); // null | 'new' | item
+  const [editPrice, setEditPrice] = React.useState(null); // { id, val }
+  const [saving, setSaving] = React.useState(false);
+  const emptyForm = { urun_kodu:'', denye:'', pesin_fiyat:'', bolum_adi:'' };
+  const [form, setForm]   = React.useState(emptyForm);
+
+  const isHdr = (p) => !p.bolum_adi || p.bolum_adi === p.urun_kodu;
+  const items  = data.filter(p => !isHdr(p));
+  const bolumler = [...new Set(items.map(p => p.bolum_adi).filter(Boolean))].sort();
+
+  const filtered = items
+    .filter(p => {
+      if (bolumF !== 'all' && p.bolum_adi !== bolumF) return false;
+      if (q) {
+        const Q = q.toLowerCase();
+        if (!(p.urun_kodu||'').toLowerCase().includes(Q) &&
+            !(p.denye||'').toLowerCase().includes(Q) &&
+            !(p.bolum_adi||'').toLowerCase().includes(Q)) return false;
+      }
+      return true;
+    })
+    .sort((a,b) => {
+      if (sort === 'name')  return (a.urun_kodu||'').localeCompare(b.urun_kodu||'','tr');
+      if (sort === 'price') return (b.pesin_fiyat||0) - (a.pesin_fiyat||0);
+      if (sort === 'bolum') return (a.bolum_adi||'').localeCompare(b.bolum_adi||'','tr');
+      if (sort === 'date')  return new Date(b.updated_at||0) - new Date(a.updated_at||0);
+      return 0;
+    });
+
+  const openAdd  = () => { setForm(emptyForm); setModal('new'); };
+  const openEdit = (p) => {
+    setForm({ urun_kodu:p.urun_kodu||'', denye:p.denye||'', pesin_fiyat:String(p.pesin_fiyat||''), bolum_adi:p.bolum_adi||'' });
+    setModal(p);
+  };
+
+  const save = async () => {
+    if (!form.urun_kodu.trim()) return;
+    setSaving(true);
+    const pf = parseFloat(form.pesin_fiyat)||0;
+    const pay = { urun_kodu: form.urun_kodu.trim().toUpperCase(), denye: form.denye.trim()||null,
+      pesin_fiyat: pf, vadeli_fiyat: pf > 0 ? parseFloat((pf+0.10).toFixed(2)) : 0,
+      bolum_adi: form.bolum_adi.trim().toUpperCase()||null, updated_at: new Date().toISOString() };
+    if (modal === 'new') await db.from('fiyatlar').insert([pay]);
+    else await db.from('fiyatlar').update(pay).eq('id', modal.id);
+    setSaving(false); setModal(null);
+    await onRefresh();
+  };
+
+  const delItem = async (p) => {
+    if (!window.confirm(`"${p.urun_kodu}" silinsin mi?`)) return;
+    setBusy(p.id);
+    await db.from('fiyatlar').delete().eq('id', p.id);
+    await onRefresh(); setBusy(null);
+  };
+
+  const startInlineEdit = (p) => setEditPrice({ id:p.id, val:String(p.pesin_fiyat||'') });
+  const commitInlineEdit = async (p) => {
+    const nv = parseFloat(editPrice.val);
+    if (isNaN(nv)) { setEditPrice(null); return; }
+    setBusy(p.id);
+    await db.from('fiyatlar').update({ pesin_fiyat:nv, vadeli_fiyat:parseFloat((nv+0.10).toFixed(2)), updated_at:new Date().toISOString() }).eq('id', p.id);
+    setEditPrice(null);
+    await onRefresh(); setBusy(null);
+  };
+
   return (
-    <div style={{ background:C.surface, borderRadius:20, border:`1px solid ${C.border}`, overflow:'hidden' }}>
-      <div style={{ padding:'20px 28px', borderBottom:`1px solid ${C.border}`,
-        display:'flex', justifyContent:'space-between', alignItems:'center' }}>
-        <div>
-          <h3 style={{ fontSize:17, fontWeight:800, color:C.txt }}>Güncel İplik Fiyatları</h3>
-          <p style={{ fontSize:12, color:C.txt2, marginTop:3 }}>Ürün bazında piyasa ve satış fiyatlandırmaları.</p>
+    <div style={{ display:'flex', flexDirection:'column', gap:14 }}>
+
+      {/* Modal */}
+      {modal !== null && (
+        <div onClick={e=>e.target===e.currentTarget&&setModal(null)}
+          style={{ position:'fixed',inset:0,background:'rgba(0,0,0,.55)',zIndex:50,
+            display:'flex',alignItems:'center',justifyContent:'center',padding:16 }}>
+          <div style={{ background:'#fff',borderRadius:20,padding:24,width:'100%',maxWidth:400,
+            boxShadow:'0 20px 60px rgba(0,0,0,.3)' }}>
+            <div style={{ display:'flex',justifyContent:'space-between',alignItems:'center',marginBottom:18 }}>
+              <h3 style={{ fontSize:17,fontWeight:800,color:C.txt }}>{modal==='new'?'➕ Yeni Ürün':'✏️ Ürünü Düzenle'}</h3>
+              <button onClick={()=>setModal(null)} style={{ background:'none',border:'none',cursor:'pointer',color:C.txt2,display:'flex' }}><IcoX size={20}/></button>
+            </div>
+            {[['Ürün Kodu *','urun_kodu'],['Denye','denye'],['Bölüm','bolum_adi']].map(([lbl,key])=>(
+              <div key={key} style={{ marginBottom:12 }}>
+                <label style={{ fontSize:10,fontWeight:700,color:C.txt2,display:'block',marginBottom:5,textTransform:'uppercase',letterSpacing:'.08em' }}>{lbl}</label>
+                <input value={form[key]} onChange={e=>setForm(f=>({...f,[key]:e.target.value}))}
+                  style={{ width:'100%',padding:'9px 12px',border:`1px solid ${C.border2}`,borderRadius:9,fontSize:13,fontFamily:'Inter,sans-serif',outline:'none',color:C.txt }} />
+              </div>
+            ))}
+            <div style={{ marginBottom:18 }}>
+              <label style={{ fontSize:10,fontWeight:700,color:C.txt2,display:'block',marginBottom:5,textTransform:'uppercase',letterSpacing:'.08em' }}>Peşin Fiyat ($)</label>
+              <input type="number" step="0.01" min="0" value={form.pesin_fiyat} onChange={e=>setForm(f=>({...f,pesin_fiyat:e.target.value}))}
+                style={{ width:'100%',padding:'9px 12px',border:`1px solid ${C.border2}`,borderRadius:9,fontSize:13,fontFamily:'monospace',outline:'none',color:C.txt }} />
+              {form.pesin_fiyat && <p style={{ fontSize:11,color:C.txt2,marginTop:4 }}>Vadeli: ${(parseFloat(form.pesin_fiyat)||0)+0.10} (otomatik)</p>}
+            </div>
+            <div style={{ display:'flex',gap:10 }}>
+              <button onClick={()=>setModal(null)} style={{ flex:1,padding:10,border:`1px solid ${C.border2}`,borderRadius:10,cursor:'pointer',background:'none',fontSize:13,fontWeight:600,color:C.txt2 }}>İptal</button>
+              <button onClick={save} disabled={saving||!form.urun_kodu.trim()}
+                style={{ flex:2,padding:10,border:'none',borderRadius:10,cursor:'pointer',
+                  background:'linear-gradient(135deg,#15803D,#16A34A)',color:'#fff',fontSize:13,fontWeight:700,
+                  opacity:saving||!form.urun_kodu.trim()?0.5:1 }}>
+                {saving?'Kaydediliyor…':'💾 Kaydet'}
+              </button>
+            </div>
+          </div>
         </div>
-        <button style={{ background:'linear-gradient(135deg,#15803D,#16A34A)',
-          color:'#fff', border:'none', borderRadius:12,
-          padding:'10px 18px', fontSize:13, fontWeight:700, cursor:'pointer',
-          display:'flex', alignItems:'center', gap:6,
-          boxShadow:'0 4px 12px rgba(22,163,74,.35)' }}>
-          <IcoPlus size={16} /> Fiyat Ekle
-        </button>
+      )}
+
+      {/* Başlık */}
+      <div style={{ display:'flex',justifyContent:'space-between',alignItems:'center',flexWrap:'wrap',gap:10 }}>
+        <div>
+          <h2 style={{ fontSize:22,fontWeight:900,color:C.txt,letterSpacing:'-.02em' }}>İplik Fiyatları</h2>
+          <p style={{ fontSize:12,color:C.txt2,marginTop:2 }}>{filtered.length} / {items.length} ürün</p>
+        </div>
+        <button onClick={openAdd} style={{ background:'linear-gradient(135deg,#15803D,#16A34A)',
+          color:'#fff',border:'none',borderRadius:10,padding:'8px 16px',fontSize:13,
+          fontWeight:700,cursor:'pointer',display:'flex',alignItems:'center',gap:5,
+          boxShadow:'0 4px 12px rgba(22,163,74,.3)' }}><IcoPlus size={16}/> Yeni Ürün</button>
       </div>
-      <div style={{ overflowX:'auto' }}>
-        <table style={{ width:'100%', borderCollapse:'collapse', fontSize:13 }}>
-          <thead>
-            <tr style={{ background:C.page, fontSize:11, fontWeight:700, color:C.txt2,
-              textTransform:'uppercase', letterSpacing:'.07em' }}>
-              {['Ürün / Kalite','Birim Fiyat','Birim','Son Güncelleme'].map((h,i) => (
-                <th key={i} style={{ padding:'12px 24px', textAlign:'left', borderBottom:`1px solid ${C.border2}` }}>{h}</th>
-              ))}
-            </tr>
-          </thead>
-          <tbody>
-            {data.length === 0
-              ? <tr><td colSpan="4" style={{ padding:28, textAlign:'center', color:C.txt2 }}>Kayıt bulunamadı.</td></tr>
-              : data.map((p,i) => (
-                <tr key={p.id||i} style={{ borderBottom:`1px solid ${C.border}`, transition:'background .15s' }}
-                  onMouseEnter={e=>e.currentTarget.style.background=C.greenS}
-                  onMouseLeave={e=>e.currentTarget.style.background='transparent'}>
-                  <td style={{ padding:'16px 24px', fontWeight:700, fontSize:14, color:C.txt }}>
-                    {getVal(p,['urun','ürün','kalite','item','isim','cinsi','cins'])}
-                  </td>
-                  <td style={{ padding:'16px 24px', color:C.green, fontWeight:900, fontSize:16, fontFamily:'monospace' }}>
-                    {getVal(p,['fiyat','price','tutar'])}
-                  </td>
-                  <td style={{ padding:'16px 24px', color:C.txt2 }}>
-                    {getVal(p,['birim','unit'],'kg')}
-                  </td>
-                  <td style={{ padding:'16px 24px', color:C.txt2, fontFamily:'monospace' }}>
-                    {fmtDate(getVal(p,['tarih','updatedate','created_at']))}
-                  </td>
-                </tr>
-              ))
-            }
-          </tbody>
-        </table>
+
+      {/* Arama + Sıralama */}
+      <div style={{ display:'flex',gap:10,flexWrap:'wrap' }}>
+        <div style={{ position:'relative',flex:1,minWidth:200 }}>
+          <span style={{ position:'absolute',left:11,top:'50%',transform:'translateY(-50%)',color:C.txt2,display:'flex' }}><IcoSearch size={14}/></span>
+          <input placeholder="Ürün kodu, denye veya bölüm ara…" value={q} onChange={e=>setQ(e.target.value)}
+            style={{ width:'100%',paddingLeft:34,paddingRight:12,paddingTop:9,paddingBottom:9,
+              border:`1px solid ${C.border2}`,borderRadius:10,fontSize:13,fontFamily:'Inter,sans-serif',
+              outline:'none',color:C.txt,background:C.surface }} />
+        </div>
+        <select value={sort} onChange={e=>setSort(e.target.value)}
+          style={{ padding:'9px 12px',border:`1px solid ${C.border2}`,borderRadius:10,fontSize:13,
+            fontFamily:'Inter,sans-serif',outline:'none',color:C.txt,background:C.surface,cursor:'pointer' }}>
+          <option value="name">🔤 Koda Göre</option>
+          <option value="price">💰 Fiyata Göre</option>
+          <option value="bolum">📁 Bölüme Göre</option>
+          <option value="date">📅 Tarihe Göre</option>
+        </select>
+      </div>
+
+      {/* Bölüm filtre çipleri */}
+      {bolumler.length > 0 && (
+        <div style={{ display:'flex',gap:7,flexWrap:'wrap' }}>
+          {[['all','Tümü',items.length],...bolumler.map(b=>[b,b,items.filter(p=>p.bolum_adi===b).length])].map(([val,lbl,cnt])=>{
+            const active = bolumF === val;
+            return (
+              <button key={val} onClick={()=>setBolumF(val)}
+                style={{ padding:'5px 12px',borderRadius:18,
+                  border:`2px solid ${active?C.green:C.border}`,
+                  background:active?C.greenS:'transparent',
+                  color:active?C.green:C.txt2,fontSize:12,fontWeight:700,
+                  cursor:'pointer',transition:'all .15s',whiteSpace:'nowrap' }}>
+                {lbl} <span style={{ opacity:.65 }}>{cnt}</span>
+              </button>
+            );
+          })}
+        </div>
+      )}
+
+      {/* Tablo */}
+      <div style={{ background:C.surface,borderRadius:16,border:`1px solid ${C.border}`,overflow:'hidden' }}>
+        <div style={{ overflowX:'auto' }}>
+          <table style={{ width:'100%',borderCollapse:'collapse',fontSize:13 }}>
+            <thead>
+              <tr style={{ background:C.page,fontSize:11,fontWeight:700,color:C.txt2,
+                textTransform:'uppercase',letterSpacing:'.07em' }}>
+                {['Ürün Kodu','Denye','Bölüm','Peşin ($)','Vadeli ($)','Güncelleme','İşlem'].map((h,i)=>(
+                  <th key={i} style={{ padding:'11px 18px',textAlign:i===6?'center':'left',
+                    borderBottom:`1px solid ${C.border2}`,whiteSpace:'nowrap' }}>{h}</th>
+                ))}
+              </tr>
+            </thead>
+            <tbody>
+              {filtered.length === 0
+                ? <tr><td colSpan="7" style={{ padding:32,textAlign:'center',color:C.txt2 }}>
+                    {q||bolumF!=='all'?'Filtreye uyan kayıt yok.':'Henüz fiyat kaydı yok.'}
+                  </td></tr>
+                : filtered.map((p,i) => {
+                  const isBusy = busy === p.id;
+                  const isEditingPrice = editPrice && editPrice.id === p.id;
+                  return (
+                    <tr key={p.id||i} style={{ borderBottom:`1px solid ${C.border}`,transition:'background .15s',opacity:isBusy?0.5:1 }}
+                      onMouseEnter={e=>e.currentTarget.style.background=C.greenS}
+                      onMouseLeave={e=>e.currentTarget.style.background='transparent'}>
+                      <td style={{ padding:'12px 18px',fontWeight:800,color:C.txt,fontFamily:'monospace',fontSize:13 }}>
+                        {p.urun_kodu||'—'}
+                      </td>
+                      <td style={{ padding:'12px 18px',color:C.txt2,fontFamily:'monospace' }}>
+                        {p.denye ? <span style={{ background:C.tealS,color:C.teal,padding:'2px 7px',borderRadius:5,fontSize:11,fontWeight:700 }}>{p.denye}</span> : '—'}
+                      </td>
+                      <td style={{ padding:'12px 18px',color:C.txt2,fontSize:12 }}>
+                        {p.bolum_adi ? <span style={{ background:C.page,border:`1px solid ${C.border}`,padding:'2px 7px',borderRadius:5,fontSize:11,fontWeight:600 }}>{p.bolum_adi}</span> : '—'}
+                      </td>
+                      <td style={{ padding:'12px 18px' }}>
+                        {isEditingPrice ? (
+                          <input autoFocus type="number" step="0.01" value={editPrice.val}
+                            onChange={e=>setEditPrice(v=>({...v,val:e.target.value}))}
+                            onBlur={()=>commitInlineEdit(p)}
+                            onKeyDown={e=>{ if(e.key==='Enter')commitInlineEdit(p); if(e.key==='Escape')setEditPrice(null); }}
+                            style={{ width:80,padding:'4px 8px',border:`2px solid ${C.green}`,borderRadius:7,
+                              fontSize:13,fontFamily:'monospace',fontWeight:700,color:C.green,outline:'none' }} />
+                        ) : (
+                          <span onClick={()=>startInlineEdit(p)} title="Tıkla düzenle"
+                            style={{ cursor:'text',fontFamily:'monospace',fontWeight:900,fontSize:14,
+                              color:p.pesin_fiyat?C.green:C.txt2,
+                              borderBottom:`1px dashed ${p.pesin_fiyat?C.green:C.border2}`,paddingBottom:1 }}>
+                            {p.pesin_fiyat ? `$${p.pesin_fiyat}` : '—'}
+                          </span>
+                        )}
+                      </td>
+                      <td style={{ padding:'12px 18px',color:C.txt2,fontFamily:'monospace',fontSize:12 }}>
+                        {p.vadeli_fiyat ? `$${p.vadeli_fiyat}` : '—'}
+                      </td>
+                      <td style={{ padding:'12px 18px',color:C.txt2,fontFamily:'monospace',fontSize:11 }}>
+                        {fmtDate(p.updated_at)||'—'}
+                      </td>
+                      <td style={{ padding:'12px 18px',textAlign:'center' }}>
+                        <div style={{ display:'flex',justifyContent:'center',gap:4 }}>
+                          <button onClick={()=>openEdit(p)} disabled={isBusy}
+                            style={{ background:'none',border:'none',cursor:'pointer',color:C.border2,padding:5,borderRadius:7 }}
+                            onMouseEnter={e=>e.currentTarget.style.color=C.teal}
+                            onMouseLeave={e=>e.currentTarget.style.color=C.border2}><IcoEdit size={14}/></button>
+                          <button onClick={()=>delItem(p)} disabled={isBusy}
+                            style={{ background:'none',border:'none',cursor:'pointer',color:C.border2,padding:5,borderRadius:7 }}
+                            onMouseEnter={e=>e.currentTarget.style.color=C.red}
+                            onMouseLeave={e=>e.currentTarget.style.color=C.border2}><IcoTrash size={14}/></button>
+                        </div>
+                      </td>
+                    </tr>
+                  );
+                })
+              }
+            </tbody>
+          </table>
+        </div>
       </div>
     </div>
   );
@@ -1459,7 +1645,7 @@ function App() {
                 {tab === 'dashboard'  && <DashboardView customers={customers} samples={samples} prices={prices} notes={notes} onNav={goTo} />}
                 {tab === 'customers'  && <CustomersView data={customers} onRefresh={loadData} />}
                 {tab === 'samples'    && <SamplesView   data={samples} tbl={samplesTbl} onRefresh={loadData} />}
-                {tab === 'prices'     && <PricesView    data={prices}    />}
+                {tab === 'prices'     && <PricesView    data={prices}    onRefresh={loadData} />}
                 {tab === 'cost'       && <CostView      data={costs}     />}
                 {tab === 'notes'      && <NotesView     data={notes}     onRefresh={loadData} />}
                 {tab === 'offers'     && (
