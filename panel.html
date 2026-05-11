@@ -2229,12 +2229,18 @@ function OffersView({ data, customers, onRefresh }) {
 
             <div style={{ display:'flex',gap:10 }}>
               <button onClick={()=>setModal(null)} style={{ flex:1,padding:10,border:`1px solid ${C.border2}`,borderRadius:10,cursor:'pointer',background:'none',fontSize:13,fontWeight:600,color:C.txt2 }}>İptal</button>
-              <button onClick={save} disabled={saving||!form.firma_adi.trim()||!form.urun.trim()}
-                style={{ flex:2,padding:10,border:'none',borderRadius:10,cursor:'pointer',
-                  background:'linear-gradient(135deg,#0672A0,#0891B2)',color:'#fff',fontSize:13,fontWeight:700,
-                  opacity:saving||!form.firma_adi.trim()||!form.urun.trim()?0.5:1 }}>
-                {saving?'Kaydediliyor…':'💾 Kaydet'}
-              </button>
+              {(() => {
+                const disabled = saving || !form.firma_adi.trim() ||
+                  (modal !== 'new' ? !form.urun.trim() : !multiRows.some(r=>r.urun.trim()));
+                return (
+                  <button onClick={save} disabled={disabled}
+                    style={{ flex:2,padding:10,border:'none',borderRadius:10,cursor:'pointer',
+                      background:'linear-gradient(135deg,#0672A0,#0891B2)',color:'#fff',fontSize:13,fontWeight:700,
+                      opacity:disabled?0.5:1 }}>
+                    {saving?'Kaydediliyor…':'💾 Kaydet'}
+                  </button>
+                );
+              })()}
             </div>
           </div>
         </div>
