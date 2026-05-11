@@ -1002,6 +1002,10 @@ function PricesView({ data, onRefresh }) {
   const [saving, setSaving] = React.useState(false);
   const [openCats, setOpenCats] = React.useState(new Set());
   const [selIds, setSelIds] = React.useState(new Set());
+  const [bulkModal, setBulkModal] = React.useState(false);
+  const [bulkType, setBulkType] = React.useState('pct_up');
+  const [bulkVal, setBulkVal] = React.useState('');
+  const [bulkBusy, setBulkBusy] = React.useState(false);
   const emptyForm = { urun_kodu:'', denye:'', pesin_fiyat:'', bolum_adi:'' };
   const [form, setForm] = React.useState(emptyForm);
 
@@ -1141,10 +1145,109 @@ function PricesView({ data, onRefresh }) {
     setEditPrice(null); await onRefresh(); setBusy(null);
   };
 
+  const doBulkUpdate = async () => {
+    const v = parseFloat(bulkVal);
+    if (isNaN(v) || v <= 0) return;
+    const targets = selIds.size > 0
+      ? allItems.filter(p => selIds.has(p.id) && p.pesin_fiyat > 0)
+      : allItems.filter(p => p.pesin_fiyat > 0);
+    if (!targets.length) return;
+    setBulkBusy(true);
+    for (const p of targets) {
+      let nv = p.pesin_fiyat;
+      if (bulkType === 'pct_up')   nv = parseFloat((p.pesin_fiyat * (1 + v/100)).toFixed(4));
+      if (bulkType === 'pct_dn')   nv = parseFloat((p.pesin_fiyat * (1 - v/100)).toFixed(4));
+      if (bulkType === 'fixed_up') nv = parseFloat((p.pesin_fiyat + v).toFixed(4));
+      if (bulkType === 'fixed_dn') nv = parseFloat(Math.max(0, p.pesin_fiyat - v).toFixed(4));
+      await db.from('fiyatlar').update({
+        pesin_fiyat: nv,
+        vadeli_fiyat: parseFloat((nv + 0.10).toFixed(4)),
+        updated_at: new Date().toISOString()
+      }).eq('id', p.id);
+    }
+    setBulkBusy(false); setBulkModal(false); setBulkVal('');
+    await onRefresh();
+  };
+
+  const bulkPreview = () => {
+    const v = parseFloat(bulkVal);
+    if (isNaN(v) || v <= 0) return null;
+    const sample = allItems.find(p => (selIds.size > 0 ? selIds.has(p.id) : true) && p.pesin_fiyat > 0);
+    if (!sample) return null;
+    let nv = sample.pesin_fiyat;
+    if (bulkType === 'pct_up')   nv = sample.pesin_fiyat * (1 + v/100);
+    if (bulkType === 'pct_dn')   nv = sample.pesin_fiyat * (1 - v/100);
+    if (bulkType === 'fixed_up') nv = sample.pesin_fiyat + v;
+    if (bulkType === 'fixed_dn') nv = Math.max(0, sample.pesin_fiyat - v);
+    return { urun: sample.urun_kodu, eski: sample.pesin_fiyat.toFixed(2), yeni: nv.toFixed(2) };
+  };
+
   const totalItems = cats.reduce((s,c) => s + G[c].items.length, 0);
 
   return (
     <div style={{ display:'flex', flexDirection:'column', gap:14 }}>
+
+      {/* Toplu Fiyat Güncelleme Modal */}
+      {bulkModal && (
+        <div onClick={e=>e.target===e.currentTarget&&setBulkModal(false)}
+          style={{ position:'fixed',inset:0,background:'rgba(0,0,0,.55)',zIndex:50,
+            display:'flex',alignItems:'center',justifyContent:'center',padding:16 }}>
+          <div style={{ background:'#fff',borderRadius:20,padding:24,width:'100%',maxWidth:380,
+            boxShadow:'0 20px 60px rgba(0,0,0,.3)' }}>
+            <div style={{ display:'flex',justifyContent:'space-between',alignItems:'center',marginBottom:16 }}>
+              <h3 style={{ fontSize:17,fontWeight:800,color:C.txt }}>📈 Toplu Fiyat Güncelle</h3>
+              <button onClick={()=>setBulkModal(false)} style={{ background:'none',border:'none',cursor:'pointer',color:C.txt2,display:'flex' }}><IcoX size={20}/></button>
+            </div>
+            <p style={{ fontSize:12,color:C.txt2,marginBottom:16 }}>
+              {selIds.size > 0 ? `${selIds.size} seçili ürüne` : 'Tüm fiyatlı ürünlere'} uygulanacak.
+            </p>
+            <div style={{ display:'grid',gridTemplateColumns:'1fr 1fr',gap:8,marginBottom:16 }}>
+              {[
+                { k:'pct_up',  lbl:'% Artış',   icon:'📈' },
+                { k:'pct_dn',  lbl:'% Azalış',  icon:'📉' },
+                { k:'fixed_up',lbl:'$ Artış',   icon:'➕' },
+                { k:'fixed_dn',lbl:'$ Azalış',  icon:'➖' },
+              ].map(o=>(
+                <button key={o.k} onClick={()=>setBulkType(o.k)}
+                  style={{ padding:'10px 8px',borderRadius:10,border:`2px solid ${bulkType===o.k?C.green:C.border2}`,
+                    background:bulkType===o.k?C.greenS:'none',color:bulkType===o.k?C.green:C.txt,
+                    fontWeight:bulkType===o.k?800:500,fontSize:13,cursor:'pointer',transition:'all .15s' }}>
+                  {o.icon} {o.lbl}
+                </button>
+              ))}
+            </div>
+            <div style={{ marginBottom:14 }}>
+              <label style={{ fontSize:10,fontWeight:700,color:C.txt2,display:'block',marginBottom:5,textTransform:'uppercase',letterSpacing:'.08em' }}>
+                {bulkType.startsWith('pct') ? 'Yüzde (%)' : 'Miktar ($)'}
+              </label>
+              <input type="number" step="0.01" min="0" value={bulkVal}
+                onChange={e=>setBulkVal(e.target.value)} placeholder="0.00"
+                style={{ width:'100%',padding:'9px 12px',border:`1px solid ${C.border2}`,borderRadius:9,
+                  fontSize:15,fontFamily:'monospace',outline:'none',color:C.txt,textAlign:'right' }} />
+            </div>
+            {(() => { const pr = bulkPreview(); return pr && (
+              <div style={{ padding:'10px 14px',background:C.greenS,borderRadius:10,marginBottom:14,
+                border:`1px solid rgba(21,128,61,.2)`,fontSize:12 }}>
+                <span style={{ color:C.txt2 }}>Örnek: </span>
+                <span style={{ fontWeight:700,color:C.txt,fontFamily:'monospace' }}>{pr.urun}</span>
+                <span style={{ color:C.txt2 }}> → </span>
+                <span style={{ color:C.txt2,fontFamily:'monospace',textDecoration:'line-through' }}>${pr.eski}</span>
+                <span style={{ color:C.txt2 }}> → </span>
+                <span style={{ color:C.green,fontFamily:'monospace',fontWeight:800 }}>${pr.yeni}</span>
+              </div>
+            ); })()}
+            <div style={{ display:'flex',gap:10 }}>
+              <button onClick={()=>setBulkModal(false)} style={{ flex:1,padding:10,border:`1px solid ${C.border2}`,borderRadius:10,cursor:'pointer',background:'none',fontSize:13,fontWeight:600,color:C.txt2 }}>İptal</button>
+              <button onClick={doBulkUpdate} disabled={bulkBusy||!bulkVal||parseFloat(bulkVal)<=0}
+                style={{ flex:2,padding:10,border:'none',borderRadius:10,cursor:'pointer',
+                  background:'linear-gradient(135deg,#15803D,#16A34A)',color:'#fff',fontSize:13,fontWeight:700,
+                  opacity:bulkBusy||!bulkVal||parseFloat(bulkVal)<=0?0.5:1 }}>
+                {bulkBusy ? 'Güncelleniyor…' : '✅ Güncelle'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Import Modal */}
       {impModal && (
@@ -1265,10 +1368,16 @@ function PricesView({ data, onRefresh }) {
           <h2 style={{ fontSize:22,fontWeight:900,color:C.txt,letterSpacing:'-.02em' }}>İplik Fiyatları</h2>
           <p style={{ fontSize:12,color:C.txt2,marginTop:2 }}>{cats.length} bölüm · {totalItems} ürün</p>
         </div>
-        <button onClick={()=>openAdd()} style={{ background:'linear-gradient(135deg,#15803D,#16A34A)',
-          color:'#fff',border:'none',borderRadius:10,padding:'8px 16px',fontSize:13,
-          fontWeight:700,cursor:'pointer',display:'flex',alignItems:'center',gap:5,
-          boxShadow:'0 4px 12px rgba(22,163,74,.3)' }}><IcoPlus size={16}/> Yeni Ürün</button>
+        <div style={{ display:'flex',gap:8 }}>
+          <button onClick={()=>setBulkModal(true)}
+            style={{ background:'linear-gradient(135deg,#0672A0,#0891B2)',color:'#fff',border:'none',
+              borderRadius:10,padding:'8px 14px',fontSize:13,fontWeight:700,cursor:'pointer',
+              display:'flex',alignItems:'center',gap:5 }}>📈 Toplu Güncelle</button>
+          <button onClick={()=>openAdd()} style={{ background:'linear-gradient(135deg,#15803D,#16A34A)',
+            color:'#fff',border:'none',borderRadius:10,padding:'8px 16px',fontSize:13,
+            fontWeight:700,cursor:'pointer',display:'flex',alignItems:'center',gap:5,
+            boxShadow:'0 4px 12px rgba(22,163,74,.3)' }}><IcoPlus size={16}/> Yeni Ürün</button>
+        </div>
       </div>
 
       {/* Arama */}
@@ -1313,15 +1422,15 @@ function PricesView({ data, onRefresh }) {
         <div style={{ display:'flex',alignItems:'center',gap:10,padding:'10px 16px',
           background:C.greenS,borderRadius:12,border:`1px solid rgba(21,128,61,.2)` }}>
           <span style={{ fontSize:13,fontWeight:700,color:C.green,flex:1 }}>✅ {selIds.size} ürün seçili</span>
+          <button onClick={()=>setBulkModal(true)}
+            style={{ padding:'6px 13px',borderRadius:8,border:`1px solid #0891B2`,background:'#fff',
+              color:'#0891B2',fontWeight:700,fontSize:11,cursor:'pointer' }}>
+            📈 Toplu Güncelle
+          </button>
           <button onClick={()=>exportXL(true)}
             style={{ padding:'6px 13px',borderRadius:8,border:`1px solid ${C.green}`,background:'#fff',
               color:C.green,fontWeight:700,fontSize:11,cursor:'pointer' }}>
-            📊 Fiyatlı Excel
-          </button>
-          <button onClick={()=>exportXL(false)}
-            style={{ padding:'6px 13px',borderRadius:8,border:`1px solid ${C.amber}`,background:'#fff',
-              color:C.amber,fontWeight:700,fontSize:11,cursor:'pointer' }}>
-            ⚠️ Fiyatsız Excel
+            📊 Excel
           </button>
           <button onClick={clearSel}
             style={{ padding:'6px 13px',borderRadius:8,border:`1px solid ${C.border2}`,background:'none',
@@ -1495,7 +1604,39 @@ function CostView({ data, onRefresh }) {
   const [q, setQ]       = React.useState('');
   const [sort, setSort] = React.useState('new');
   const [busy, setBusy] = React.useState(null);
-  const [tab, setTab]   = React.useState('calc'); // 'calc' | 'hist'
+  const [tab, setTab]   = React.useState('calc'); // 'calc' | 'hist' | 'hamm'
+
+  // Hammadde (localStorage)
+  const loadHamm = () => { try { return JSON.parse(localStorage.getItem('yanteks_hamm')||'[]'); } catch { return []; } };
+  const [hammadde, setHammadde] = React.useState(loadHamm);
+  const [hammModal, setHammModal] = React.useState(null); // null | 'new' | item
+  const emptyHamm = { ad:'', tedarikci:'', birim_fiyat:'', stok:'', birim:'kg' };
+  const [hammForm, setHammForm] = React.useState(emptyHamm);
+  const saveHamm = (list) => { localStorage.setItem('yanteks_hamm', JSON.stringify(list)); setHammadde(list); };
+  const openHammNew = () => { setHammForm(emptyHamm); setHammModal('new'); };
+  const openHammEdit = (h) => { setHammForm({ ad:h.ad||'', tedarikci:h.tedarikci||'', birim_fiyat:String(h.birim_fiyat||''), stok:String(h.stok||''), birim:h.birim||'kg' }); setHammModal(h); };
+  const doHammSave = () => {
+    if (!hammForm.ad.trim()) return;
+    const item = { ...hammForm, birim_fiyat: parseFloat(hammForm.birim_fiyat)||0, stok: parseFloat(hammForm.stok)||0, id: hammModal==='new' ? Date.now() : hammModal.id };
+    if (hammModal === 'new') saveHamm([...hammadde, item]);
+    else saveHamm(hammadde.map(h => h.id === item.id ? item : h));
+    setHammModal(null);
+  };
+  const delHamm = (h) => { if (!window.confirm(`"${h.ad}" silinsin mi?`)) return; saveHamm(hammadde.filter(x => x.id !== h.id)); };
+  const exportHammXL = async () => {
+    if (!hammadde.length) return;
+    const wb = new ExcelJS.Workbook(); wb.creator = 'Yanteks Pro';
+    const sh = wb.addWorksheet('Hammadde');
+    const hr = sh.addRow(['Hammadde Adı','Tedarikçi','Birim Fiyat ($)','Stok','Birim']);
+    hr.eachCell(c=>{ c.fill={type:'pattern',pattern:'solid',fgColor:{argb:'FF0891B2'}}; c.font={color:{argb:'FFFFFFFF'},bold:true}; });
+    sh.columns = [{width:28},{width:22},{width:16},{width:14},{width:10}];
+    hammadde.forEach(h => sh.addRow([h.ad,h.tedarikci||'',h.birim_fiyat,h.stok,h.birim||'kg']));
+    const buf = await wb.xlsx.writeBuffer();
+    const blob = new Blob([buf], { type:'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+    const a = document.createElement('a'); a.href = URL.createObjectURL(blob);
+    a.download = 'Hammadde_' + new Date().toLocaleDateString('tr-TR').replace(/\./g,'-') + '.xlsx';
+    a.click(); URL.revokeObjectURL(a.href);
+  };
 
   const f4 = (v) => parseFloat(v.toFixed(4));
 
@@ -1579,7 +1720,7 @@ function CostView({ data, onRefresh }) {
           <p style={{ fontSize:12, color:C.txt2, marginTop:2 }}>Hammadde, fire ve işletme giderleri dahil üretim maliyeti.</p>
         </div>
         <div style={{ display:'flex', gap:6 }}>
-          {[['calc','🧮 Hesap'],['hist','📋 Geçmiş']].map(([id,lbl])=>(
+          {[['calc','🧮 Hesap'],['hist','📋 Geçmiş'],['hamm','🏭 Hammadde']].map(([id,lbl])=>(
             <button key={id} onClick={()=>setTab(id)}
               style={{ padding:'8px 16px', borderRadius:10, border:`2px solid ${tab===id?C.teal:C.border}`,
                 background:tab===id?C.tealS:'transparent', color:tab===id?C.teal:C.txt2,
@@ -1754,6 +1895,128 @@ function CostView({ data, onRefresh }) {
           </div>
         </div>
       )}
+
+      {tab === 'hamm' && (
+        <div style={{ display:'flex', flexDirection:'column', gap:12 }}>
+
+          {/* Hammadde Modal */}
+          {hammModal !== null && (
+            <div onClick={e=>e.target===e.currentTarget&&setHammModal(null)}
+              style={{ position:'fixed',inset:0,background:'rgba(0,0,0,.55)',zIndex:50,
+                display:'flex',alignItems:'center',justifyContent:'center',padding:16 }}>
+              <div style={{ background:'#fff',borderRadius:20,padding:24,width:'100%',maxWidth:380,
+                boxShadow:'0 20px 60px rgba(0,0,0,.3)' }}>
+                <div style={{ display:'flex',justifyContent:'space-between',alignItems:'center',marginBottom:16 }}>
+                  <h3 style={{ fontSize:17,fontWeight:800,color:C.txt }}>{hammModal==='new'?'➕ Yeni Hammadde':'✏️ Düzenle'}</h3>
+                  <button onClick={()=>setHammModal(null)} style={{ background:'none',border:'none',cursor:'pointer',color:C.txt2,display:'flex' }}><IcoX size={20}/></button>
+                </div>
+                {[['Hammadde Adı *','ad','text'],['Tedarikçi','tedarikci','text'],['Birim Fiyat ($)','birim_fiyat','number'],['Stok Miktarı','stok','number']].map(([lbl,key,type])=>(
+                  <div key={key} style={{ marginBottom:12 }}>
+                    <label style={{ fontSize:10,fontWeight:700,color:C.txt2,display:'block',marginBottom:5,textTransform:'uppercase',letterSpacing:'.08em' }}>{lbl}</label>
+                    <input type={type} step="0.01" value={hammForm[key]} onChange={e=>setHammForm(f=>({...f,[key]:e.target.value}))}
+                      style={{ width:'100%',padding:'9px 12px',border:`1px solid ${C.border2}`,borderRadius:9,fontSize:13,fontFamily:type==='number'?'monospace':'Inter,sans-serif',outline:'none',color:C.txt }} />
+                  </div>
+                ))}
+                <div style={{ marginBottom:18 }}>
+                  <label style={{ fontSize:10,fontWeight:700,color:C.txt2,display:'block',marginBottom:5,textTransform:'uppercase',letterSpacing:'.08em' }}>Birim</label>
+                  <select value={hammForm.birim} onChange={e=>setHammForm(f=>({...f,birim:e.target.value}))}
+                    style={{ width:'100%',padding:'9px 12px',border:`1px solid ${C.border2}`,borderRadius:9,fontSize:13,color:C.txt,background:'#fff',cursor:'pointer',outline:'none' }}>
+                    {['kg','ton','adet','balya'].map(b=><option key={b}>{b}</option>)}
+                  </select>
+                </div>
+                <div style={{ display:'flex',gap:10 }}>
+                  <button onClick={()=>setHammModal(null)} style={{ flex:1,padding:10,border:`1px solid ${C.border2}`,borderRadius:10,cursor:'pointer',background:'none',fontSize:13,fontWeight:600,color:C.txt2 }}>İptal</button>
+                  <button onClick={doHammSave} disabled={!hammForm.ad.trim()}
+                    style={{ flex:2,padding:10,border:'none',borderRadius:10,cursor:'pointer',
+                      background:'linear-gradient(135deg,#0672A0,#0891B2)',color:'#fff',fontSize:13,fontWeight:700,
+                      opacity:!hammForm.ad.trim()?0.5:1 }}>
+                    💾 Kaydet
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Hammadde başlık */}
+          <div style={{ display:'flex',justifyContent:'space-between',alignItems:'center',flexWrap:'wrap',gap:10 }}>
+            <div>
+              <p style={{ fontSize:13,color:C.txt2 }}>{hammadde.length} hammadde · Veriler bu cihazda saklanır.</p>
+            </div>
+            <div style={{ display:'flex',gap:8 }}>
+              <button onClick={exportHammXL} disabled={!hammadde.length}
+                style={{ background:'none',border:`1px solid ${C.green}`,borderRadius:10,padding:'8px 14px',
+                  fontSize:12,fontWeight:700,color:C.green,cursor:'pointer' }}>📊 Excel</button>
+              <button onClick={openHammNew}
+                style={{ background:'linear-gradient(135deg,#0672A0,#0891B2)',color:'#fff',border:'none',
+                  borderRadius:10,padding:'8px 16px',fontSize:13,fontWeight:700,cursor:'pointer',
+                  display:'flex',alignItems:'center',gap:5 }}><IcoPlus size={16}/> Hammadde Ekle</button>
+            </div>
+          </div>
+
+          {/* Hammadde tablosu */}
+          <div style={{ background:C.surface,borderRadius:16,border:`1px solid ${C.border}`,overflow:'hidden' }}>
+            {hammadde.length === 0
+              ? <div style={{ padding:40,textAlign:'center',color:C.txt2 }}>Henüz hammadde eklenmemiş.</div>
+              : <div style={{ overflowX:'auto' }}>
+                <table style={{ width:'100%',borderCollapse:'collapse',fontSize:13 }}>
+                  <thead>
+                    <tr style={{ background:C.page,fontSize:10,fontWeight:700,color:C.txt2,textTransform:'uppercase',letterSpacing:'.08em' }}>
+                      {['Hammadde','Tedarikçi','Birim Fiyat','Stok','Birim','İşlem'].map((h,i)=>(
+                        <th key={i} style={{ padding:'10px 14px',textAlign:i===5?'center':'left',borderBottom:`1px solid ${C.border2}` }}>{h}</th>
+                      ))}
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {hammadde.map((h,i)=>(
+                      <tr key={h.id||i} style={{ borderBottom:`1px solid ${C.border}`,transition:'background .15s' }}
+                        onMouseEnter={e=>e.currentTarget.style.background=C.page}
+                        onMouseLeave={e=>e.currentTarget.style.background='transparent'}>
+                        <td style={{ padding:'11px 14px',fontWeight:700,color:C.txt }}>{h.ad}</td>
+                        <td style={{ padding:'11px 14px',color:C.txt2 }}>{h.tedarikci||'—'}</td>
+                        <td style={{ padding:'11px 14px',fontFamily:'monospace',fontWeight:700,color:C.green }}>
+                          {h.birim_fiyat > 0 ? `$${parseFloat(h.birim_fiyat).toFixed(2)}` : '—'}
+                        </td>
+                        <td style={{ padding:'11px 14px',fontFamily:'monospace',color:C.txt2 }}>
+                          {h.stok > 0 ? parseFloat(h.stok).toLocaleString('tr-TR') : '—'}
+                        </td>
+                        <td style={{ padding:'11px 14px',color:C.txt2 }}>{h.birim||'kg'}</td>
+                        <td style={{ padding:'11px 14px',textAlign:'center' }}>
+                          <div style={{ display:'flex',justifyContent:'center',gap:4 }}>
+                            <button onClick={()=>openHammEdit(h)}
+                              style={{ background:'none',border:'none',cursor:'pointer',color:C.border2,padding:4,borderRadius:6 }}
+                              onMouseEnter={e=>e.currentTarget.style.color=C.teal}
+                              onMouseLeave={e=>e.currentTarget.style.color=C.border2}><IcoEdit size={13}/></button>
+                            <button onClick={()=>delHamm(h)}
+                              style={{ background:'none',border:'none',cursor:'pointer',color:C.border2,padding:4,borderRadius:6 }}
+                              onMouseEnter={e=>e.currentTarget.style.color=C.red}
+                              onMouseLeave={e=>e.currentTarget.style.color=C.border2}><IcoTrash size={13}/></button>
+                          </div>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            }
+          </div>
+
+          {/* Hammadde özet */}
+          {hammadde.filter(h=>h.birim_fiyat>0).length > 0 && (
+            <div style={{ display:'grid',gridTemplateColumns:'repeat(auto-fill,minmax(160px,1fr))',gap:10 }}>
+              {[
+                ['📦 Toplam Kalem', hammadde.length, C.teal, C.tealS],
+                ['💰 Ort. Fiyat', '$'+(hammadde.filter(h=>h.birim_fiyat>0).reduce((s,h)=>s+parseFloat(h.birim_fiyat),0)/Math.max(1,hammadde.filter(h=>h.birim_fiyat>0).length)).toFixed(2), C.green, C.greenS],
+                ['📊 Stok Var', hammadde.filter(h=>h.stok>0).length, C.amber, C.amberS],
+              ].map(([lbl,val,col,bg])=>(
+                <div key={lbl} style={{ background:bg,borderRadius:12,padding:'12px 16px',border:`1px solid ${col}30` }}>
+                  <p style={{ fontSize:11,fontWeight:700,color:col,marginBottom:4 }}>{lbl}</p>
+                  <p style={{ fontSize:22,fontWeight:900,color:col,fontFamily:'monospace' }}>{val}</p>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
     </div>
   );
 }
@@ -1811,6 +2074,11 @@ function OffersView({ data, customers, onRefresh }) {
   const emptyForm = { firma_adi:'', urun:'', fiyat:'', durum:'Teklif Verildi',
     teklif_tarihi: new Date().toISOString().slice(0,10), gecerlilik_tarihi:'', notlar:'' };
   const [form, setForm] = React.useState(emptyForm);
+  const [multiRows, setMultiRows] = React.useState([{ urun:'', fiyat:'' }]);
+
+  const addMultiRow = () => setMultiRows(r => [...r, { urun:'', fiyat:'' }]);
+  const removeMultiRow = (i) => setMultiRows(r => r.filter((_,j) => j !== i));
+  const updateMultiRow = (i, field, val) => setMultiRows(r => r.map((row,j) => j===i ? {...row,[field]:val} : row));
 
   const DURUMLAR = ['Teklif Verildi', 'Onaylandı', 'Onaylanmadı'];
   const DCLR = {
@@ -1870,6 +2138,7 @@ function OffersView({ data, customers, onRefresh }) {
 
   const openAdd = (firmaAdi = '') => {
     setForm({ ...emptyForm, firma_adi: firmaAdi });
+    setMultiRows([{ urun:'', fiyat:'' }]);
     setModal('new');
   };
   const openEdit = (t) => {
@@ -1880,17 +2149,53 @@ function OffersView({ data, customers, onRefresh }) {
   };
 
   const save = async () => {
-    if (!form.firma_adi.trim() || !form.urun.trim()) return;
+    if (!form.firma_adi.trim()) return;
     setSaving(true);
     const now = new Date().toISOString();
-    const pay = { firma_adi: form.firma_adi.trim().toUpperCase(), urun: form.urun.trim(),
-      fiyat: parseFloat(form.fiyat)||null, durum: form.durum,
+    const base = { firma_adi: form.firma_adi.trim().toUpperCase(), durum: form.durum,
       teklif_tarihi: form.teklif_tarihi||null, gecerlilik_tarihi: form.gecerlilik_tarihi||null,
       notlar: form.notlar.trim()||null, updated_at: now };
-    if (modal === 'new') await db.from('fiyat_teklifleri').insert([{ ...pay, created_at: now }]);
-    else await db.from('fiyat_teklifleri').update(pay).eq('id', modal.id);
+    if (modal === 'new') {
+      const validRows = multiRows.filter(r => r.urun.trim());
+      if (!validRows.length) { setSaving(false); return; }
+      const payload = validRows.map(r => ({ ...base, urun: r.urun.trim(),
+        fiyat: parseFloat(r.fiyat)||null, created_at: now }));
+      await db.from('fiyat_teklifleri').insert(payload);
+    } else {
+      if (!form.urun.trim()) { setSaving(false); return; }
+      await db.from('fiyat_teklifleri').update({ ...base, urun: form.urun.trim(),
+        fiyat: parseFloat(form.fiyat)||null }).eq('id', modal.id);
+    }
     setSaving(false); setModal(null);
     await onRefresh();
+  };
+
+  const exportFirmaXL = async (firmaAdi, teklifler) => {
+    const dt = new Date().toLocaleDateString('tr-TR');
+    const wb = new ExcelJS.Workbook(); wb.creator = 'Yanteks Pro';
+    const sh = wb.addWorksheet('Teklif');
+    sh.mergeCells(1,1,1,5);
+    const tc = sh.getCell('A1');
+    tc.value = (firmaAdi || 'TÜM FİRMALAR') + ' — FİYAT TEKLİFLERİ (' + dt + ')';
+    tc.font = { bold:true, size:13, color:{ argb:'FFFFFFFF' } };
+    tc.fill = { type:'pattern', pattern:'solid', fgColor:{ argb:'FF0672A0' } };
+    tc.alignment = { horizontal:'center', vertical:'middle' };
+    sh.getRow(1).height = 28;
+    const hr = sh.addRow(['Firma','Ürün / Kalite','Fiyat ($)','Durum','Teklif Tarihi']);
+    hr.eachCell(c=>{ c.fill={type:'pattern',pattern:'solid',fgColor:{argb:'FF0891B2'}}; c.font={color:{argb:'FFFFFFFF'},bold:true}; c.alignment={horizontal:'center'}; });
+    sh.columns = [{width:30},{width:35},{width:14},{width:18},{width:16}];
+    const rows = teklifler || filtered;
+    rows.forEach(t => {
+      const r = sh.addRow([t.firma_adi||'',t.urun||'',t.fiyat||'',t.durum||'',t.teklif_tarihi||'']);
+      if (t.durum === 'Onaylandi') r.getCell(4).font = { color:{argb:'FF15803D'},bold:true };
+      if (t.durum === 'Onaylanmadi') r.getCell(4).font = { color:{argb:'FF991B1B'},bold:true };
+    });
+    const buf = await wb.xlsx.writeBuffer();
+    const blob = new Blob([buf], { type:'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = 'Teklif_' + (firmaAdi||'Tum').replace(/\s+/g,'_') + '_' + dt.replace(/\./g,'-') + '.xlsx';
+    a.click(); URL.revokeObjectURL(a.href);
   };
 
   // KPI'lar
@@ -1926,20 +2231,51 @@ function OffersView({ data, customers, onRefresh }) {
                 style={{ width:'100%',padding:'9px 12px',border:`1px solid ${C.border2}`,borderRadius:9,fontSize:13,fontFamily:'Inter,sans-serif',outline:'none',color:C.txt }} />
             </div>
 
-            {/* Ürün */}
-            <div style={{ marginBottom:12 }}>
-              <label style={{ fontSize:10,fontWeight:700,color:C.txt2,display:'block',marginBottom:5,textTransform:'uppercase',letterSpacing:'.08em' }}>Ürün / Kalite *</label>
-              <input value={form.urun} onChange={e=>setForm(f=>({...f,urun:e.target.value}))}
-                style={{ width:'100%',padding:'9px 12px',border:`1px solid ${C.border2}`,borderRadius:9,fontSize:13,fontFamily:'Inter,sans-serif',outline:'none',color:C.txt }} />
-            </div>
-
-            {/* Fiyat + Durum */}
-            <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:10, marginBottom:12 }}>
-              <div>
-                <label style={{ fontSize:10,fontWeight:700,color:C.txt2,display:'block',marginBottom:5,textTransform:'uppercase',letterSpacing:'.08em' }}>Fiyat ($)</label>
-                <input type="number" step="0.01" value={form.fiyat} onChange={e=>setForm(f=>({...f,fiyat:e.target.value}))}
-                  style={{ width:'100%',padding:'9px 12px',border:`1px solid ${C.border2}`,borderRadius:9,fontSize:13,fontFamily:'monospace',outline:'none',color:C.txt }} />
+            {/* Ürün + Fiyat — multi-row when new, single when edit */}
+            {modal === 'new' ? (
+              <div style={{ marginBottom:12 }}>
+                <div style={{ display:'flex',justifyContent:'space-between',alignItems:'center',marginBottom:6 }}>
+                  <label style={{ fontSize:10,fontWeight:700,color:C.txt2,textTransform:'uppercase',letterSpacing:'.08em' }}>Ürün / Kalite & Fiyat</label>
+                  <button onClick={addMultiRow}
+                    style={{ fontSize:11,fontWeight:700,color:C.teal,background:C.tealS,border:`1px solid rgba(8,145,178,.2)`,
+                      borderRadius:7,padding:'3px 9px',cursor:'pointer',display:'flex',alignItems:'center',gap:3 }}>
+                    <IcoPlus size={11}/> Satır Ekle
+                  </button>
+                </div>
+                {multiRows.map((row, i) => (
+                  <div key={i} style={{ display:'grid',gridTemplateColumns:'1fr 90px 28px',gap:6,marginBottom:6 }}>
+                    <input value={row.urun} onChange={e=>updateMultiRow(i,'urun',e.target.value)}
+                      placeholder={`Ürün ${i+1}…`}
+                      style={{ padding:'8px 10px',border:`1px solid ${C.border2}`,borderRadius:8,fontSize:13,fontFamily:'Inter,sans-serif',outline:'none',color:C.txt }} />
+                    <input type="number" step="0.01" value={row.fiyat} onChange={e=>updateMultiRow(i,'fiyat',e.target.value)}
+                      placeholder="$ —"
+                      style={{ padding:'8px 10px',border:`1px solid ${C.border2}`,borderRadius:8,fontSize:13,fontFamily:'monospace',outline:'none',color:C.txt,textAlign:'right' }} />
+                    {multiRows.length > 1
+                      ? <button onClick={()=>removeMultiRow(i)}
+                          style={{ background:'none',border:`1px solid ${C.border2}`,borderRadius:8,cursor:'pointer',color:C.red,display:'flex',alignItems:'center',justifyContent:'center' }}>
+                          <IcoX size={14}/>
+                        </button>
+                      : <div/>}
+                  </div>
+                ))}
               </div>
+            ) : (
+              <div style={{ marginBottom:12 }}>
+                <label style={{ fontSize:10,fontWeight:700,color:C.txt2,display:'block',marginBottom:5,textTransform:'uppercase',letterSpacing:'.08em' }}>Ürün / Kalite *</label>
+                <input value={form.urun} onChange={e=>setForm(f=>({...f,urun:e.target.value}))}
+                  style={{ width:'100%',padding:'9px 12px',border:`1px solid ${C.border2}`,borderRadius:9,fontSize:13,fontFamily:'Inter,sans-serif',outline:'none',color:C.txt }} />
+              </div>
+            )}
+
+            {/* Fiyat (edit only) + Durum */}
+            <div style={{ display:'grid', gridTemplateColumns: modal!=='new'?'1fr 1fr':'1fr', gap:10, marginBottom:12 }}>
+              {modal !== 'new' && (
+                <div>
+                  <label style={{ fontSize:10,fontWeight:700,color:C.txt2,display:'block',marginBottom:5,textTransform:'uppercase',letterSpacing:'.08em' }}>Fiyat ($)</label>
+                  <input type="number" step="0.01" value={form.fiyat} onChange={e=>setForm(f=>({...f,fiyat:e.target.value}))}
+                    style={{ width:'100%',padding:'9px 12px',border:`1px solid ${C.border2}`,borderRadius:9,fontSize:13,fontFamily:'monospace',outline:'none',color:C.txt }} />
+                </div>
+              )}
               <div>
                 <label style={{ fontSize:10,fontWeight:700,color:C.txt2,display:'block',marginBottom:5,textTransform:'uppercase',letterSpacing:'.08em' }}>Durum</label>
                 <select value={form.durum} onChange={e=>setForm(f=>({...f,durum:e.target.value}))}
@@ -1987,6 +2323,9 @@ function OffersView({ data, customers, onRefresh }) {
           <p style={{ fontSize:12,color:C.txt2,marginTop:2 }}>{filtered.length} / {data.length} teklif · {sortedFirms.length} firma</p>
         </div>
         <div style={{ display:'flex',gap:8 }}>
+          <button onClick={()=>exportFirmaXL('', filtered)} style={{ background:'none',border:`1px solid ${C.green}`,borderRadius:10,
+            padding:'8px 14px',fontSize:12,fontWeight:700,color:C.green,cursor:'pointer',
+            display:'flex',alignItems:'center',gap:5 }}>📊 Excel</button>
           <button onClick={()=>setImpModal(true)} style={{ background:'none',border:`1px solid ${C.border2}`,borderRadius:10,
             padding:'8px 14px',fontSize:12,fontWeight:700,color:C.txt2,cursor:'pointer',
             display:'flex',alignItems:'center',gap:5 }}>📥 İçe Aktar</button>
@@ -2080,6 +2419,12 @@ function OffersView({ data, customers, onRefresh }) {
                   </div>
                 </div>
                 <div style={{ display:'flex',alignItems:'center',gap:8 }}>
+                  <button onClick={e=>{e.stopPropagation();exportFirmaXL(firmaAdi, teklifler);}}
+                    style={{ background:'none',border:`1px solid ${C.green}`,color:C.green,
+                      borderRadius:8,padding:'5px 10px',cursor:'pointer',fontSize:11,fontWeight:700 }}
+                    onMouseEnter={e=>e.stopPropagation()} onMouseLeave={e=>e.stopPropagation()}>
+                    📊
+                  </button>
                   <button onClick={e=>{e.stopPropagation();openAdd(firmaAdi);}}
                     style={{ background:C.tealS,border:`1px solid rgba(8,145,178,.2)`,color:C.teal,
                       borderRadius:8,padding:'5px 10px',cursor:'pointer',fontSize:11,fontWeight:700,
@@ -2198,13 +2543,32 @@ function FirmaInput({ value, onChange, firmalar, placeholder, style }) {
   );
 }
 
+const NOTE_TAGS = ['Önemli','Takip','Toplantı','Teklif','Numune','Fikir','Acil'];
+const TAG_COLORS = { 'Önemli':'#DC2626','Takip':'#0891B2','Toplantı':'#7C3AED','Teklif':'#15803D','Numune':'#B45309','Fikir':'#6366F1','Acil':'#DC2626' };
+
+function parseTags(icerik) {
+  if (!icerik) return { tags:[], body:icerik||'' };
+  const lines = icerik.split('\n');
+  if (lines[0] && lines[0].startsWith('#')) {
+    const tags = lines[0].match(/#(\S+)/g)||[];
+    return { tags: tags.map(t=>t.slice(1)), body: lines.slice(1).join('\n') };
+  }
+  return { tags:[], body:icerik };
+}
+
+function buildIcerik(tags, body) {
+  if (tags.length === 0) return body;
+  return tags.map(t=>'#'+t).join(' ') + '\n' + body;
+}
+
 function NotesView({ data, customers, onRefresh }) {
   const [q, setQ]       = React.useState('');
   const [rf, setRf]     = React.useState('all');
+  const [tf, setTf]     = React.useState('all'); // tag filter
   const [sort, setSort] = React.useState('new');
   const [busy, setBusy] = React.useState(null);
   const [modal, setModal]   = React.useState(null); // null | { note } | 'new'
-  const [form, setForm]     = React.useState({ icerik:'', renk:'default', musteri:'' });
+  const [form, setForm]     = React.useState({ icerik:'', renk:'default', musteri:'', tags:[] });
   const [saving, setSaving] = React.useState(false);
 
   const RENKLER = {
@@ -2257,13 +2621,18 @@ function NotesView({ data, customers, onRefresh }) {
 
   const getTitle = (icerik) => {
     if (!icerik) return 'Başlıksız Not';
-    const lines = icerik.split('\n').filter(l => l.trim());
+    const { body } = parseTags(icerik);
+    const lines = body.split('\n').filter(l => l.trim());
     return lines[0]?.substring(0, 60) || 'Başlıksız Not';
   };
 
   const filtered = data
     .filter(n => {
       if (rf !== 'all' && (n.renk||'default') !== rf) return false;
+      if (tf !== 'all') {
+        const { tags } = parseTags(n.icerik||'');
+        if (!tags.includes(tf)) return false;
+      }
       if (q) {
         const Q = q.toLowerCase();
         if (!(n.icerik||'').toLowerCase().includes(Q) &&
@@ -2277,14 +2646,22 @@ function NotesView({ data, customers, onRefresh }) {
       return getTitle(a.icerik).localeCompare(getTitle(b.icerik), 'tr');
     });
 
-  const openNew  = () => { setForm({ icerik:'', renk:'default', musteri:'' }); setModal('new'); };
-  const openEdit = (n) => { setForm({ icerik:n.icerik||'', renk:n.renk||'default', musteri:n.musteri||'' }); setModal(n); };
+  const openNew  = () => { setForm({ icerik:'', renk:'default', musteri:'', tags:[] }); setModal('new'); };
+  const openEdit = (n) => {
+    const { tags, body } = parseTags(n.icerik||'');
+    setForm({ icerik:body, renk:n.renk||'default', musteri:n.musteri||'', tags });
+    setModal(n);
+  };
+  const toggleTag = (tag) => setForm(f => ({
+    ...f, tags: f.tags.includes(tag) ? f.tags.filter(t=>t!==tag) : [...f.tags, tag]
+  }));
 
   const save = async () => {
     if (!form.icerik.trim()) return;
     setSaving(true);
     const now = new Date().toISOString();
-    const pay = { icerik: form.icerik.trim(), renk: form.renk, musteri: form.musteri.trim()||null, updated_at: now };
+    const fullIcerik = buildIcerik(form.tags, form.icerik.trim());
+    const pay = { icerik: fullIcerik, renk: form.renk, musteri: form.musteri.trim()||null, updated_at: now };
     if (modal === 'new') {
       await db.from('genel_notlar').insert([{ ...pay, created_at: now }]);
     } else {
@@ -2304,6 +2681,8 @@ function NotesView({ data, customers, onRefresh }) {
 
   const cntByRenk = {};
   Object.keys(RENKLER).forEach(r => { cntByRenk[r] = data.filter(n => (n.renk||'default') === r).length; });
+  const cntByTag = {};
+  NOTE_TAGS.forEach(tag => { cntByTag[tag] = data.filter(n => parseTags(n.icerik||'').tags.includes(tag)).length; });
 
   return (
     <div style={{ display:'flex', flexDirection:'column', gap:14 }}>
@@ -2321,6 +2700,25 @@ function NotesView({ data, customers, onRefresh }) {
                 {modal === 'new' ? '📝 Yeni Not' : '✏️ Notu Düzenle'}
               </h3>
               <button onClick={()=>setModal(null)} style={{ background:'none',border:'none',cursor:'pointer',color:C.txt2,display:'flex' }}><IcoX size={20}/></button>
+            </div>
+
+            {/* Etiketler */}
+            <div style={{ marginBottom:12 }}>
+              <label style={{ fontSize:10,fontWeight:700,color:C.txt2,display:'block',marginBottom:6,textTransform:'uppercase',letterSpacing:'.08em' }}>Etiketler</label>
+              <div style={{ display:'flex', gap:6, flexWrap:'wrap' }}>
+                {NOTE_TAGS.map(tag => {
+                  const active = form.tags.includes(tag);
+                  const col = TAG_COLORS[tag]||C.txt2;
+                  return (
+                    <button key={tag} onClick={()=>toggleTag(tag)}
+                      style={{ padding:'4px 10px',borderRadius:14,border:`1.5px solid ${active?col:C.border2}`,
+                        background:active?col+'20':'transparent',color:active?col:C.txt2,
+                        fontSize:11,fontWeight:700,cursor:'pointer',transition:'all .15s' }}>
+                      #{tag}
+                    </button>
+                  );
+                })}
+              </div>
             </div>
 
             {/* Renk seç */}
@@ -2424,6 +2822,28 @@ function NotesView({ data, customers, onRefresh }) {
         })}
       </div>
 
+      {/* Etiket filtreleri */}
+      <div style={{ display:'flex', gap:6, flexWrap:'wrap', alignItems:'center' }}>
+        <span style={{ fontSize:10,fontWeight:700,color:C.txt2,textTransform:'uppercase',letterSpacing:'.08em' }}>Etiket:</span>
+        <button onClick={()=>setTf('all')}
+          style={{ padding:'4px 10px',borderRadius:14,border:`1.5px solid ${tf==='all'?C.teal:C.border}`,
+            background:tf==='all'?C.tealS:'transparent',color:tf==='all'?C.teal:C.txt2,
+            fontSize:11,fontWeight:700,cursor:'pointer' }}>
+          Tümü
+        </button>
+        {NOTE_TAGS.filter(tag => cntByTag[tag] > 0).map(tag => {
+          const col = TAG_COLORS[tag]||C.txt2;
+          return (
+            <button key={tag} onClick={()=>setTf(tf===tag?'all':tag)}
+              style={{ padding:'4px 10px',borderRadius:14,border:`1.5px solid ${tf===tag?col:C.border}`,
+                background:tf===tag?col+'18':'transparent',color:tf===tag?col:C.txt2,
+                fontSize:11,fontWeight:700,cursor:'pointer' }}>
+              #{tag} <span style={{ opacity:.7 }}>{cntByTag[tag]}</span>
+            </button>
+          );
+        })}
+      </div>
+
       {/* Notlar grid */}
       <div style={{ display:'grid', gridTemplateColumns:'repeat(auto-fill,minmax(260px,1fr))', gap:14 }}>
         {filtered.length === 0
@@ -2433,8 +2853,9 @@ function NotesView({ data, customers, onRefresh }) {
             </div>
           : filtered.map((n, i) => {
             const renk = RENKLER[n.renk||'default'] || RENKLER.default;
+            const { tags: noteTags, body: noteBody } = parseTags(n.icerik||'');
             const title = getTitle(n.icerik);
-            const body  = (n.icerik||'').split('\n').slice(1).join('\n').trim();
+            const body  = noteBody.split('\n').slice(1).join('\n').trim();
             const isBusy = busy === n.id;
             return (
               <div key={n.id||i}
@@ -2445,12 +2866,19 @@ function NotesView({ data, customers, onRefresh }) {
                 onMouseEnter={e=>{ e.currentTarget.style.boxShadow=`0 8px 24px rgba(0,0,0,.1)`; e.currentTarget.style.transform='translateY(-2px)'; }}
                 onMouseLeave={e=>{ e.currentTarget.style.boxShadow='none'; e.currentTarget.style.transform='none'; }}>
 
-                {/* Firma etiketi */}
-                {n.musteri && (
-                  <div style={{ fontSize:10, fontWeight:700, color:renk.txt, opacity:.65,
-                    textTransform:'uppercase', letterSpacing:'.08em', marginBottom:6,
-                    display:'flex', alignItems:'center', gap:4 }}>
-                    🏢 {n.musteri}
+                {/* Etiketler + Firma */}
+                {(noteTags.length > 0 || n.musteri) && (
+                  <div style={{ display:'flex', flexWrap:'wrap', gap:4, marginBottom:6, alignItems:'center' }}>
+                    {noteTags.map(tag => (
+                      <span key={tag} style={{ fontSize:10,fontWeight:700,padding:'2px 7px',borderRadius:10,
+                        background:(TAG_COLORS[tag]||C.txt2)+'20', color:TAG_COLORS[tag]||C.txt2 }}>
+                        #{tag}
+                      </span>
+                    ))}
+                    {n.musteri && (
+                      <span style={{ fontSize:10,fontWeight:700,color:renk.txt,opacity:.6,
+                        textTransform:'uppercase',letterSpacing:'.06em' }}>🏢 {n.musteri}</span>
+                    )}
                   </div>
                 )}
 
