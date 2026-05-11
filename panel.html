@@ -1056,84 +1056,277 @@ function PricesView({ data, onRefresh }) {
   );
 }
 
-// ── MALİYET ──────────────────────────────────────────────────────────────
-function CostView({ data }) {
+// ── MALİYET (TAM FONKSİYONEL) ────────────────────────────────────────────
+function CostView({ data, onRefresh }) {
+  const DEF = { iplik:'', denye:75, hiz:25, ig:256, hmd:0.964, fire:3,
+    person:10, maas:25000, makine:4, kw:180, kwtuk:2.8,
+    amort:0.005, bobin:0.01, paket:0.005, kar:20 };
+
+  const [inp, setInp]   = React.useState(DEF);
+  const [res, setRes]   = React.useState(null);
+  const [saving, setSaving] = React.useState(false);
+  const [q, setQ]       = React.useState('');
+  const [sort, setSort] = React.useState('new');
+  const [busy, setBusy] = React.useState(null);
+  const [tab, setTab]   = React.useState('calc'); // 'calc' | 'hist'
+
+  const f4 = (v) => parseFloat(v.toFixed(4));
+
+  const hesapla = React.useCallback((vals) => {
+    const { denye, hiz, ig, hmd, fire, person, maas, makine, kw, kwtuk, amort, bobin, paket, kar } = vals;
+    const gunluk   = hiz * 60 * 24 * (denye / 9000) * ig / 1000;
+    const aylik    = gunluk * 28;
+    const hammadde = hmd * (1 + fire / 100);
+    const iscilik  = aylik > 0 ? (person * maas * 1.1 / makine) / aylik : 0;
+    const enerji   = gunluk > 0 ? (kwtuk * 24 / gunluk) * kw : 0;
+    const diger    = amort + bobin + paket;
+    const net      = hammadde + iscilik + enerji + diger;
+    const satis    = net * (1 + kar / 100);
+    return { gunluk: f4(gunluk), aylik: f4(aylik), hammadde: f4(hammadde),
+      iscilik: f4(iscilik), enerji: f4(enerji), diger: f4(diger), net: f4(net), satis: f4(satis) };
+  }, []);
+
+  React.useEffect(() => { setRes(hesapla(inp)); }, [inp]);
+
+  const setV = (key, val) => setInp(prev => ({ ...prev, [key]: parseFloat(val)||0 }));
+
+  const saveToHistory = async () => {
+    if (!res) return;
+    setSaving(true);
+    await db.from('erp_gecmis').insert([{
+      tarih: new Date().toISOString(), iplik: inp.iplik||'—',
+      denye: inp.denye, hiz: inp.hiz, gunluk: res.gunluk,
+      iscilik: res.iscilik, enerji: res.enerji,
+      net: res.net, satis: res.satis, hammadde: res.hammadde, kar: inp.kar
+    }]);
+    setSaving(false);
+    await onRefresh();
+    setTab('hist');
+  };
+
+  const delRow = async (row) => {
+    if (!window.confirm(`"${row.iplik||'Kayıt'}" silinsin mi?`)) return;
+    setBusy(row.id);
+    await db.from('erp_gecmis').delete().eq('id', row.id);
+    await onRefresh(); setBusy(null);
+  };
+
+  const filtered = (data||[])
+    .filter(r => !q || (r.iplik||'').toLowerCase().includes(q.toLowerCase()))
+    .sort((a,b) => sort === 'new'
+      ? new Date(b.tarih||0) - new Date(a.tarih||0)
+      : new Date(a.tarih||0) - new Date(b.tarih||0));
+
+  const pctBar = (val, total) => total > 0 ? Math.round(val / total * 100) : 0;
+
+  const NumInput = ({ label, k, unit, step=0.001, min=0 }) => (
+    <div style={{ display:'flex', flexDirection:'column', gap:4 }}>
+      <label style={{ fontSize:10, fontWeight:700, color:C.txt2, textTransform:'uppercase', letterSpacing:'.07em' }}>{label}</label>
+      <div style={{ display:'flex', alignItems:'center', gap:4 }}>
+        <input type="number" step={step} min={min} value={inp[k]}
+          onChange={e=>setV(k, e.target.value)}
+          style={{ width:'100%', padding:'8px 10px', border:`1px solid ${C.border2}`, borderRadius:8,
+            fontSize:13, fontFamily:'monospace', fontWeight:700, color:C.txt, outline:'none',
+            background:C.surface }} />
+        {unit && <span style={{ fontSize:11, color:C.txt2, whiteSpace:'nowrap', flexShrink:0 }}>{unit}</span>}
+      </div>
+    </div>
+  );
+
+  const Section = ({ title, children }) => (
+    <div style={{ background:C.page, borderRadius:12, padding:14 }}>
+      <p style={{ fontSize:10, fontWeight:800, color:C.txt2, textTransform:'uppercase', letterSpacing:'.1em', marginBottom:10 }}>{title}</p>
+      <div style={{ display:'grid', gridTemplateColumns:'repeat(auto-fill,minmax(130px,1fr))', gap:10 }}>
+        {children}
+      </div>
+    </div>
+  );
+
   return (
-    <div style={{ background:C.surface, borderRadius:20, border:`1px solid ${C.border}`, overflow:'hidden' }}>
-      <div style={{ padding:'20px 28px', borderBottom:`1px solid ${C.border}`,
-        display:'flex', justifyContent:'space-between', alignItems:'center', flexWrap:'wrap', gap:12 }}>
+    <div style={{ display:'flex', flexDirection:'column', gap:14 }}>
+
+      {/* Başlık + Sekme */}
+      <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', flexWrap:'wrap', gap:10 }}>
         <div>
-          <h3 style={{ fontSize:17, fontWeight:800, color:C.txt }}>İplik Maliyet Hesaplama</h3>
-          <p style={{ fontSize:12, color:C.txt2, marginTop:3 }}>Hammadde, fire ve işletme giderleri dahil üretim maliyetleri.</p>
+          <h2 style={{ fontSize:22, fontWeight:900, color:C.txt, letterSpacing:'-.02em' }}>İplik Maliyet Hesaplama</h2>
+          <p style={{ fontSize:12, color:C.txt2, marginTop:2 }}>Hammadde, fire ve işletme giderleri dahil üretim maliyeti.</p>
         </div>
-        <div style={{ display:'flex', gap:10, alignItems:'center' }}>
-          <select style={{ background:C.page, border:`1px solid ${C.border2}`, color:C.txt,
-            fontWeight:600, fontSize:12, borderRadius:12, padding:'10px 14px',
-            cursor:'pointer', fontFamily:'Inter,sans-serif', outline:'none' }}>
-            <option>1. Tesis (Ana Fabrika)</option>
-            <option>2. Tesis</option>
-            <option>Tüm Tesisler</option>
-          </select>
-          <button style={{ background:C.navActive, color:'#fff', border:'none', borderRadius:12,
-            padding:'10px 18px', fontSize:13, fontWeight:700, cursor:'pointer',
-            display:'flex', alignItems:'center', gap:6,
-            boxShadow:'0 4px 12px rgba(8,145,178,.35)' }}>
-            <IcoRefresh size={15} /> Güncelle
-          </button>
+        <div style={{ display:'flex', gap:6 }}>
+          {[['calc','🧮 Hesap'],['hist','📋 Geçmiş']].map(([id,lbl])=>(
+            <button key={id} onClick={()=>setTab(id)}
+              style={{ padding:'8px 16px', borderRadius:10, border:`2px solid ${tab===id?C.teal:C.border}`,
+                background:tab===id?C.tealS:'transparent', color:tab===id?C.teal:C.txt2,
+                fontSize:13, fontWeight:700, cursor:'pointer' }}>{lbl}</button>
+          ))}
         </div>
       </div>
-      <div style={{ overflowX:'auto' }}>
-        <table style={{ width:'100%', borderCollapse:'collapse', fontSize:12, whiteSpace:'nowrap' }}>
-          <thead>
-            <tr style={{ background:C.page, fontSize:10, fontWeight:700, color:C.txt2,
-              textTransform:'uppercase', letterSpacing:'.1em' }}>
-              {['Cinsi','Ne','Harman','Boya','No','Fire','Hammadde','Maliyet','İşlem'].map((h,i) => (
-                <th key={i} style={{ padding:'11px 18px', textAlign:i===8?'center':'left',
-                  borderBottom:`1px solid ${C.border2}` }}>{h}</th>
+
+      {tab === 'calc' && res && (
+        <div style={{ display:'flex', flexDirection:'column', gap:12 }}>
+
+          {/* İplik adı */}
+          <div>
+            <label style={{ fontSize:10,fontWeight:700,color:C.txt2,display:'block',marginBottom:5,textTransform:'uppercase',letterSpacing:'.08em' }}>İplik Adı / Kodu</label>
+            <input value={inp.iplik} onChange={e=>setInp(p=>({...p,iplik:e.target.value}))}
+              placeholder="Örn: Ring 75/1 Polyester"
+              style={{ width:'100%',padding:'9px 12px',border:`1px solid ${C.border2}`,borderRadius:9,
+                fontSize:13,fontFamily:'Inter,sans-serif',outline:'none',color:C.txt,background:C.surface }} />
+          </div>
+
+          {/* Giriş grupları */}
+          <Section title="🏭 Üretim Parametreleri">
+            <NumInput label="Denye" k="denye" step={1} />
+            <NumInput label="Hız (m/dk)" k="hiz" step={0.1} />
+            <NumInput label="İğ Sayısı" k="ig" step={1} />
+          </Section>
+
+          <Section title="🧵 Hammadde">
+            <NumInput label="HMD Fiyatı ($/kg)" k="hmd" step={0.001} />
+            <NumInput label="Fire (%)" k="fire" step={0.1} />
+          </Section>
+
+          <Section title="👷 İşletme Giderleri">
+            <NumInput label="Çalışan" k="person" step={1} />
+            <NumInput label="Maaş (₺)" k="maas" step={100} />
+            <NumInput label="Makine Sayısı" k="makine" step={1} />
+            <NumInput label="kW" k="kw" step={1} />
+            <NumInput label="kWh Fiyatı (₺)" k="kwtuk" step={0.1} />
+            <NumInput label="Amortisman ($/kg)" k="amort" step={0.001} />
+            <NumInput label="Bobin ($/kg)" k="bobin" step={0.001} />
+            <NumInput label="Paketleme ($/kg)" k="paket" step={0.001} />
+          </Section>
+
+          <div style={{ display:'flex', alignItems:'center', gap:10 }}>
+            <label style={{ fontSize:10,fontWeight:700,color:C.txt2,textTransform:'uppercase',letterSpacing:'.08em',whiteSpace:'nowrap' }}>Kâr Marjı (%)</label>
+            <input type="number" step={0.5} min={0} value={inp.kar} onChange={e=>setV('kar',e.target.value)}
+              style={{ width:90,padding:'8px 10px',border:`1px solid ${C.border2}`,borderRadius:8,
+                fontSize:13,fontFamily:'monospace',fontWeight:700,color:C.txt,outline:'none',background:C.surface }} />
+          </div>
+
+          {/* Sonuçlar */}
+          <div style={{ background:'linear-gradient(135deg,#0F172A,#1E2D3D)', borderRadius:18, padding:24, color:'#fff' }}>
+            <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:20, marginBottom:20 }}>
+              <div style={{ textAlign:'center' }}>
+                <p style={{ fontSize:11, fontWeight:700, color:'rgba(255,255,255,.5)', textTransform:'uppercase', letterSpacing:'.1em', marginBottom:6 }}>Net Maliyet</p>
+                <p style={{ fontSize:42, fontWeight:900, color:'#38BDF8', letterSpacing:'-.03em', fontFamily:'monospace' }}>${res.net.toFixed(4)}</p>
+                <p style={{ fontSize:11, color:'rgba(255,255,255,.4)', marginTop:4 }}>per kg</p>
+              </div>
+              <div style={{ textAlign:'center' }}>
+                <p style={{ fontSize:11, fontWeight:700, color:'rgba(255,255,255,.5)', textTransform:'uppercase', letterSpacing:'.1em', marginBottom:6 }}>Satış Fiyatı</p>
+                <p style={{ fontSize:42, fontWeight:900, color:'#4ADE80', letterSpacing:'-.03em', fontFamily:'monospace' }}>${res.satis.toFixed(4)}</p>
+                <p style={{ fontSize:11, color:'rgba(255,255,255,.4)', marginTop:4 }}>%{inp.kar} kâr dahil</p>
+              </div>
+            </div>
+
+            {/* Maliyet dağılımı */}
+            <div style={{ display:'grid', gridTemplateColumns:'repeat(2,1fr)', gap:10, marginBottom:16 }}>
+              {[
+                ['🧵 Hammadde', res.hammadde, '#38BDF8'],
+                ['👷 İşçilik',  res.iscilik,  '#A78BFA'],
+                ['⚡ Enerji',   res.enerji,   '#FCD34D'],
+                ['📦 Diğer',   res.diger,    '#6EE7B7'],
+              ].map(([lbl, val, clr]) => (
+                <div key={lbl} style={{ background:'rgba(255,255,255,.06)', borderRadius:10, padding:'10px 14px' }}>
+                  <div style={{ display:'flex', justifyContent:'space-between', marginBottom:6 }}>
+                    <span style={{ fontSize:11, fontWeight:700, color:'rgba(255,255,255,.7)' }}>{lbl}</span>
+                    <span style={{ fontSize:12, fontWeight:900, color:clr, fontFamily:'monospace' }}>${val.toFixed(4)}</span>
+                  </div>
+                  <div style={{ height:4, background:'rgba(255,255,255,.1)', borderRadius:2 }}>
+                    <div style={{ height:'100%', borderRadius:2, background:clr, width:`${pctBar(val,res.net)}%`, transition:'width .4s' }} />
+                  </div>
+                  <span style={{ fontSize:10, color:'rgba(255,255,255,.4)', marginTop:3, display:'block' }}>%{pctBar(val,res.net)}</span>
+                </div>
               ))}
-            </tr>
-          </thead>
-          <tbody>
-            {data.length === 0
-              ? <tr><td colSpan="9" style={{ padding:28, textAlign:'center', color:C.txt2 }}>Kayıt bulunamadı.</td></tr>
-              : data.map((item,i) => (
-                <tr key={item.id||i} style={{ borderBottom:`1px solid ${C.border}`, transition:'background .15s' }}
-                  onMouseEnter={e=>e.currentTarget.style.background=C.page}
-                  onMouseLeave={e=>e.currentTarget.style.background='transparent'}>
-                  <td style={{ padding:'13px 18px', fontWeight:700, color:C.txt }}>{getVal(item,['cinsi','urun','ürün','iplik'])}</td>
-                  <td style={{ padding:'13px 18px' }}>
-                    <span style={{ background:C.tealS, color:C.teal, fontWeight:800,
-                      padding:'4px 10px', borderRadius:8, fontFamily:'monospace' }}>
-                      {getVal(item,['ne','numara','kalinlik'])}
-                    </span>
-                  </td>
-                  <td style={{ padding:'13px 18px', color:C.txt2 }}>{getVal(item,['harman','karisim','karışım','icerik'])}</td>
-                  <td style={{ padding:'13px 18px', color:C.txt2 }}>{getVal(item,['boya','renk','color'])}</td>
-                  <td style={{ padding:'13px 18px' }}>
-                    <span style={{ background:C.page, border:`1px solid ${C.border2}`, color:C.txt2,
-                      fontSize:10, padding:'3px 8px', borderRadius:6, fontWeight:700, fontFamily:'monospace' }}>
-                      {getVal(item,['no','id'])}
-                    </span>
-                  </td>
-                  <td style={{ padding:'13px 18px', color:C.red, fontWeight:700, fontFamily:'monospace' }}>{getVal(item,['fire','kayip','fireorani'])}</td>
-                  <td style={{ padding:'13px 18px', color:C.txt2, fontFamily:'monospace' }}>{getVal(item,['hammadde','hammaddefiyati','materyal'])}</td>
-                  <td style={{ padding:'13px 18px', color:C.green, fontWeight:900, fontSize:14, fontFamily:'monospace' }}>{getVal(item,['maliyet','toplam','cost'])}</td>
-                  <td style={{ padding:'13px 18px', textAlign:'center' }}>
-                    <div style={{ display:'flex', justifyContent:'center', gap:6 }}>
-                      <button style={{ background:'none', border:'none', cursor:'pointer', color:C.border2, padding:4, borderRadius:6 }}
-                        onMouseEnter={e=>e.currentTarget.style.color=C.teal}
-                        onMouseLeave={e=>e.currentTarget.style.color=C.border2}><IcoEdit size={14}/></button>
-                      <button style={{ background:'none', border:'none', cursor:'pointer', color:C.border2, padding:4, borderRadius:6 }}
-                        onMouseEnter={e=>e.currentTarget.style.color=C.red}
-                        onMouseLeave={e=>e.currentTarget.style.color=C.border2}><IcoTrash size={14}/></button>
-                    </div>
-                  </td>
-                </tr>
-              ))
-            }
-          </tbody>
-        </table>
-      </div>
+            </div>
+
+            <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', flexWrap:'wrap', gap:10, paddingTop:14, borderTop:'1px solid rgba(255,255,255,.1)' }}>
+              <div style={{ display:'flex', gap:16 }}>
+                <div><span style={{ fontSize:10, color:'rgba(255,255,255,.45)', display:'block' }}>Günlük Üretim</span>
+                  <span style={{ fontFamily:'monospace', fontWeight:800, color:'#fff' }}>{res.gunluk.toFixed(2)} kg</span></div>
+                <div><span style={{ fontSize:10, color:'rgba(255,255,255,.45)', display:'block' }}>Aylık Üretim</span>
+                  <span style={{ fontFamily:'monospace', fontWeight:800, color:'#fff' }}>{Math.round(res.aylik).toLocaleString('tr-TR')} kg</span></div>
+              </div>
+              <button onClick={saveToHistory} disabled={saving}
+                style={{ background:'linear-gradient(135deg,#0672A0,#0891B2)', color:'#fff', border:'none',
+                  borderRadius:10, padding:'10px 20px', fontSize:13, fontWeight:700, cursor:'pointer',
+                  boxShadow:'0 4px 12px rgba(8,145,178,.4)', opacity:saving?0.6:1 }}>
+                {saving ? '⏳ Kaydediliyor…' : '💾 Geçmişe Kaydet'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {tab === 'hist' && (
+        <div style={{ display:'flex', flexDirection:'column', gap:10 }}>
+
+          {/* Arama + sıralama */}
+          <div style={{ display:'flex', gap:10, flexWrap:'wrap' }}>
+            <div style={{ position:'relative', flex:1, minWidth:180 }}>
+              <span style={{ position:'absolute', left:11, top:'50%', transform:'translateY(-50%)', color:C.txt2, display:'flex' }}><IcoSearch size={14}/></span>
+              <input placeholder="İplik adı ara…" value={q} onChange={e=>setQ(e.target.value)}
+                style={{ width:'100%', paddingLeft:34, paddingRight:12, paddingTop:9, paddingBottom:9,
+                  border:`1px solid ${C.border2}`, borderRadius:10, fontSize:13, fontFamily:'Inter,sans-serif',
+                  outline:'none', color:C.txt, background:C.surface }} />
+            </div>
+            <select value={sort} onChange={e=>setSort(e.target.value)}
+              style={{ padding:'9px 12px', border:`1px solid ${C.border2}`, borderRadius:10, fontSize:13,
+                fontFamily:'Inter,sans-serif', outline:'none', color:C.txt, background:C.surface, cursor:'pointer' }}>
+              <option value="new">⏱ En Yeni</option>
+              <option value="old">📅 En Eski</option>
+            </select>
+          </div>
+
+          {/* Geçmiş tablosu */}
+          <div style={{ background:C.surface, borderRadius:16, border:`1px solid ${C.border}`, overflow:'hidden' }}>
+            <div style={{ overflowX:'auto' }}>
+              <table style={{ width:'100%', borderCollapse:'collapse', fontSize:12, whiteSpace:'nowrap' }}>
+                <thead>
+                  <tr style={{ background:C.page, fontSize:10, fontWeight:700, color:C.txt2,
+                    textTransform:'uppercase', letterSpacing:'.08em' }}>
+                    {['İplik','Denye','Hız','Günlük (kg)','Hammadde','İşçilik','Enerji','Net ($)','Satış ($)','Kâr %','Tarih','Sil'].map((h,i)=>(
+                      <th key={i} style={{ padding:'10px 14px', textAlign:i===11?'center':'left', borderBottom:`1px solid ${C.border2}` }}>{h}</th>
+                    ))}
+                  </tr>
+                </thead>
+                <tbody>
+                  {filtered.length === 0
+                    ? <tr><td colSpan="12" style={{ padding:28, textAlign:'center', color:C.txt2 }}>
+                        {q ? 'Arama sonucu yok.' : 'Henüz kayıt yok.'}
+                      </td></tr>
+                    : filtered.map((r,i) => {
+                      const isBusy = busy === r.id;
+                      return (
+                        <tr key={r.id||i} style={{ borderBottom:`1px solid ${C.border}`, transition:'background .15s', opacity:isBusy?0.5:1 }}
+                          onMouseEnter={e=>e.currentTarget.style.background=C.page}
+                          onMouseLeave={e=>e.currentTarget.style.background='transparent'}>
+                          <td style={{ padding:'10px 14px', fontWeight:700, color:C.txt }}>{r.iplik||'—'}</td>
+                          <td style={{ padding:'10px 14px', fontFamily:'monospace', color:C.txt2 }}>{r.denye||'—'}</td>
+                          <td style={{ padding:'10px 14px', fontFamily:'monospace', color:C.txt2 }}>{r.hiz||'—'}</td>
+                          <td style={{ padding:'10px 14px', fontFamily:'monospace', color:C.txt2 }}>{r.gunluk?.toFixed(2)||'—'}</td>
+                          <td style={{ padding:'10px 14px', fontFamily:'monospace', color:C.txt2 }}>${r.hammadde?.toFixed(4)||'—'}</td>
+                          <td style={{ padding:'10px 14px', fontFamily:'monospace', color:C.txt2 }}>${r.iscilik?.toFixed(4)||'—'}</td>
+                          <td style={{ padding:'10px 14px', fontFamily:'monospace', color:C.txt2 }}>${r.enerji?.toFixed(4)||'—'}</td>
+                          <td style={{ padding:'10px 14px', fontFamily:'monospace', fontWeight:900, color:C.teal }}>${r.net?.toFixed(4)||'—'}</td>
+                          <td style={{ padding:'10px 14px', fontFamily:'monospace', fontWeight:900, color:C.green }}>${r.satis?.toFixed(4)||'—'}</td>
+                          <td style={{ padding:'10px 14px', fontFamily:'monospace', color:C.amber }}>%{r.kar||'—'}</td>
+                          <td style={{ padding:'10px 14px', fontFamily:'monospace', color:C.txt2, fontSize:11 }}>{fmtDate(r.tarih)}</td>
+                          <td style={{ padding:'10px 14px', textAlign:'center' }}>
+                            <button onClick={()=>delRow(r)} disabled={isBusy}
+                              style={{ background:'none',border:'none',cursor:'pointer',color:C.border2,padding:4,borderRadius:6 }}
+                              onMouseEnter={e=>e.currentTarget.style.color=C.red}
+                              onMouseLeave={e=>e.currentTarget.style.color=C.border2}><IcoTrash size={13}/></button>
+                          </td>
+                        </tr>
+                      );
+                    })
+                  }
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
@@ -1427,7 +1620,7 @@ function App() {
       const { data:pr, error:pe } = await db.from('fiyatlar').select('*');
       if (pe) errs.push(`Fiyatlar: ${pe.message}`); else setPrices(pr||[]);
 
-      const { data:co } = await db.from('maliyetler').select('*');
+      const { data:co } = await db.from('erp_gecmis').select('*').order('tarih', { ascending: false }).limit(200);
       if (co) setCosts(co);
 
       const [genelRes, notlarRes] = await Promise.all([
@@ -1646,7 +1839,7 @@ function App() {
                 {tab === 'customers'  && <CustomersView data={customers} onRefresh={loadData} />}
                 {tab === 'samples'    && <SamplesView   data={samples} tbl={samplesTbl} onRefresh={loadData} />}
                 {tab === 'prices'     && <PricesView    data={prices}    onRefresh={loadData} />}
-                {tab === 'cost'       && <CostView      data={costs}     />}
+                {tab === 'cost'       && <CostView      data={costs}     onRefresh={loadData} />}
                 {tab === 'notes'      && <NotesView     data={notes}     onRefresh={loadData} />}
                 {tab === 'offers'     && (
                   <div style={{ display:'flex', flexDirection:'column', alignItems:'center',
