@@ -30,10 +30,12 @@
 const { useState, useEffect } = React;
 const { createClient } = supabase;
 
+// ── Supabase ──────────────────────────────────────────────────────────────
 const SUPABASE_URL      = 'https://zmlbdpjcergcvcurihuy.supabase.co';
 const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InptbGJkcGpjZXJnY3ZjdXJpaHV5Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzU1MTA2MzIsImV4cCI6MjA5MTA4NjYzMn0.Jh4e_UXSL7CH7EzLBhhXtQYM0-iQwrFU3GHnoe-njBM';
 const db = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
+// ── İkonlar ───────────────────────────────────────────────────────────────
 const Ico = ({ d, size = 20, children, viewBox = "0 0 24 24" }) => (
   <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox={viewBox}
     fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -62,6 +64,7 @@ const IcoTrash    = (p) => <Ico {...p}><polyline points="3 6 5 6 21 6"/><path d=
 const IcoRefresh  = (p) => <Ico {...p}><polyline points="23 4 23 10 17 10"/><polyline points="1 20 1 14 7 14"/><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/></Ico>;
 const IcoAlert    = (p) => <Ico {...p}><circle cx="12" cy="12" r="10"/><line x1="12" x2="12" y1="8" y2="12"/><line x1="12" x2="12.01" y1="16" y2="16"/></Ico>;
 
+// ── Yardımcılar ───────────────────────────────────────────────────────────
 const getVal = (item, keys, fallback = null) => {
   if (!item) return fallback;
   for (let k of keys) {
@@ -101,6 +104,7 @@ const fmtDate = (d) => {
   } catch { return d; }
 };
 
+// ── Tema renkleri ─────────────────────────────────────────────────────────
 const C = {
   sidebar:  '#0F172A',
   sHead:    '#0A1520',
@@ -127,6 +131,7 @@ const C = {
   redS:     'rgba(153,27,27,.1)',
 };
 
+// ── StatusBadge ───────────────────────────────────────────────────────────
 function StatusBadge({ status }) {
   const m = {
     'Aktif':        ['rgba(21,128,61,.1)',   '#15803D', 'rgba(21,128,61,.25)'],
@@ -148,6 +153,7 @@ function StatusBadge({ status }) {
   );
 }
 
+// ── KpiCard ───────────────────────────────────────────────────────────────
 function KpiCard({ title, value, Icon, grad, glow, badge }) {
   const [hov, setHov] = useState(false);
   return (
@@ -181,52 +187,86 @@ function KpiCard({ title, value, Icon, grad, glow, badge }) {
   );
 }
 
+// ── ÖZET PANELİ ──────────────────────────────────────────────────────────
 function DashboardView({ customers, samples, prices, notes, onNav }) {
   return (
     <div style={{ display:'flex', flexDirection:'column', gap:24 }}>
+
+      {/* KPI grid */}
       <div style={{ display:'grid', gridTemplateColumns:'repeat(auto-fill,minmax(200px,1fr))', gap:16 }}>
         <KpiCard title="Toplam Müşteri"  value={customers.length || 0} Icon={IcoUsers}   grad="linear-gradient(135deg,#0672A0,#0891B2)" glow="rgba(8,145,178,.3)" />
         <KpiCard title="Numune Kaydı"    value={samples.length   || 0} Icon={IcoPkg}     grad="linear-gradient(135deg,#C2410C,#EA580C)" glow="rgba(234,88,12,.3)" />
         <KpiCard title="Fiyat Kalemi"    value={prices.length    || 0} Icon={IcoDollar}  grad="linear-gradient(135deg,#15803D,#16A34A)" glow="rgba(22,163,74,.3)" />
         <KpiCard title="Bağlantı"        value="Aktif"                 Icon={IcoCheck}   grad="linear-gradient(135deg,#162332,#1E2D3D)" glow="rgba(30,45,61,.35)" badge="Supabase Bağlı" />
       </div>
+
+      {/* Alt iki panel */}
       <div style={{ display:'grid', gridTemplateColumns:'2fr 1fr', gap:20, flexWrap:'wrap' }}>
-        <div style={{ background:C.surface, borderRadius:20, border:`1px solid ${C.border}`, overflow:'hidden', minWidth:0 }}>
-          <div style={{ padding:'18px 24px', borderBottom:`1px solid ${C.border}`, display:'flex', justifyContent:'space-between', alignItems:'center' }}>
+
+        {/* Son numuneler */}
+        <div style={{ background:C.surface, borderRadius:20, border:`1px solid ${C.border}`,
+          overflow:'hidden', minWidth:0 }}>
+          <div style={{ padding:'18px 24px', borderBottom:`1px solid ${C.border}`,
+            display:'flex', justifyContent:'space-between', alignItems:'center' }}>
             <h3 style={{ fontSize:15, fontWeight:800, color:C.txt }}>Son Numune Talepleri</h3>
-            <button onClick={() => onNav('samples')} style={{ fontSize:12, fontWeight:700, color:C.teal, background:C.tealS, border:'none', borderRadius:8, padding:'6px 12px', cursor:'pointer', display:'flex', alignItems:'center', gap:4 }}>
+            <button onClick={() => onNav('samples')}
+              style={{ fontSize:12, fontWeight:700, color:C.teal,
+                background:C.tealS, border:'none', borderRadius:8,
+                padding:'6px 12px', cursor:'pointer', display:'flex', alignItems:'center', gap:4 }}>
               Tümü <IcoArrow size={14} />
             </button>
           </div>
           {samples.length === 0
             ? <div style={{ padding:24, textAlign:'center', color:C.txt2, fontSize:13 }}>Henüz numune kaydı yok.</div>
             : samples.slice(0,5).map((s, i) => (
-              <div key={s.id || i} style={{ padding:'13px 24px', borderBottom: i < 4 ? `1px solid ${C.border}` : 'none', display:'flex', justifyContent:'space-between', alignItems:'center', transition:'background .15s' }}
+              <div key={s.id || i} style={{ padding:'13px 24px',
+                borderBottom: i < 4 ? `1px solid ${C.border}` : 'none',
+                display:'flex', justifyContent:'space-between', alignItems:'center',
+                transition:'background .15s' }}
                 onMouseEnter={e => e.currentTarget.style.background='#F7FAFB'}
                 onMouseLeave={e => e.currentTarget.style.background='transparent'}>
                 <div style={{ display:'flex', alignItems:'center', gap:14 }}>
-                  <div style={{ width:42, height:42, borderRadius:13, background:C.tealS, display:'flex', alignItems:'center', justifyContent:'center', color:C.teal, flexShrink:0 }}><IcoPkg size={18} /></div>
+                  <div style={{ width:42, height:42, borderRadius:13, background:C.tealS,
+                    display:'flex', alignItems:'center', justifyContent:'center', color:C.teal, flexShrink:0 }}>
+                    <IcoPkg size={18} />
+                  </div>
                   <div>
-                    <p style={{ fontWeight:700, fontSize:13, color:C.txt }}>{getVal(s,['musteri','müşteri','firma','firmaadi','firmaadı','customer','isim','alici','alıcı','kime'])}</p>
+                    <p style={{ fontWeight:700, fontSize:13, color:C.txt }}>
+                      {getVal(s,['musteri','müşteri','firma','firmaadi','firmaadı','customer','isim','alici','alıcı','kime'])}
+                    </p>
                     <p style={{ fontSize:11, color:C.txt2, marginTop:2 }}>
                       {debugVal(s,['cinsi','cins','urun','ürün','type','iplik','kalite','detay'])}
                       <span style={{ margin:'0 5px', color:C.border2 }}>•</span>
-                      <span style={{ color:C.teal, fontWeight:600 }}>{debugVal(s,['miktar','quantity','kg','adet','agirlik','ağırlık','gramaj','kilo'])}</span>
+                      <span style={{ color:C.teal, fontWeight:600 }}>
+                        {debugVal(s,['miktar','quantity','kg','adet','agirlik','ağırlık','gramaj','kilo'])}
+                      </span>
                     </p>
                   </div>
                 </div>
                 <div style={{ display:'flex', alignItems:'center', gap:10, flexShrink:0 }}>
-                  <span style={{ fontSize:10, color:C.txt2, background:C.page, padding:'4px 8px', borderRadius:6, fontWeight:600, fontFamily:'monospace' }}>{fmtDate(getVal(s,['tarih','date','created_at','eklenme']))}</span>
+                  <span style={{ fontSize:10, color:C.txt2, background:C.page,
+                    padding:'4px 8px', borderRadius:6, fontWeight:600, fontFamily:'monospace' }}>
+                    {fmtDate(getVal(s,['tarih','date','created_at','eklenme']))}
+                  </span>
                   <StatusBadge status={getVal(s,['durum','status','asama','aşama'],'Beklemede')} />
                 </div>
               </div>
             ))
           }
         </div>
-        <div style={{ background:C.surface, borderRadius:20, border:`1px solid ${C.border}`, overflow:'hidden', display:'flex', flexDirection:'column', minWidth:0 }}>
-          <div style={{ padding:'18px 24px', borderBottom:`1px solid ${C.border}`, display:'flex', justifyContent:'space-between', alignItems:'center' }}>
+
+        {/* Son notlar */}
+        <div style={{ background:C.surface, borderRadius:20, border:`1px solid ${C.border}`,
+          overflow:'hidden', display:'flex', flexDirection:'column', minWidth:0 }}>
+          <div style={{ padding:'18px 24px', borderBottom:`1px solid ${C.border}`,
+            display:'flex', justifyContent:'space-between', alignItems:'center' }}>
             <h3 style={{ fontSize:15, fontWeight:800, color:C.txt }}>Son Notlar</h3>
-            <button onClick={() => onNav('notes')} style={{ width:30, height:30, borderRadius:'50%', background:C.page, border:`1px solid ${C.border}`, display:'flex', alignItems:'center', justifyContent:'center', cursor:'pointer', color:C.txt2 }}><IcoPlus size={15} /></button>
+            <button onClick={() => onNav('notes')}
+              style={{ width:30, height:30, borderRadius:'50%', background:C.page,
+                border:`1px solid ${C.border}`, display:'flex', alignItems:'center',
+                justifyContent:'center', cursor:'pointer', color:C.txt2 }}>
+              <IcoPlus size={15} />
+            </button>
           </div>
           <div style={{ padding:'20px 24px', flex:1, display:'flex', flexDirection:'column', gap:20, overflowY:'auto' }}>
             {notes.length === 0
@@ -234,10 +274,21 @@ function DashboardView({ customers, samples, prices, notes, onNav }) {
               : notes.slice(0,3).map((n, i) => (
                 <div key={n.id || i} style={{ position:'relative', paddingLeft:18 }}>
                   {i < 2 && <div style={{ position:'absolute', left:6, top:18, bottom:-20, width:2, background:C.border }} />}
-                  <div style={{ position:'absolute', left:-1, top:4, width:14, height:14, borderRadius:'50%', background:C.surface, border:`3px solid ${C.teal}`, boxShadow:`0 0 0 2px ${C.tealG}` }} />
-                  <h4 style={{ fontSize:13, fontWeight:700, color:C.txt }}>{getVal(n,['baslik','başlık','title','konu'])}</h4>
-                  <p style={{ fontSize:12, color:C.txt2, marginTop:4, lineHeight:1.5, overflow:'hidden', display:'-webkit-box', WebkitLineClamp:2, WebkitBoxOrient:'vertical' }}>{getVal(n,['icerik','içerik','content','not','detay'])}</p>
-                  <span style={{ fontSize:10, color:C.txt2, display:'block', marginTop:6, fontWeight:600, textTransform:'uppercase', letterSpacing:'.06em', fontFamily:'monospace' }}>{fmtDate(getVal(n,['tarih','date','created_at']))}</span>
+                  <div style={{ position:'absolute', left:-1, top:4, width:14, height:14,
+                    borderRadius:'50%', background:C.surface,
+                    border:`3px solid ${C.teal}`, boxShadow:`0 0 0 2px ${C.tealG}` }} />
+                  <h4 style={{ fontSize:13, fontWeight:700, color:C.txt }}>
+                    {getVal(n,['baslik','başlık','title','konu'])}
+                  </h4>
+                  <p style={{ fontSize:12, color:C.txt2, marginTop:4, lineHeight:1.5,
+                    overflow:'hidden', display:'-webkit-box',
+                    WebkitLineClamp:2, WebkitBoxOrient:'vertical' }}>
+                    {getVal(n,['icerik','içerik','content','not','detay'])}
+                  </p>
+                  <span style={{ fontSize:10, color:C.txt2, display:'block', marginTop:6,
+                    fontWeight:600, textTransform:'uppercase', letterSpacing:'.06em', fontFamily:'monospace' }}>
+                    {fmtDate(getVal(n,['tarih','date','created_at']))}
+                  </span>
                 </div>
               ))
             }
@@ -248,22 +299,30 @@ function DashboardView({ customers, samples, prices, notes, onNav }) {
   );
 }
 
+// ── MÜŞTERİLER ───────────────────────────────────────────────────────────
 function CustomersView({ data }) {
   return (
     <div style={{ background:C.surface, borderRadius:20, border:`1px solid ${C.border}`, overflow:'hidden' }}>
-      <div style={{ padding:'20px 28px', borderBottom:`1px solid ${C.border}`, display:'flex', justifyContent:'space-between', alignItems:'center' }}>
+      <div style={{ padding:'20px 28px', borderBottom:`1px solid ${C.border}`,
+        display:'flex', justifyContent:'space-between', alignItems:'center' }}>
         <div>
           <h3 style={{ fontSize:17, fontWeight:800, color:C.txt }}>Müşteri Portföyü</h3>
           <p style={{ fontSize:12, color:C.txt2, marginTop:3 }}>Sistemde kayıtlı tüm firmalar ve iletişim bilgileri.</p>
         </div>
-        <button style={{ background:C.navActive, color:'#fff', border:'none', borderRadius:12, padding:'10px 18px', fontSize:13, fontWeight:700, cursor:'pointer', display:'flex', alignItems:'center', gap:6, boxShadow:'0 4px 12px rgba(8,145,178,.35)' }}><IcoPlus size={16} /> Yeni Müşteri</button>
+        <button style={{ background:C.navActive, color:'#fff', border:'none', borderRadius:12,
+          padding:'10px 18px', fontSize:13, fontWeight:700, cursor:'pointer',
+          display:'flex', alignItems:'center', gap:6, boxShadow:'0 4px 12px rgba(8,145,178,.35)' }}>
+          <IcoPlus size={16} /> Yeni Müşteri
+        </button>
       </div>
       <div style={{ overflowX:'auto' }}>
         <table style={{ width:'100%', borderCollapse:'collapse', fontSize:13 }}>
           <thead>
-            <tr style={{ background:C.page, fontSize:11, fontWeight:700, color:C.txt2, textTransform:'uppercase', letterSpacing:'.07em' }}>
+            <tr style={{ background:C.page, fontSize:11, fontWeight:700, color:C.txt2,
+              textTransform:'uppercase', letterSpacing:'.07em' }}>
               {['Firma Adı','İletişim Kişisi','Telefon','Durum','İşlem'].map((h,i) => (
-                <th key={i} style={{ padding:'12px 24px', textAlign:i===4?'right':'left', borderBottom:`1px solid ${C.border2}`, whiteSpace:'nowrap' }}>{h}</th>
+                <th key={i} style={{ padding:'12px 24px', textAlign:i===4?'right':'left',
+                  borderBottom:`1px solid ${C.border2}`, whiteSpace:'nowrap' }}>{h}</th>
               ))}
             </tr>
           </thead>
@@ -274,18 +333,27 @@ function CustomersView({ data }) {
                 <tr key={c.id||i} style={{ borderBottom:`1px solid ${C.border}`, transition:'background .15s' }}
                   onMouseEnter={e=>e.currentTarget.style.background=C.tealS}
                   onMouseLeave={e=>e.currentTarget.style.background='transparent'}>
-                  <td style={{ padding:'14px 24px', fontWeight:700, color:C.txt }}>{getVal(c,['firma','firmaadi','firmaadı','name','musteri','müşteri','unvan'])}</td>
-                  <td style={{ padding:'14px 24px', color:C.txt2 }}>{getVal(c,['yetkili','contact','isim','iletisim','iletişim','kisi','kişi'])}</td>
-                  <td style={{ padding:'14px 24px', color:C.txt2, fontFamily:'monospace' }}>{getVal(c,['telefon','tel','phone','cep','gsm','numara'])}</td>
-                  <td style={{ padding:'14px 24px' }}><StatusBadge status={getVal(c,['durum','status'],'Aktif')} /></td>
+                  <td style={{ padding:'14px 24px', fontWeight:700, color:C.txt }}>
+                    {getVal(c,['firma','firmaadi','firmaadı','name','musteri','müşteri','unvan'])}
+                  </td>
+                  <td style={{ padding:'14px 24px', color:C.txt2 }}>
+                    {getVal(c,['yetkili','contact','isim','iletisim','iletişim','kisi','kişi'])}
+                  </td>
+                  <td style={{ padding:'14px 24px', color:C.txt2, fontFamily:'monospace' }}>
+                    {getVal(c,['telefon','tel','phone','cep','gsm','numara'])}
+                  </td>
+                  <td style={{ padding:'14px 24px' }}>
+                    <StatusBadge status={getVal(c,['durum','status'],'Aktif')} />
+                  </td>
                   <td style={{ padding:'14px 24px', textAlign:'right' }}>
                     <button style={{ background:'none', border:'none', cursor:'pointer', color:C.border2, padding:6, borderRadius:8 }}
                       onMouseEnter={e=>e.currentTarget.style.color=C.teal}
-                      onMouseLeave={e=>e.currentTarget.style.color=C.border2}><IcoEdit size={16} /></button>
+                      onMouseLeave={e=>e.currentTarget.style.color=C.border2}>
+                      <IcoEdit size={16} />
+                    </button>
                   </td>
                 </tr>
-              ))
-            }
+              ))}
           </tbody>
         </table>
       </div>
@@ -293,35 +361,54 @@ function CustomersView({ data }) {
   );
 }
 
+// ── NUMUNELER ────────────────────────────────────────────────────────────
 function SamplesView({ data }) {
   return (
     <div style={{ background:C.surface, borderRadius:20, border:`1px solid ${C.border}`, overflow:'hidden' }}>
-      <div style={{ padding:'20px 28px', borderBottom:`1px solid ${C.border}`, display:'flex', justifyContent:'space-between', alignItems:'center' }}>
+      <div style={{ padding:'20px 28px', borderBottom:`1px solid ${C.border}`,
+        display:'flex', justifyContent:'space-between', alignItems:'center' }}>
         <div>
           <h3 style={{ fontSize:17, fontWeight:800, color:C.txt }}>Numune Takibi</h3>
           <p style={{ fontSize:12, color:C.txt2, marginTop:3 }}>Müşterilere gönderilen numunelerin anlık durumları.</p>
         </div>
-        <button style={{ background:'linear-gradient(135deg,#C2410C,#EA580C)', color:'#fff', border:'none', borderRadius:12, padding:'10px 18px', fontSize:13, fontWeight:700, cursor:'pointer', display:'flex', alignItems:'center', gap:6, boxShadow:'0 4px 12px rgba(234,88,12,.35)' }}><IcoPlus size={16} /> Numune Talebi</button>
+        <button style={{ background:'linear-gradient(135deg,#C2410C,#EA580C)',
+          color:'#fff', border:'none', borderRadius:12,
+          padding:'10px 18px', fontSize:13, fontWeight:700, cursor:'pointer',
+          display:'flex', alignItems:'center', gap:6,
+          boxShadow:'0 4px 12px rgba(234,88,12,.35)' }}>
+          <IcoPlus size={16} /> Numune Talebi
+        </button>
       </div>
       <div style={{ padding:20, display:'flex', flexDirection:'column', gap:12 }}>
         {data.length === 0
           ? <div style={{ padding:24, textAlign:'center', color:C.txt2, border:`1px solid ${C.border}`, borderRadius:14 }}>Kayıt bulunamadı.</div>
           : data.map((s,i) => (
-            <div key={s.id||i} style={{ display:'flex', alignItems:'center', gap:16, padding:'16px 20px', background:C.surface, border:`1px solid ${C.border}`, borderRadius:16, cursor:'pointer', transition:'border-color .18s, box-shadow .18s' }}
+            <div key={s.id||i} style={{ display:'flex', alignItems:'center', gap:16,
+              padding:'16px 20px', background:C.surface, border:`1px solid ${C.border}`,
+              borderRadius:16, cursor:'pointer', transition:'border-color .18s, box-shadow .18s' }}
               onMouseEnter={e=>{ e.currentTarget.style.borderColor=C.teal; e.currentTarget.style.boxShadow=`0 4px 16px ${C.tealG}`; }}
               onMouseLeave={e=>{ e.currentTarget.style.borderColor=C.border; e.currentTarget.style.boxShadow='none'; }}>
-              <div style={{ width:52, height:52, borderRadius:16, background:C.tealS, display:'flex', alignItems:'center', justifyContent:'center', color:C.teal, flexShrink:0 }}><IcoPkg size={22} /></div>
+              <div style={{ width:52, height:52, borderRadius:16, background:C.tealS,
+                display:'flex', alignItems:'center', justifyContent:'center', color:C.teal, flexShrink:0 }}>
+                <IcoPkg size={22} />
+              </div>
               <div style={{ flex:1, minWidth:0 }}>
                 <div style={{ display:'flex', justifyContent:'space-between', alignItems:'flex-start', gap:8 }}>
-                  <h4 style={{ fontWeight:800, fontSize:14, color:C.txt }}>{getVal(s,['musteri','müşteri','firma','firmaadi','firmaadı','customer','isim','alici','alıcı','kime'])}</h4>
+                  <h4 style={{ fontWeight:800, fontSize:14, color:C.txt }}>
+                    {getVal(s,['musteri','müşteri','firma','firmaadi','firmaadı','customer','isim','alici','alıcı','kime'])}
+                  </h4>
                   <StatusBadge status={getVal(s,['durum','status','asama','aşama'],'Bekliyor')} />
                 </div>
                 <p style={{ fontSize:12, color:C.txt2, marginTop:4 }}>
                   {debugVal(s,['cinsi','cins','urun','ürün','type','iplik','kalite','detay','aciklama','açıklama'])}
                   <span style={{ margin:'0 6px', color:C.border2 }}>•</span>
-                  <strong style={{ color:C.teal }}>{debugVal(s,['miktar','quantity','kg','adet','agirlik','ağırlık','gramaj','kilo','bobin'])}</strong>
+                  <strong style={{ color:C.teal }}>
+                    {debugVal(s,['miktar','quantity','kg','adet','agirlik','ağırlık','gramaj','kilo','bobin'])}
+                  </strong>
                 </p>
-                <div style={{ display:'flex', alignItems:'center', gap:5, marginTop:8, fontSize:11, color:C.txt2, fontWeight:600, textTransform:'uppercase', letterSpacing:'.06em', fontFamily:'monospace' }}>
+                <div style={{ display:'flex', alignItems:'center', gap:5, marginTop:8,
+                  fontSize:11, color:C.txt2, fontWeight:600, textTransform:'uppercase',
+                  letterSpacing:'.06em', fontFamily:'monospace' }}>
                   <IcoClock size={12} />
                   {fmtDate(getVal(s,['tarih','date','created_at','zaman']))}
                 </div>
@@ -334,20 +421,29 @@ function SamplesView({ data }) {
   );
 }
 
+// ── FİYATLAR ────────────────────────────────────────────────────────────
 function PricesView({ data }) {
   return (
     <div style={{ background:C.surface, borderRadius:20, border:`1px solid ${C.border}`, overflow:'hidden' }}>
-      <div style={{ padding:'20px 28px', borderBottom:`1px solid ${C.border}`, display:'flex', justifyContent:'space-between', alignItems:'center' }}>
+      <div style={{ padding:'20px 28px', borderBottom:`1px solid ${C.border}`,
+        display:'flex', justifyContent:'space-between', alignItems:'center' }}>
         <div>
           <h3 style={{ fontSize:17, fontWeight:800, color:C.txt }}>Güncel İplik Fiyatları</h3>
           <p style={{ fontSize:12, color:C.txt2, marginTop:3 }}>Ürün bazında piyasa ve satış fiyatlandırmaları.</p>
         </div>
-        <button style={{ background:'linear-gradient(135deg,#15803D,#16A34A)', color:'#fff', border:'none', borderRadius:12, padding:'10px 18px', fontSize:13, fontWeight:700, cursor:'pointer', display:'flex', alignItems:'center', gap:6, boxShadow:'0 4px 12px rgba(22,163,74,.35)' }}><IcoPlus size={16} /> Fiyat Ekle</button>
+        <button style={{ background:'linear-gradient(135deg,#15803D,#16A34A)',
+          color:'#fff', border:'none', borderRadius:12,
+          padding:'10px 18px', fontSize:13, fontWeight:700, cursor:'pointer',
+          display:'flex', alignItems:'center', gap:6,
+          boxShadow:'0 4px 12px rgba(22,163,74,.35)' }}>
+          <IcoPlus size={16} /> Fiyat Ekle
+        </button>
       </div>
       <div style={{ overflowX:'auto' }}>
         <table style={{ width:'100%', borderCollapse:'collapse', fontSize:13 }}>
           <thead>
-            <tr style={{ background:C.page, fontSize:11, fontWeight:700, color:C.txt2, textTransform:'uppercase', letterSpacing:'.07em' }}>
+            <tr style={{ background:C.page, fontSize:11, fontWeight:700, color:C.txt2,
+              textTransform:'uppercase', letterSpacing:'.07em' }}>
               {['Ürün / Kalite','Birim Fiyat','Birim','Son Güncelleme'].map((h,i) => (
                 <th key={i} style={{ padding:'12px 24px', textAlign:'left', borderBottom:`1px solid ${C.border2}` }}>{h}</th>
               ))}
@@ -360,10 +456,18 @@ function PricesView({ data }) {
                 <tr key={p.id||i} style={{ borderBottom:`1px solid ${C.border}`, transition:'background .15s' }}
                   onMouseEnter={e=>e.currentTarget.style.background=C.greenS}
                   onMouseLeave={e=>e.currentTarget.style.background='transparent'}>
-                  <td style={{ padding:'16px 24px', fontWeight:700, fontSize:14, color:C.txt }}>{getVal(p,['urun','ürün','kalite','item','isim','cinsi','cins'])}</td>
-                  <td style={{ padding:'16px 24px', color:C.green, fontWeight:900, fontSize:16, fontFamily:'monospace' }}>{getVal(p,['fiyat','price','tutar'])}</td>
-                  <td style={{ padding:'16px 24px', color:C.txt2 }}>{getVal(p,['birim','unit'],'kg')}</td>
-                  <td style={{ padding:'16px 24px', color:C.txt2, fontFamily:'monospace' }}>{fmtDate(getVal(p,['tarih','updatedate','created_at']))}</td>
+                  <td style={{ padding:'16px 24px', fontWeight:700, fontSize:14, color:C.txt }}>
+                    {getVal(p,['urun','ürün','kalite','item','isim','cinsi','cins'])}
+                  </td>
+                  <td style={{ padding:'16px 24px', color:C.green, fontWeight:900, fontSize:16, fontFamily:'monospace' }}>
+                    {getVal(p,['fiyat','price','tutar'])}
+                  </td>
+                  <td style={{ padding:'16px 24px', color:C.txt2 }}>
+                    {getVal(p,['birim','unit'],'kg')}
+                  </td>
+                  <td style={{ padding:'16px 24px', color:C.txt2, fontFamily:'monospace' }}>
+                    {fmtDate(getVal(p,['tarih','updatedate','created_at']))}
+                  </td>
                 </tr>
               ))
             }
@@ -374,27 +478,40 @@ function PricesView({ data }) {
   );
 }
 
+// ── MALİYET ──────────────────────────────────────────────────────────────
 function CostView({ data }) {
   return (
     <div style={{ background:C.surface, borderRadius:20, border:`1px solid ${C.border}`, overflow:'hidden' }}>
-      <div style={{ padding:'20px 28px', borderBottom:`1px solid ${C.border}`, display:'flex', justifyContent:'space-between', alignItems:'center', flexWrap:'wrap', gap:12 }}>
+      <div style={{ padding:'20px 28px', borderBottom:`1px solid ${C.border}`,
+        display:'flex', justifyContent:'space-between', alignItems:'center', flexWrap:'wrap', gap:12 }}>
         <div>
           <h3 style={{ fontSize:17, fontWeight:800, color:C.txt }}>İplik Maliyet Hesaplama</h3>
           <p style={{ fontSize:12, color:C.txt2, marginTop:3 }}>Hammadde, fire ve işletme giderleri dahil üretim maliyetleri.</p>
         </div>
         <div style={{ display:'flex', gap:10, alignItems:'center' }}>
-          <select style={{ background:C.page, border:`1px solid ${C.border2}`, color:C.txt, fontWeight:600, fontSize:12, borderRadius:12, padding:'10px 14px', cursor:'pointer', fontFamily:'Inter,sans-serif', outline:'none' }}>
-            <option>1. Tesis (Ana Fabrika)</option><option>2. Tesis</option><option>Tüm Tesisler</option>
+          <select style={{ background:C.page, border:`1px solid ${C.border2}`, color:C.txt,
+            fontWeight:600, fontSize:12, borderRadius:12, padding:'10px 14px',
+            cursor:'pointer', fontFamily:'Inter,sans-serif', outline:'none' }}>
+            <option>1. Tesis (Ana Fabrika)</option>
+            <option>2. Tesis</option>
+            <option>Tüm Tesisler</option>
           </select>
-          <button style={{ background:C.navActive, color:'#fff', border:'none', borderRadius:12, padding:'10px 18px', fontSize:13, fontWeight:700, cursor:'pointer', display:'flex', alignItems:'center', gap:6, boxShadow:'0 4px 12px rgba(8,145,178,.35)' }}><IcoRefresh size={15} /> Güncelle</button>
+          <button style={{ background:C.navActive, color:'#fff', border:'none', borderRadius:12,
+            padding:'10px 18px', fontSize:13, fontWeight:700, cursor:'pointer',
+            display:'flex', alignItems:'center', gap:6,
+            boxShadow:'0 4px 12px rgba(8,145,178,.35)' }}>
+            <IcoRefresh size={15} /> Güncelle
+          </button>
         </div>
       </div>
       <div style={{ overflowX:'auto' }}>
         <table style={{ width:'100%', borderCollapse:'collapse', fontSize:12, whiteSpace:'nowrap' }}>
           <thead>
-            <tr style={{ background:C.page, fontSize:10, fontWeight:700, color:C.txt2, textTransform:'uppercase', letterSpacing:'.1em' }}>
+            <tr style={{ background:C.page, fontSize:10, fontWeight:700, color:C.txt2,
+              textTransform:'uppercase', letterSpacing:'.1em' }}>
               {['Cinsi','Ne','Harman','Boya','No','Fire','Hammadde','Maliyet','İşlem'].map((h,i) => (
-                <th key={i} style={{ padding:'11px 18px', textAlign:i===8?'center':'left', borderBottom:`1px solid ${C.border2}` }}>{h}</th>
+                <th key={i} style={{ padding:'11px 18px', textAlign:i===8?'center':'left',
+                  borderBottom:`1px solid ${C.border2}` }}>{h}</th>
               ))}
             </tr>
           </thead>
@@ -406,17 +523,31 @@ function CostView({ data }) {
                   onMouseEnter={e=>e.currentTarget.style.background=C.page}
                   onMouseLeave={e=>e.currentTarget.style.background='transparent'}>
                   <td style={{ padding:'13px 18px', fontWeight:700, color:C.txt }}>{getVal(item,['cinsi','urun','ürün','iplik'])}</td>
-                  <td style={{ padding:'13px 18px' }}><span style={{ background:C.tealS, color:C.teal, fontWeight:800, padding:'4px 10px', borderRadius:8, fontFamily:'monospace' }}>{getVal(item,['ne','numara','kalinlik'])}</span></td>
+                  <td style={{ padding:'13px 18px' }}>
+                    <span style={{ background:C.tealS, color:C.teal, fontWeight:800,
+                      padding:'4px 10px', borderRadius:8, fontFamily:'monospace' }}>
+                      {getVal(item,['ne','numara','kalinlik'])}
+                    </span>
+                  </td>
                   <td style={{ padding:'13px 18px', color:C.txt2 }}>{getVal(item,['harman','karisim','karışım','icerik'])}</td>
                   <td style={{ padding:'13px 18px', color:C.txt2 }}>{getVal(item,['boya','renk','color'])}</td>
-                  <td style={{ padding:'13px 18px' }}><span style={{ background:C.page, border:`1px solid ${C.border2}`, color:C.txt2, fontSize:10, padding:'3px 8px', borderRadius:6, fontWeight:700, fontFamily:'monospace' }}>{getVal(item,['no','id'])}</span></td>
+                  <td style={{ padding:'13px 18px' }}>
+                    <span style={{ background:C.page, border:`1px solid ${C.border2}`, color:C.txt2,
+                      fontSize:10, padding:'3px 8px', borderRadius:6, fontWeight:700, fontFamily:'monospace' }}>
+                      {getVal(item,['no','id'])}
+                    </span>
+                  </td>
                   <td style={{ padding:'13px 18px', color:C.red, fontWeight:700, fontFamily:'monospace' }}>{getVal(item,['fire','kayip','fireorani'])}</td>
                   <td style={{ padding:'13px 18px', color:C.txt2, fontFamily:'monospace' }}>{getVal(item,['hammadde','hammaddefiyati','materyal'])}</td>
                   <td style={{ padding:'13px 18px', color:C.green, fontWeight:900, fontSize:14, fontFamily:'monospace' }}>{getVal(item,['maliyet','toplam','cost'])}</td>
                   <td style={{ padding:'13px 18px', textAlign:'center' }}>
                     <div style={{ display:'flex', justifyContent:'center', gap:6 }}>
-                      <button style={{ background:'none', border:'none', cursor:'pointer', color:C.border2, padding:4, borderRadius:6 }} onMouseEnter={e=>e.currentTarget.style.color=C.teal} onMouseLeave={e=>e.currentTarget.style.color=C.border2}><IcoEdit size={14}/></button>
-                      <button style={{ background:'none', border:'none', cursor:'pointer', color:C.border2, padding:4, borderRadius:6 }} onMouseEnter={e=>e.currentTarget.style.color=C.red} onMouseLeave={e=>e.currentTarget.style.color=C.border2}><IcoTrash size={14}/></button>
+                      <button style={{ background:'none', border:'none', cursor:'pointer', color:C.border2, padding:4, borderRadius:6 }}
+                        onMouseEnter={e=>e.currentTarget.style.color=C.teal}
+                        onMouseLeave={e=>e.currentTarget.style.color=C.border2}><IcoEdit size={14}/></button>
+                      <button style={{ background:'none', border:'none', cursor:'pointer', color:C.border2, padding:4, borderRadius:6 }}
+                        onMouseEnter={e=>e.currentTarget.style.color=C.red}
+                        onMouseLeave={e=>e.currentTarget.style.color=C.border2}><IcoTrash size={14}/></button>
                     </div>
                   </td>
                 </tr>
@@ -429,29 +560,55 @@ function CostView({ data }) {
   );
 }
 
+// ── NOTLARIM ────────────────────────────────────────────────────────────
 function NotesView({ data }) {
   return (
     <div>
-      <div style={{ display:'flex', justifyContent:'space-between', alignItems:'flex-start', marginBottom:24, flexWrap:'wrap', gap:14 }}>
+      <div style={{ display:'flex', justifyContent:'space-between', alignItems:'flex-start',
+        marginBottom:24, flexWrap:'wrap', gap:14 }}>
         <div>
           <h3 style={{ fontSize:26, fontWeight:800, color:C.txt, letterSpacing:'-.02em' }}>Kişisel Notlar</h3>
           <p style={{ color:C.txt2, marginTop:4, fontWeight:500 }}>Önemli toplantılar, hatırlatmalar ve planlar.</p>
         </div>
-        <button style={{ background:'linear-gradient(135deg,#4F46E5,#6366F1)', color:'#fff', border:'none', borderRadius:12, padding:'11px 20px', fontSize:13, fontWeight:700, cursor:'pointer', display:'flex', alignItems:'center', gap:6, boxShadow:'0 4px 12px rgba(99,102,241,.35)' }}><IcoPlus size={16} /> Yeni Not Ekle</button>
+        <button style={{ background:'linear-gradient(135deg,#4F46E5,#6366F1)',
+          color:'#fff', border:'none', borderRadius:12,
+          padding:'11px 20px', fontSize:13, fontWeight:700, cursor:'pointer',
+          display:'flex', alignItems:'center', gap:6,
+          boxShadow:'0 4px 12px rgba(99,102,241,.35)' }}>
+          <IcoPlus size={16} /> Yeni Not Ekle
+        </button>
       </div>
       <div style={{ display:'grid', gridTemplateColumns:'repeat(auto-fill,minmax(270px,1fr))', gap:18 }}>
         {data.length === 0
-          ? <div style={{ gridColumn:'1/-1', padding:28, textAlign:'center', color:C.txt2, background:C.surface, borderRadius:18, border:`1px solid ${C.border}` }}>Kayıtlı not bulunamadı.</div>
+          ? <div style={{ gridColumn:'1/-1', padding:28, textAlign:'center', color:C.txt2,
+              background:C.surface, borderRadius:18, border:`1px solid ${C.border}` }}>
+              Kayıtlı not bulunamadı.
+            </div>
           : data.map((n,i) => (
-            <div key={n.id||i} style={{ background:'#FFFBEB', border:'1px solid #FDE68A', borderRadius:18, padding:24, position:'relative', cursor:'pointer', transition:'box-shadow .18s, transform .18s' }}
+            <div key={n.id||i} style={{ background:'#FFFBEB', border:'1px solid #FDE68A',
+              borderRadius:18, padding:24, position:'relative', cursor:'pointer',
+              transition:'box-shadow .18s, transform .18s' }}
               onMouseEnter={e=>{ e.currentTarget.style.boxShadow='0 8px 24px rgba(217,119,6,.15)'; e.currentTarget.style.transform='translateY(-2px)'; }}
               onMouseLeave={e=>{ e.currentTarget.style.boxShadow='none'; e.currentTarget.style.transform='none'; }}>
-              <h4 style={{ fontWeight:800, fontSize:15, color:C.txt, marginBottom:10, paddingRight:24 }}>{getVal(n,['baslik','başlık','title','konu'])}</h4>
-              <p style={{ fontSize:13, color:'#78350F', lineHeight:1.6, marginBottom:36, overflow:'hidden', display:'-webkit-box', WebkitLineClamp:4, WebkitBoxOrient:'vertical' }}>{getVal(n,['icerik','içerik','content','detay'])}</p>
-              <div style={{ position:'absolute', bottom:16, left:24, display:'flex', alignItems:'center', gap:5, fontSize:10, color:'#92400E', fontWeight:700, textTransform:'uppercase', letterSpacing:'.07em', fontFamily:'monospace' }}>
+              <h4 style={{ fontWeight:800, fontSize:15, color:C.txt, marginBottom:10, paddingRight:24 }}>
+                {getVal(n,['baslik','başlık','title','konu'])}
+              </h4>
+              <p style={{ fontSize:13, color:'#78350F', lineHeight:1.6, marginBottom:36,
+                overflow:'hidden', display:'-webkit-box',
+                WebkitLineClamp:4, WebkitBoxOrient:'vertical' }}>
+                {getVal(n,['icerik','içerik','content','detay'])}
+              </p>
+              <div style={{ position:'absolute', bottom:16, left:24, display:'flex',
+                alignItems:'center', gap:5, fontSize:10, color:'#92400E',
+                fontWeight:700, textTransform:'uppercase', letterSpacing:'.07em', fontFamily:'monospace' }}>
                 <IcoClock size={11} /> {fmtDate(getVal(n,['tarih','date','created_at']))}
               </div>
-              <button style={{ position:'absolute', top:16, right:16, background:'none', border:'none', cursor:'pointer', color:'#FCD34D' }} onMouseEnter={e=>e.currentTarget.style.color='#DC2626'} onMouseLeave={e=>e.currentTarget.style.color='#FCD34D'}><IcoX size={16} /></button>
+              <button style={{ position:'absolute', top:16, right:16, background:'none',
+                border:'none', cursor:'pointer', color:'#FCD34D' }}
+                onMouseEnter={e=>e.currentTarget.style.color='#DC2626'}
+                onMouseLeave={e=>e.currentTarget.style.color='#FCD34D'}>
+                <IcoX size={16} />
+              </button>
             </div>
           ))
         }
@@ -460,11 +617,13 @@ function NotesView({ data }) {
   );
 }
 
+// ── ANA UYGULAMA ─────────────────────────────────────────────────────────
 function App() {
   const [tab, setTab]           = useState('dashboard');
   const [sideOpen, setSideOpen] = useState(false);
   const [loading, setLoading]   = useState(true);
   const [dbErr, setDbErr]       = useState(null);
+
   const [customers, setCustomers] = useState([]);
   const [samples,   setSamples]   = useState([]);
   const [prices,    setPrices]    = useState([]);
@@ -487,16 +646,21 @@ function App() {
       const errs = [];
       const { data:cu, error:ce } = await db.from('musteriler').select('*');
       if (ce) errs.push(`Müşteriler: ${ce.message}`); else setCustomers(cu||[]);
+
       let { data:sa } = await db.from('numuneler').select('*');
       if (!sa) { const { data:sa2 } = await db.from('Numune takip').select('*'); sa = sa2; }
       if (sa) setSamples(sa);
+
       const { data:pr, error:pe } = await db.from('fiyatlar').select('*');
       if (pe) errs.push(`Fiyatlar: ${pe.message}`); else setPrices(pr||[]);
+
       const { data:co } = await db.from('maliyetler').select('*');
       if (co) setCosts(co);
+
       let { data:no } = await db.from('notlar').select('*');
       if (!no) { const { data:no2 } = await db.from('genel_notlar').select('*'); no = no2; }
       if (no) setNotes(no);
+
       if (errs.length) setDbErr(errs.join(' | '));
     } catch (e) {
       setDbErr(`Sistemsel Hata: ${e.message}`);
@@ -506,11 +670,16 @@ function App() {
   };
 
   useEffect(() => { loadData(); }, []);
+
   const goTo = (id) => { setTab(id); setSideOpen(false); };
+
   const current = nav.find(n => n.id === tab);
 
   return (
-    <div style={{ display:'flex', height:'100vh', background:C.page, color:C.txt, fontFamily:'Inter,sans-serif', overflow:'hidden' }}>
+    <div style={{ display:'flex', height:'100vh', background:C.page, color:C.txt,
+      fontFamily:'Inter,sans-serif', overflow:'hidden' }}>
+
+      {/* Global stiller */}
       <style>{`
         @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap');
         body { margin:0; }
@@ -528,76 +697,170 @@ function App() {
         }
       `}</style>
 
+      {/* Mobil overlay */}
       {sideOpen && (
         <div onClick={() => setSideOpen(false)}
-          style={{ position:'fixed', inset:0, background:'rgba(10,21,32,.65)', zIndex:20, backdropFilter:'blur(3px)' }} />
+          style={{ position:'fixed', inset:0, background:'rgba(10,21,32,.65)',
+            zIndex:20, backdropFilter:'blur(3px)' }} />
       )}
 
+      {/* ══════ SIDEBAR ══════ */}
       <aside className={`ypSidebarWrap${sideOpen?' open':''}`}
-        style={{ width:252, background:C.sidebar, borderRight:`1px solid ${C.sBorder}`, boxShadow:'4px 0 24px rgba(0,0,0,.4)', display:'flex', flexDirection:'column' }}>
-        <div style={{ height:72, padding:'0 20px', flexShrink:0, display:'flex', alignItems:'center', justifyContent:'space-between', background:C.sHead, borderBottom:`1px solid ${C.sBorder}` }}>
+        style={{ width:252, background:C.sidebar,
+          borderRight:`1px solid ${C.sBorder}`,
+          boxShadow:'4px 0 24px rgba(0,0,0,.4)',
+          display:'flex', flexDirection:'column' }}>
+
+        {/* Logo */}
+        <div style={{ height:72, padding:'0 20px', flexShrink:0,
+          display:'flex', alignItems:'center', justifyContent:'space-between',
+          background:C.sHead, borderBottom:`1px solid ${C.sBorder}` }}>
           <div style={{ display:'flex', alignItems:'center', gap:10 }}>
-            <div style={{ width:36, height:36, borderRadius:9, background:'linear-gradient(135deg,#0672A0,#0891B2)', display:'flex', alignItems:'center', justifyContent:'center', color:'#fff', boxShadow:'0 2px 10px rgba(8,145,178,.4)' }}><IcoZap size={18} /></div>
-            <span style={{ fontSize:18, fontWeight:800, color:'#fff', letterSpacing:'-.01em' }}>Yanteks<span style={{ color:C.tealL }}>Pro</span></span>
+            <div style={{ width:36, height:36, borderRadius:9,
+              background:'linear-gradient(135deg,#0672A0,#0891B2)',
+              display:'flex', alignItems:'center', justifyContent:'center',
+              color:'#fff', boxShadow:'0 2px 10px rgba(8,145,178,.4)' }}>
+              <IcoZap size={18} />
+            </div>
+            <span style={{ fontSize:18, fontWeight:800, color:'#fff', letterSpacing:'-.01em' }}>
+              Yanteks<span style={{ color:C.tealL }}>Pro</span>
+            </span>
           </div>
-          <button className="ypMobile" onClick={() => setSideOpen(false)} style={{ background:'none', border:'none', color:'rgba(255,255,255,.45)', cursor:'pointer', padding:6, borderRadius:8, display:'flex' }}><IcoX size={18} /></button>
+          <button className="ypMobile" onClick={() => setSideOpen(false)}
+            style={{ background:'none', border:'none', color:'rgba(255,255,255,.45)',
+              cursor:'pointer', padding:6, borderRadius:8, display:'flex' }}>
+            <IcoX size={18} />
+          </button>
         </div>
-        <nav style={{ flex:1, overflowY:'auto', padding:'10px 0', scrollbarWidth:'thin', scrollbarColor:'rgba(255,255,255,.12) transparent' }}>
-          <p style={{ padding:'8px 20px 6px', fontSize:9, fontWeight:700, color:'rgba(255,255,255,.25)', letterSpacing:'.13em', textTransform:'uppercase' }}>ANA MENÜ</p>
+
+        {/* Nav linkleri */}
+        <nav style={{ flex:1, overflowY:'auto', padding:'10px 0',
+          scrollbarWidth:'thin', scrollbarColor:'rgba(255,255,255,.12) transparent' }}>
+          <p style={{ padding:'8px 20px 6px', fontSize:9, fontWeight:700,
+            color:'rgba(255,255,255,.25)', letterSpacing:'.13em', textTransform:'uppercase' }}>
+            ANA MENÜ
+          </p>
           {nav.map(({ id, label, Icon }) => {
             const active = tab === id;
             return (
               <button key={id} onClick={() => goTo(id)}
-                style={{ width:'calc(100% - 16px)', margin:'2px 8px', display:'flex', alignItems:'center', gap:12, padding:'12px 14px', borderRadius:12, border:'none', cursor:'pointer', fontFamily:'Inter,sans-serif', fontSize:13, fontWeight:600, background: active ? C.navActive : 'transparent', boxShadow: active ? C.navGlow : 'none', color: active ? '#fff' : C.navTxt, transition:'background .15s, color .15s' }}
+                style={{
+                  width:'calc(100% - 16px)', margin:'2px 8px',
+                  display:'flex', alignItems:'center', gap:12,
+                  padding:'12px 14px', borderRadius:12, border:'none',
+                  cursor:'pointer', fontFamily:'Inter,sans-serif', fontSize:13, fontWeight:600,
+                  background: active ? C.navActive : 'transparent',
+                  boxShadow: active ? C.navGlow : 'none',
+                  color: active ? '#fff' : C.navTxt,
+                  transition:'background .15s, color .15s',
+                }}
                 onMouseEnter={e => { if (!active) { e.currentTarget.style.background=C.navHover; e.currentTarget.style.color='rgba(255,255,255,.9)'; } }}
                 onMouseLeave={e => { if (!active) { e.currentTarget.style.background='transparent'; e.currentTarget.style.color=C.navTxt; } }}>
-                <span style={{ width:22, textAlign:'center', flexShrink:0, opacity:active?1:.75 }}><Icon size={18} /></span>
+                <span style={{ width:22, textAlign:'center', flexShrink:0, opacity:active?1:.75 }}>
+                  <Icon size={18} />
+                </span>
                 <span>{label}</span>
-                {active && <span style={{ marginLeft:'auto', width:6, height:6, borderRadius:'50%', background:'rgba(255,255,255,.7)' }} />}
+                {active && <span style={{ marginLeft:'auto', width:6, height:6,
+                  borderRadius:'50%', background:'rgba(255,255,255,.7)' }} />}
               </button>
             );
           })}
         </nav>
-        <div style={{ padding:'14px 20px', borderTop:`1px solid ${C.sBorder}`, fontSize:10, fontWeight:600, color:'rgba(255,255,255,.2)', letterSpacing:'.06em' }}>YANTEKS PRO v2.0</div>
+
+        <div style={{ padding:'14px 20px', borderTop:`1px solid ${C.sBorder}`,
+          fontSize:10, fontWeight:600, color:'rgba(255,255,255,.2)', letterSpacing:'.06em' }}>
+          YANTEKS PRO v2.0
+        </div>
       </aside>
 
+      {/* ══════ İÇERİK ══════ */}
       <main style={{ flex:1, display:'flex', flexDirection:'column', minWidth:0, overflow:'hidden' }}>
-        <header style={{ height:72, background:C.surface, borderBottom:`1.5px solid ${C.border2}`, boxShadow:'0 1px 0 rgba(0,0,0,.04)', display:'flex', alignItems:'center', justifyContent:'space-between', padding:'0 24px', flexShrink:0, zIndex:10 }}>
+
+        {/* Topbar */}
+        <header style={{ height:72, background:C.surface,
+          borderBottom:`1.5px solid ${C.border2}`,
+          boxShadow:'0 1px 0 rgba(0,0,0,.04)',
+          display:'flex', alignItems:'center', justifyContent:'space-between',
+          padding:'0 24px', flexShrink:0, zIndex:10 }}>
           <div style={{ display:'flex', alignItems:'center', gap:14 }}>
-            <button className="ypMobile" onClick={() => setSideOpen(true)} style={{ background:'none', border:`1px solid ${C.border}`, borderRadius:10, padding:8, cursor:'pointer', color:C.txt2, display:'flex', alignItems:'center' }}><IcoMenu size={20} /></button>
+            <button className="ypMobile" onClick={() => setSideOpen(true)}
+              style={{ background:'none', border:`1px solid ${C.border}`, borderRadius:10,
+                padding:8, cursor:'pointer', color:C.txt2, display:'flex', alignItems:'center' }}>
+              <IcoMenu size={20} />
+            </button>
             <div>
-              <h2 style={{ fontSize:18, fontWeight:800, color:C.txt, letterSpacing:'-.02em' }}>{current?.label}</h2>
-              <p style={{ fontSize:11, color:C.txt2, fontWeight:500, marginTop:1 }}>Sisteme hoş geldiniz, iyi çalışmalar.</p>
+              <h2 style={{ fontSize:18, fontWeight:800, color:C.txt, letterSpacing:'-.02em' }}>
+                {current?.label}
+              </h2>
+              <p style={{ fontSize:11, color:C.txt2, fontWeight:500, marginTop:1 }}>
+                Sisteme hoş geldiniz, iyi çalışmalar.
+              </p>
             </div>
           </div>
+
           <div style={{ display:'flex', alignItems:'center', gap:10 }}>
+            {/* Arama (masaüstü) */}
             <div className="ypDesk" style={{ position:'relative' }}>
-              <span style={{ position:'absolute', left:12, top:'50%', transform:'translateY(-50%)', color:C.txt2, display:'flex' }}><IcoSearch size={15} /></span>
-              <input type="text" placeholder="Müşteri veya ürün ara..." style={{ paddingLeft:36, paddingRight:16, paddingTop:9, paddingBottom:9, width:250, background:C.page, border:`1px solid ${C.border2}`, borderRadius:22, fontSize:12, fontWeight:500, color:C.txt, fontFamily:'Inter,sans-serif', outline:'none' }}
-                onFocus={e=>{e.target.style.borderColor=C.teal;e.target.style.boxShadow=`0 0 0 3px ${C.tealG}`;}} onBlur={e=>{e.target.style.borderColor=C.border2;e.target.style.boxShadow='none';}} />
+              <span style={{ position:'absolute', left:12, top:'50%', transform:'translateY(-50%)',
+                color:C.txt2, display:'flex' }}><IcoSearch size={15} /></span>
+              <input type="text" placeholder="Müşteri veya ürün ara..."
+                style={{ paddingLeft:36, paddingRight:16, paddingTop:9, paddingBottom:9,
+                  width:250, background:C.page, border:`1px solid ${C.border2}`,
+                  borderRadius:22, fontSize:12, fontWeight:500, color:C.txt,
+                  fontFamily:'Inter,sans-serif', outline:'none' }}
+                onFocus={e=>{e.target.style.borderColor=C.teal;e.target.style.boxShadow=`0 0 0 3px ${C.tealG}`;}}
+                onBlur={e=>{e.target.style.borderColor=C.border2;e.target.style.boxShadow='none';}} />
             </div>
-            <button onClick={loadData} title="Verileri Yenile" style={{ background:'none', border:`1px solid ${C.border}`, borderRadius:10, padding:8, cursor:'pointer', color:C.txt2, display:'flex' }}>
+
+            {/* Yenile */}
+            <button onClick={loadData} title="Verileri Yenile"
+              style={{ background:'none', border:`1px solid ${C.border}`, borderRadius:10,
+                padding:8, cursor:'pointer', color:C.txt2, display:'flex' }}>
               <span className={loading?'ypSpin':''}><IcoRefresh size={18} /></span>
             </button>
-            <button style={{ background:'none', border:`1px solid ${C.border}`, borderRadius:10, padding:8, cursor:'pointer', color:C.txt2, display:'flex', position:'relative' }}>
+
+            {/* Bildirim */}
+            <button style={{ background:'none', border:`1px solid ${C.border}`, borderRadius:10,
+              padding:8, cursor:'pointer', color:C.txt2, display:'flex', position:'relative' }}>
               <IcoBell size={18} />
-              <span style={{ position:'absolute', top:7, right:7, width:8, height:8, background:'#DC2626', borderRadius:'50%', border:'2px solid #fff' }} />
+              <span style={{ position:'absolute', top:7, right:7, width:8, height:8,
+                background:'#DC2626', borderRadius:'50%', border:'2px solid #fff' }} />
             </button>
-            <div style={{ width:38, height:38, borderRadius:'50%', background:'linear-gradient(135deg,#0672A0,#0891B2)', display:'flex', alignItems:'center', justifyContent:'center', color:'#fff', fontWeight:800, fontSize:13, cursor:'pointer', boxShadow:'0 2px 8px rgba(8,145,178,.35)', border:'3px solid #fff' }}>YP</div>
+
+            {/* Avatar */}
+            <div style={{ width:38, height:38, borderRadius:'50%',
+              background:'linear-gradient(135deg,#0672A0,#0891B2)',
+              display:'flex', alignItems:'center', justifyContent:'center',
+              color:'#fff', fontWeight:800, fontSize:13, cursor:'pointer',
+              boxShadow:'0 2px 8px rgba(8,145,178,.35)', border:'3px solid #fff' }}>
+              YP
+            </div>
           </div>
         </header>
 
+        {/* Sayfa içeriği */}
         <div style={{ flex:1, overflowY:'auto', padding:24 }}>
           <div style={{ maxWidth:1300, margin:'0 auto' }}>
+
+            {/* Hata */}
             {dbErr && (
-              <div style={{ background:'#FEF2F2', borderLeft:'4px solid #DC2626', padding:'14px 20px', marginBottom:24, borderRadius:'0 12px 12px 0' }}>
-                <div style={{ display:'flex', alignItems:'center', gap:8, color:'#991B1B', fontWeight:700, marginBottom:4 }}><IcoAlert size={16} /> Veritabanı Uyarısı</div>
+              <div style={{ background:'#FEF2F2', borderLeft:'4px solid #DC2626',
+                padding:'14px 20px', marginBottom:24, borderRadius:'0 12px 12px 0' }}>
+                <div style={{ display:'flex', alignItems:'center', gap:8,
+                  color:'#991B1B', fontWeight:700, marginBottom:4 }}>
+                  <IcoAlert size={16} /> Veritabanı Uyarısı
+                </div>
                 <p style={{ fontSize:12, color:'#B91C1C', fontWeight:500 }}>{dbErr}</p>
               </div>
             )}
+
+            {/* Yükleniyor */}
             {loading ? (
-              <div style={{ display:'flex', flexDirection:'column', alignItems:'center', justifyContent:'center', height:280, gap:14 }}>
-                <span className="ypSpin" style={{ color:C.teal, display:'flex' }}><IcoRefresh size={40} /></span>
+              <div style={{ display:'flex', flexDirection:'column', alignItems:'center',
+                justifyContent:'center', height:280, gap:14 }}>
+                <span className="ypSpin" style={{ color:C.teal, display:'flex' }}>
+                  <IcoRefresh size={40} />
+                </span>
                 <p style={{ color:C.txt2, fontWeight:500 }}>Supabase verileri yükleniyor…</p>
               </div>
             ) : (
@@ -609,10 +872,18 @@ function App() {
                 {tab === 'cost'       && <CostView      data={costs}     />}
                 {tab === 'notes'      && <NotesView     data={notes}     />}
                 {tab === 'offers'     && (
-                  <div style={{ display:'flex', flexDirection:'column', alignItems:'center', justifyContent:'center', height:'60vh', background:C.surface, borderRadius:20, border:`2px dashed ${C.border2}` }}>
-                    <div style={{ width:72, height:72, borderRadius:'50%', background:C.page, display:'flex', alignItems:'center', justifyContent:'center', color:C.border2, marginBottom:20 }}><IcoPhone size={32} /></div>
+                  <div style={{ display:'flex', flexDirection:'column', alignItems:'center',
+                    justifyContent:'center', height:'60vh', background:C.surface,
+                    borderRadius:20, border:`2px dashed ${C.border2}` }}>
+                    <div style={{ width:72, height:72, borderRadius:'50%', background:C.page,
+                      display:'flex', alignItems:'center', justifyContent:'center',
+                      color:C.border2, marginBottom:20 }}>
+                      <IcoPhone size={32} />
+                    </div>
                     <h3 style={{ fontSize:22, fontWeight:800, color:C.txt }}>Modül Hazırlanıyor</h3>
-                    <p style={{ color:C.txt2, marginTop:8, textAlign:'center', maxWidth:360 }}>"Teklifler" modülü üzerinde çalışmalarımız devam ediyor.</p>
+                    <p style={{ color:C.txt2, marginTop:8, textAlign:'center', maxWidth:360 }}>
+                      "Teklifler" modülü üzerinde çalışmalarımız devam ediyor.
+                    </p>
                   </div>
                 )}
               </>

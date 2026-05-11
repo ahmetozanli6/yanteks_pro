@@ -198,6 +198,10 @@ function toast(m,t='info'){const c=document.getElementById('toasts'),el=document
 function showUpload(txt){const el=document.getElementById('upload-progress');document.getElementById('up-text').textContent=txt||'Yükleniyor...';el.classList.add('on');}
 function hideUpload(){document.getElementById('upload-progress').classList.remove('on');}
 
+// ═══════════════════════════════════════════════
+// FOTOĞRAF FONKSİYONLARI
+// ═══════════════════════════════════════════════
+
 async function fetchPhotos(numeneId){
   try{
     const{data,error}=await db.storage.from(BUCKET).list('numune_'+numeneId,{sortBy:{column:'created_at',order:'asc'}});
@@ -329,6 +333,10 @@ document.getElementById('photo-viewer').addEventListener('touchend',e=>{
   pvTouchX=null;
 },{passive:true});
 
+// ═══════════════════════════════════════════════
+// ANA FONKSİYONLAR
+// ═══════════════════════════════════════════════
+
 function updBanner(){const b=document.getElementById('firma-banner');if(firmaF){b.classList.add('on');document.getElementById('fb-name').textContent=firmaF;}else b.classList.remove('on');}
 function clearFirmaF(){firmaF='';updBanner();history.replaceState({},'',location.pathname);render();}
 function setSort(s){curSort=s;document.querySelectorAll('.sort-btn').forEach(x=>x.classList.toggle('on',x.dataset.sort===s));render();}
@@ -365,8 +373,13 @@ function clearQ(){document.getElementById('q').value='';document.getElementById(
 function setF(f){curF=f;document.querySelectorAll('.ft').forEach(x=>x.classList.toggle('on',x.dataset.f===f));render();}
 function statusClass(st){if(st==='Takip Et')return'st-takip';if(st==='Gönderildi')return'st-gonderildi';if(st==='Onaylandı')return'st-onaylandi';if(st==='Reddedildi')return'st-reddedildi';return'st-beklemede';}
 
+// ═══════════════════════════════════════════════
+// RENDER — Varyantları ana öğenin altına grupla
+// ═══════════════════════════════════════════════
 function groupVariants(items){
+  // Ana öğeler (↳ ile başlamayanlar)
   const anaItems=items.filter(i=>!isV(i.numune));
+  // Varyantlar (↳ ile başlayanlar)
   const varItems=items.filter(i=>isV(i.numune));
 
   const grouped=[];
@@ -375,10 +388,14 @@ function groupVariants(items){
   anaItems.forEach(ana=>{
     grouped.push(ana);
     const anaKod=dName(ana.numune);
+    // Bu ana koda ait varyantları bul:
+    // aciklama alanı "AnaKod|not" veya sadece "AnaKod" şeklinde başlar
     const altlar=varItems.filter(v=>{
       if(usedVarIds.has(v.id))return false;
       const{pc}=parseAc(v);
+      // pc alanı ana kodla eşleşiyor mu?
       if(pc&&trl(pc)===trl(anaKod))return true;
+      // Ya da aciklama direkt ana kod ile başlıyor mu?
       const ac=v.aciklama||'';
       if(ac.startsWith(anaKod+'|')||ac===anaKod)return true;
       return false;
@@ -389,6 +406,7 @@ function groupVariants(items){
     });
   });
 
+  // Hiçbir ana öğeye bağlanamayan varyantları sona ekle
   varItems.filter(v=>!usedVarIds.has(v.id)).forEach(v=>grouped.push(v));
 
   return grouped;
@@ -432,6 +450,7 @@ function render(){
     st+='</div>';
     h+='<div class="client-sec"><div class="client-head"><span class="client-name">🏢 '+ef+'</span>'+st+'<div style="display:flex;align-items:center;gap:6px"><button class="cl-edit" data-act="firma-change" data-firma="'+ef+'" title="Firma değiştir">&#x270F;️</button><span class="client-badge">'+items.length+'</span></div></div>';
 
+    // ── DÜZELTME: Önce sırala, sonra varyantları ana öğenin altına grupla ──
     let sItems=[...items];
     if(curSort==='alpha'){
       sItems.sort((a,b)=>dName(a.numune).localeCompare(dName(b.numune),'tr'));
@@ -439,6 +458,7 @@ function render(){
       const ord=['Beklemede','Takip Et','Gönderildi','Onaylandı','Reddedildi'];
       sItems.sort((a,b)=>ord.indexOf(a.durum||'Beklemede')-ord.indexOf(b.durum||'Beklemede'));
     }
+    // Sıralamadan sonra varyantları ana öğelerinin hemen altına taşı
     sItems=groupVariants(sItems);
 
     sItems.forEach(i=>{
@@ -557,6 +577,7 @@ sync();
 <div class="bnav-spacer"></div>
 
 <script>
+// iOS PWA: sayfalar arası geçişte standalone moddan çıkmasın
 document.addEventListener('click', function(e) {
   var a = e.target.closest('a[href]');
   if (!a) return;
