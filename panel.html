@@ -337,6 +337,7 @@ function CustomersView({ data, onRefresh }) {
       if (sf === 'visited' && !visited(m)) return false;
       if (sf === 'pending' && visited(m)) return false;
       if (sf === 'late' && lateLevel(m) !== 'red' && lateLevel(m) !== 'amber') return false;
+      if (sf === 'notlu' && !m.notlar) return false;
       if (q) {
         const Q = q.toLowerCase();
         const f1 = (m.firma_adi||'').toLowerCase();
@@ -385,13 +386,58 @@ function CustomersView({ data, onRefresh }) {
   const cntV = data.filter(visited).length;
   const cntP = data.length - cntV;
   const cntL = data.filter(m => lateLevel(m) !== null).length;
+  const cntN = data.filter(m => m.notlar).length;
 
   const FILTERS = [
     ['all','Tümü',data.length,C.teal,C.tealS],
     ['visited','✅ Gidilen',cntV,C.green,C.greenS],
     ['pending','⏳ Bekleyen',cntP,C.amber,C.amberS],
     ['late','🔴 Geciken',cntL,C.red,C.redS],
+    ['notlu','📝 Notlu',cntN,'#7C3AED','rgba(124,58,237,.1)'],
   ];
+
+  // Bölge gruplama
+  const [openBolge, setOpenBolge] = React.useState(new Set());
+  const toggleBolge = (b) => setOpenBolge(prev => {
+    const n = new Set(prev); n.has(b) ? n.delete(b) : n.add(b); return n;
+  });
+  const bolgeMap = {};
+  filtered.forEach(m => {
+    const b = m.bolge || '—';
+    if (!bolgeMap[b]) bolgeMap[b] = [];
+    bolgeMap[b].push(m);
+  });
+  const bolgeList = Object.keys(bolgeMap).sort((a,b) => a.localeCompare(b,'tr'));
+
+  const exportXL = async () => {
+    const dt = new Date().toLocaleDateString('tr-TR');
+    const wb = new ExcelJS.Workbook(); wb.creator = 'Yanteks Pro';
+    const sh = wb.addWorksheet('Müşteriler');
+    sh.mergeCells('A1:F1');
+    const tc = sh.getCell('A1');
+    tc.value = 'YANTEKS MÜŞTERİ LİSTESİ · ' + dt;
+    tc.font = { bold:true, size:13, color:{ argb:'FFFFFFFF' } };
+    tc.fill = { type:'pattern', pattern:'solid', fgColor:{ argb:'FF0672A0' } };
+    tc.alignment = { horizontal:'center', vertical:'middle' };
+    sh.getRow(1).height = 28;
+    const hr = sh.addRow(['FİRMA ADI','BÖLGE','SON ZİYARET','SÜRE (GÜN)','DURUM','NOTLAR']);
+    hr.eachCell(c => { c.fill={type:'pattern',pattern:'solid',fgColor:{argb:'FF0891B2'}}; c.font={color:{argb:'FFFFFFFF'},bold:true}; c.alignment={horizontal:'center'}; });
+    hr.height = 20;
+    sh.columns = [{width:32},{width:16},{width:14},{width:14},{width:18},{width:40}];
+    filtered.forEach(m => {
+      const ds = daysSince(m.son_ziyaret);
+      const row = sh.addRow([m.firma_adi||'', m.bolge||'', m.son_ziyaret||'', ds!==null?ds:'', visited(m)?'Ziyaret Edildi':'Bekliyor', m.notlar||'']);
+      row.getCell(1).font = { bold:true };
+      if (lateLevel(m)==='red') row.getCell(4).font = { color:{argb:'FF991B1B'}, bold:true };
+      else if (lateLevel(m)==='amber') row.getCell(4).font = { color:{argb:'FFB45309'}, bold:true };
+    });
+    const buf = await wb.xlsx.writeBuffer();
+    const blob = new Blob([buf],{type:'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'});
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = 'Yanteks_Musteriler_'+dt.replace(/\./g,'-')+'.xlsx';
+    a.click(); URL.revokeObjectURL(a.href);
+  };
 
   return (
     <div style={{ display:'flex', flexDirection:'column', gap:14 }}>
@@ -446,10 +492,15 @@ function CustomersView({ data, onRefresh }) {
           <h2 style={{ fontSize:22, fontWeight:900, color:C.txt, letterSpacing:'-.02em' }}>Müşteri Portföyü</h2>
           <p style={{ fontSize:12, color:C.txt2, marginTop:2 }}>{filtered.length} / {data.length} firma</p>
         </div>
-        <button onClick={openAdd} style={{ background:'linear-gradient(135deg,#0672A0,#0891B2)',
-          color:'#fff', border:'none', borderRadius:10, padding:'8px 16px', fontSize:13,
-          fontWeight:700, cursor:'pointer', display:'flex', alignItems:'center', gap:5,
-          boxShadow:'0 4px 12px rgba(8,145,178,.3)' }}><IcoPlus size={16}/> Yeni Müşteri</button>
+        <div style={{ display:'flex', gap:8 }}>
+          <button onClick={exportXL} style={{ background:'none', border:`1px solid ${C.border2}`, borderRadius:10,
+            padding:'8px 14px', fontSize:12, fontWeight:700, color:C.txt2, cursor:'pointer',
+            display:'flex', alignItems:'center', gap:5 }}>📊 Excel</button>
+          <button onClick={openAdd} style={{ background:'linear-gradient(135deg,#0672A0,#0891B2)',
+            color:'#fff', border:'none', borderRadius:10, padding:'8px 16px', fontSize:13,
+            fontWeight:700, cursor:'pointer', display:'flex', alignItems:'center', gap:5,
+            boxShadow:'0 4px 12px rgba(8,145,178,.3)' }}><IcoPlus size={16}/> Yeni Müşteri</button>
+        </div>
       </div>
 
       {/* Arama + Sıralama */}
@@ -467,6 +518,7 @@ function CustomersView({ data, onRefresh }) {
           <option value="az">🔤 A-Z</option>
           <option value="late">📅 Son Ziyarete Göre</option>
           <option value="bolge">📍 Bölgeye Göre</option>
+          <option value="late">⏰ Geç Ziyaret</option>
         </select>
       </div>
 
@@ -485,97 +537,90 @@ function CustomersView({ data, onRefresh }) {
         })}
       </div>
 
-      {/* Tablo */}
-      <div style={{ background:C.surface, borderRadius:16, border:`1px solid ${C.border}`, overflow:'hidden' }}>
-        <div style={{ overflowX:'auto' }}>
-          <table style={{ width:'100%', borderCollapse:'collapse', fontSize:13 }}>
-            <thead>
-              <tr style={{ background:C.page, fontSize:11, fontWeight:700, color:C.txt2,
-                textTransform:'uppercase', letterSpacing:'.07em' }}>
-                {['Firma Adı','Bölge','Son Ziyaret','Süre','Durum','İşlem'].map((h,i)=>(
-                  <th key={i} style={{ padding:'11px 20px', textAlign:i===5?'center':'left',
-                    borderBottom:`1px solid ${C.border2}`, whiteSpace:'nowrap' }}>{h}</th>
-                ))}
-              </tr>
-            </thead>
-            <tbody>
-              {filtered.length === 0
-                ? <tr><td colSpan="6" style={{ padding:32, textAlign:'center', color:C.txt2 }}>
-                    {q||sf!=='all' ? 'Filtreye uyan kayıt yok.' : 'Henüz müşteri kaydı yok.'}
-                  </td></tr>
-                : filtered.map((m, i) => {
-                  const done = visited(m);
-                  const lv   = lateLevel(m);
-                  const ds   = daysSince(m.son_ziyaret);
-                  const isBusy = busy === m.id;
-                  return (
-                    <tr key={m.id||i} style={{ borderBottom:`1px solid ${C.border}`, transition:'background .15s', opacity:isBusy?0.5:1 }}
-                      onMouseEnter={e=>e.currentTarget.style.background=C.tealS}
-                      onMouseLeave={e=>e.currentTarget.style.background='transparent'}>
-                      <td style={{ padding:'13px 20px', fontWeight:700, color:C.txt, maxWidth:200 }}>
-                        <div style={{ display:'flex', alignItems:'center', gap:8 }}>
-                          <div style={{ width:32, height:32, borderRadius:9, background:done?C.greenS:C.tealS,
-                            display:'flex', alignItems:'center', justifyContent:'center',
-                            color:done?C.green:C.teal, fontSize:13, fontWeight:800, flexShrink:0 }}>
-                            {(m.firma_adi||'?')[0]}
-                          </div>
-                          <span style={{ overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>
-                            {m.firma_adi || '—'}
+      {/* Bölge Akordeonları */}
+      {filtered.length === 0
+        ? <div style={{ padding:32, textAlign:'center', color:C.txt2, background:C.surface, borderRadius:16, border:`1px solid ${C.border}` }}>
+            {q||sf!=='all' ? 'Filtreye uyan kayıt yok.' : 'Henüz müşteri kaydı yok.'}
+          </div>
+        : bolgeList.map(bolge => {
+          const items = bolgeMap[bolge];
+          const isOpen = openBolge.has(bolge) || q.length > 0 || sf !== 'all';
+          const lateC  = items.filter(m => lateLevel(m) !== null).length;
+          return (
+            <div key={bolge} style={{ background:C.surface, borderRadius:14, border:`1px solid ${C.border}`, overflow:'hidden' }}>
+              {/* Bölge başlığı */}
+              <div onClick={()=>toggleBolge(bolge)}
+                style={{ display:'flex', alignItems:'center', gap:10, padding:'12px 18px',
+                  cursor:'pointer', background:isOpen?C.page:C.surface, borderBottom:isOpen?`1px solid ${C.border2}`:'none' }}>
+                <span style={{ fontSize:14, color:C.txt2, transition:'transform .2s',
+                  transform:isOpen?'rotate(0deg)':'rotate(-90deg)' }}>▼</span>
+                <span style={{ fontSize:13, fontWeight:800, color:C.txt, flex:1 }}>📍 {bolge}</span>
+                <span style={{ background:C.tealS, color:C.teal, fontSize:11, fontWeight:700,
+                  padding:'2px 8px', borderRadius:8 }}>{items.length} firma</span>
+                {lateC > 0 && <span style={{ background:C.redS, color:C.red, fontSize:10, fontWeight:700,
+                  padding:'2px 7px', borderRadius:7 }}>⏰ {lateC} geciken</span>}
+              </div>
+              {/* Firma kartları */}
+              {isOpen && items.map((m, i) => {
+                const done   = visited(m);
+                const lv     = lateLevel(m);
+                const ds     = daysSince(m.son_ziyaret);
+                const isBusy = busy === m.id;
+                return (
+                  <div key={m.id||i}
+                    style={{ display:'flex', alignItems:'center', gap:12, padding:'12px 18px',
+                      borderBottom: i < items.length-1 ? `1px solid ${C.border}` : 'none',
+                      transition:'background .15s', opacity:isBusy?0.5:1,
+                      background: lv==='red'?'rgba(153,27,27,.04)':lv==='amber'?'rgba(180,83,9,.04)':'transparent' }}
+                    onMouseEnter={e=>e.currentTarget.style.background=C.tealS}
+                    onMouseLeave={e=>e.currentTarget.style.background=lv==='red'?'rgba(153,27,27,.04)':lv==='amber'?'rgba(180,83,9,.04)':'transparent'}>
+                    <div style={{ width:34, height:34, borderRadius:9, background:done?C.greenS:C.tealS,
+                      display:'flex', alignItems:'center', justifyContent:'center',
+                      color:done?C.green:C.teal, fontSize:13, fontWeight:800, flexShrink:0 }}>
+                      {(m.firma_adi||'?')[0]}
+                    </div>
+                    <div style={{ flex:1, minWidth:0 }}>
+                      <div style={{ fontWeight:700, fontSize:13, color:C.txt,
+                        overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>
+                        {m.firma_adi}
+                      </div>
+                      <div style={{ display:'flex', gap:10, marginTop:3, flexWrap:'wrap', alignItems:'center' }}>
+                        {ds !== null && (
+                          <span style={{ fontSize:11, fontWeight:700,
+                            color:lv==='red'?C.red:lv==='amber'?C.amber:C.green, fontFamily:'monospace' }}>
+                            {lv==='red'?'🔴':lv==='amber'?'🟡':'✅'} {ds} gün önce
                           </span>
-                        </div>
-                      </td>
-                      <td style={{ padding:'13px 20px', color:C.txt2, fontSize:12 }}>
-                        <span style={{ background:C.page, border:`1px solid ${C.border}`,
-                          padding:'3px 8px', borderRadius:6, fontWeight:600, fontSize:11 }}>
-                          📍 {m.bolge || '—'}
-                        </span>
-                      </td>
-                      <td style={{ padding:'13px 20px', color:C.txt2, fontFamily:'monospace', fontSize:12 }}>
-                        {fmtDate(m.son_ziyaret) || '—'}
-                      </td>
-                      <td style={{ padding:'13px 20px' }}>
-                        {ds !== null ? (
-                          <span style={{ fontWeight:700, fontSize:12, fontFamily:'monospace',
-                            color: lv==='red'?C.red : lv==='amber'?C.amber : C.green }}>
-                            {lv==='red'?'🔴':lv==='amber'?'🟡':'✅'} {ds} gün
-                          </span>
-                        ) : <span style={{ color:C.txt2, fontSize:12 }}>—</span>}
-                      </td>
-                      <td style={{ padding:'13px 20px' }}>
-                        <span style={{ padding:'4px 10px', borderRadius:7, fontSize:11, fontWeight:700,
-                          background: done?C.greenS:C.amberS, color: done?C.green:C.amber,
-                          border: `1px solid ${done?'rgba(21,128,61,.2)':'rgba(180,83,9,.2)'}`,
-                          whiteSpace:'nowrap' }}>
-                          {done ? '✅ Gidildi' : '⏳ Bekliyor'}
-                        </span>
-                      </td>
-                      <td style={{ padding:'13px 20px', textAlign:'center' }}>
-                        <div style={{ display:'flex', justifyContent:'center', gap:4 }}>
-                          {!done && (
-                            <button onClick={()=>visitToday(m)} disabled={isBusy} title="Bugün Ziyaret Et"
-                              style={{ background:C.greenS, border:`1px solid rgba(21,128,61,.2)`, color:C.green,
-                                borderRadius:7, padding:'5px 8px', cursor:'pointer', fontSize:11, fontWeight:700 }}>
-                              ✓ Bugün
-                            </button>
-                          )}
-                          <button onClick={()=>openEdit(m)} disabled={isBusy}
-                            style={{ background:'none',border:'none',cursor:'pointer',color:C.border2,padding:5,borderRadius:7 }}
-                            onMouseEnter={e=>e.currentTarget.style.color=C.teal}
-                            onMouseLeave={e=>e.currentTarget.style.color=C.border2}><IcoEdit size={14}/></button>
-                          <button onClick={()=>delItem(m)} disabled={isBusy}
-                            style={{ background:'none',border:'none',cursor:'pointer',color:C.border2,padding:5,borderRadius:7 }}
-                            onMouseEnter={e=>e.currentTarget.style.color=C.red}
-                            onMouseLeave={e=>e.currentTarget.style.color=C.border2}><IcoTrash size={14}/></button>
-                        </div>
-                      </td>
-                    </tr>
-                  );
-                })
-              }
-            </tbody>
-          </table>
-        </div>
-      </div>
+                        )}
+                        {m.notlar && <span style={{ fontSize:11, color:C.txt2, fontStyle:'italic',
+                          overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap', maxWidth:160 }}>
+                          📝 {m.notlar}
+                        </span>}
+                      </div>
+                    </div>
+                    <div style={{ display:'flex', alignItems:'center', gap:6, flexShrink:0 }}>
+                      {!done && (
+                        <button onClick={()=>visitToday(m)} disabled={isBusy}
+                          style={{ background:C.greenS, border:`1px solid rgba(21,128,61,.2)`, color:C.green,
+                            borderRadius:7, padding:'5px 9px', cursor:'pointer', fontSize:11, fontWeight:700, whiteSpace:'nowrap' }}>
+                          ✓ Bugün
+                        </button>
+                      )}
+                      <button onClick={()=>openEdit(m)} disabled={isBusy}
+                        style={{ background:'none',border:'none',cursor:'pointer',color:C.border2,padding:5,borderRadius:7 }}
+                        onMouseEnter={e=>e.currentTarget.style.color=C.teal}
+                        onMouseLeave={e=>e.currentTarget.style.color=C.border2}><IcoEdit size={14}/></button>
+                      <button onClick={()=>delItem(m)} disabled={isBusy}
+                        style={{ background:'none',border:'none',cursor:'pointer',color:C.border2,padding:5,borderRadius:7 }}
+                        onMouseEnter={e=>e.currentTarget.style.color=C.red}
+                        onMouseLeave={e=>e.currentTarget.style.color=C.border2}><IcoTrash size={14}/></button>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          );
+        })
+      }
     </div>
   );
 }
@@ -587,46 +632,106 @@ function SamplesView({ data, tbl, onRefresh }) {
   const [sort, setSort] = React.useState('new');
   const [busy, setBusy] = React.useState(null);
   const [showAdd, setShowAdd] = React.useState(false);
-  const [form, setForm] = React.useState({ musteri:'', cinsi:'', miktar:'', fiyat:'', not:'', durum:'Bekle' });
+  const [form, setForm] = React.useState({ musteri:'', cinsi:'', miktar:'', fiyat:'', not:'', durum:'Beklemede' });
   const [saving, setSaving] = React.useState(false);
+  const [selIds, setSelIds] = React.useState(new Set());
+  const [bulkBusy, setBulkBusy] = React.useState(false);
 
-  const STATUSES = ['Bekle','Takip','Gitti','Onay','Red','Arşiv'];
-  const EMO = { Bekle:'⏳', Takip:'👀', Gitti:'🚀', Onay:'✅', Red:'❌', Arşiv:'🗂️' };
-  const CLRS = {
-    Bekle: ['rgba(217,119,6,.12)','#B45309'],  Takip: ['rgba(8,145,178,.12)','#0891B2'],
-    Gitti: ['rgba(29,78,216,.12)','#1D4ED8'],  Onay:  ['rgba(21,128,61,.12)','#15803D'],
-    Red:   ['rgba(153,27,27,.12)','#991B1B'],  Arşiv: ['rgba(71,85,105,.12)','#475569'],
+  const relDate = (d) => {
+    if (!d) return '';
+    const diff = Math.floor((Date.now() - new Date(d)) / 86400000);
+    if (diff === 0) return 'bugün';
+    if (diff === 1) return 'dün';
+    if (diff < 7)  return diff + 'g';
+    if (diff < 30) return Math.floor(diff/7) + 'h';
+    if (diff < 365) return Math.floor(diff/30) + 'ay';
+    return Math.floor(diff/365) + 'y';
   };
+
+  const toggleSel = (id) => setSelIds(prev => {
+    const n = new Set(prev); n.has(id) ? n.delete(id) : n.add(id); return n;
+  });
+  const toggleAll = () => setSelIds(prev =>
+    prev.size === filtered.length ? new Set() : new Set(filtered.map(s => s.id))
+  );
+  const clearSel = () => setSelIds(new Set());
+
+  const bulkStatus = async (ns) => {
+    if (!selIds.size) return;
+    setBulkBusy(true);
+    const ids = [...selIds];
+    if (ns === 'Arşiv') {
+      await db.from(tbl).update({ arsiv: true }).in('id', ids);
+    } else {
+      await db.from(tbl).update({ durum: ns, arsiv: false }).in('id', ids);
+    }
+    setBulkBusy(false); clearSel(); await onRefresh();
+  };
+
+  const bulkDelete = async () => {
+    if (!selIds.size || !window.confirm(selIds.size + ' numune silinsin mi?')) return;
+    setBulkBusy(true);
+    await db.from(tbl).delete().in('id', [...selIds]);
+    setBulkBusy(false); clearSel(); await onRefresh();
+  };
+
+  // DB'deki gerçek değerler
+  const STATUSES    = ['Beklemede','Takip Et','Gönderildi','Onaylandı','Reddedildi','Arşiv'];
+  const LABELS = { Beklemede:'⏳ Bekle', 'Takip Et':'👀 Takip', Gönderildi:'🚀 Gitti', Onaylandı:'✅ Onay', Reddedildi:'❌ Red', Arşiv:'🗂️ Arşiv' };
+  const SHORT  = { Beklemede:'Bekle', 'Takip Et':'Takip', Gönderildi:'Gitti', Onaylandı:'Onay', Reddedildi:'Red', Arşiv:'Arşiv' };
+  const EMO    = { Beklemede:'⏳', 'Takip Et':'👀', Gönderildi:'🚀', Onaylandı:'✅', Reddedildi:'❌', Arşiv:'🗂️' };
+  // Chip renkleri (filtre çubukları için — alpha arka plan)
+  const CLRS = {
+    Beklemede:  ['rgba(217,119,6,.12)','#B45309'],  'Takip Et': ['rgba(8,145,178,.12)','#0891B2'],
+    Gönderildi: ['rgba(29,78,216,.12)','#1D4ED8'],  Onaylandı:  ['rgba(21,128,61,.12)','#15803D'],
+    Reddedildi: ['rgba(153,27,27,.12)','#991B1B'],  Arşiv:      ['rgba(71,85,105,.12)','#475569'],
+  };
+  // Dropdown renkleri (solid — iOS'ta alpha yok sayılıyor)
+  const DCLR = {
+    Beklemede: '#B45309', 'Takip Et': '#0891B2',
+    Gönderildi:'#1D4ED8', Onaylandı: '#15803D',
+    Reddedildi:'#991B1B', Arşiv:     '#475569',
+  };
+
+  const isArsiv = (s) => s.arsiv === true;
+  const getDur  = (s) => isArsiv(s) ? 'Arşiv' : (getVal(s,['durum','status'],'') || 'Beklemede');
 
   const filtered = data
     .filter(s => {
-      const dur = getVal(s,['durum','status'],'') || '';
-      if (sf !== 'all' && dur !== sf) return false;
+      if (sf === 'Arşiv') return isArsiv(s);
+      if (sf !== 'all') { if (isArsiv(s) || getDur(s) !== sf) return false; }
+      else { if (isArsiv(s)) return false; }
       if (q) {
         const Q = q.toLowerCase();
-        const f1 = String(getVal(s,['musteri','müşteri','firma','firmaadi','firmaadı'],'') || '').toLowerCase();
-        const f2 = String(getVal(s,['cinsi','cins','urun','ürün'],'') || '').toLowerCase();
-        const f3 = String(getVal(s,['not','aciklama','açıklama','note'],'') || '').toLowerCase();
-        const f4 = String(getVal(s,['kod','code','no'],'') || '').toLowerCase();
-        if (!f1.includes(Q) && !f2.includes(Q) && !f3.includes(Q) && !f4.includes(Q)) return false;
+        const f1 = String(getVal(s,['firma','musteri','müşteri','firmaadi','firmaadı'],'') || '').toLowerCase();
+        const f2 = String(getVal(s,['numune','cinsi','cins','urun','ürün'],'') || '').toLowerCase();
+        const f3 = String(getVal(s,['aciklama','not','açıklama','note'],'') || '').toLowerCase();
+        if (!f1.includes(Q) && !f2.includes(Q) && !f3.includes(Q)) return false;
       }
       return true;
     })
     .sort((a,b) => {
       if (sort==='new') return new Date(b.created_at||0)-new Date(a.created_at||0);
       if (sort==='old') return new Date(a.created_at||0)-new Date(b.created_at||0);
-      const fa=String(getVal(a,['musteri','firma'],'') || '');
-      const fb=String(getVal(b,['musteri','firma'],'') || '');
+      const fa=String(getVal(a,['firma','musteri'],'') || '');
+      const fb=String(getVal(b,['firma','musteri'],'') || '');
       return fa.localeCompare(fb,'tr');
     });
 
   const counts = {};
-  STATUSES.forEach(s => { counts[s] = data.filter(i => (getVal(i,['durum','status'],'') || '') === s).length; });
+  STATUSES.forEach(st => {
+    if (st === 'Arşiv') counts[st] = data.filter(i => isArsiv(i)).length;
+    else counts[st] = data.filter(i => !isArsiv(i) && getDur(i) === st).length;
+  });
 
   const setStatus = async (item, ns) => {
     if (!item.id || !tbl) return;
     setBusy(item.id);
-    await db.from(tbl).update({ durum: ns }).eq('id', item.id);
+    if (ns === 'Arşiv') {
+      await db.from(tbl).update({ arsiv: true }).eq('id', item.id);
+    } else {
+      await db.from(tbl).update({ durum: ns, arsiv: false }).eq('id', item.id);
+    }
     await onRefresh(); setBusy(null);
   };
 
@@ -642,24 +747,51 @@ function SamplesView({ data, tbl, onRefresh }) {
   const addSample = async () => {
     if (!tbl || !form.musteri.trim()) return;
     setSaving(true);
-    await db.from(tbl).insert({ musteri:form.musteri, cinsi:form.cinsi, miktar:form.miktar, fiyat:form.fiyat, not:form.not, durum:form.durum, tarih:new Date().toISOString() });
+    const fiyatVal = form.fiyat ? (form.fiyat.startsWith('$') ? form.fiyat : '$'+form.fiyat) : '';
+    await db.from(tbl).insert({ firma:form.musteri.toUpperCase(), numune:form.cinsi, fiyat:fiyatVal, aciklama:form.not, durum:form.durum, arsiv:false });
     setSaving(false); setShowAdd(false);
-    setForm({ musteri:'', cinsi:'', miktar:'', fiyat:'', not:'', durum:'Bekle' });
+    setForm({ musteri:'', cinsi:'', miktar:'', fiyat:'', not:'', durum:'Beklemede' });
     await onRefresh();
   };
 
-  const exportCSV = () => {
-    const rows = [['Müşteri','Cinsi','Miktar','Fiyat','Durum','Tarih','Not']];
-    filtered.forEach(s => rows.push([
-      getVal(s,['musteri','müşteri','firma'],''), getVal(s,['cinsi','cins','urun'],''),
-      getVal(s,['miktar','adet','kg'],''),        getVal(s,['fiyat','birimfiyat'],''),
-      getVal(s,['durum','status'],''),            fmtDate(s.created_at||''),
-      getVal(s,['not','aciklama'],''),
-    ]));
-    const csv = rows.map(r=>r.map(v=>`"${String(v||'').replace(/"/g,'""')}"`).join(',')).join('\n');
+  const exportXL = async () => {
+    if (!filtered.length) return;
+    const dt = new Date().toLocaleDateString('tr-TR');
+    const wb = new ExcelJS.Workbook(); wb.creator = 'Yanteks Pro';
+    const sh = wb.addWorksheet('Numuneler', { pageSetup:{ paperSize:9, orientation:'landscape' } });
+    sh.mergeCells('A1:F1');
+    const tc = sh.getCell('A1');
+    tc.value = 'YANTEKS NUMUNE TAKİBİ · ' + dt;
+    tc.font = { bold:true, size:14, color:{ argb:'FFFFFFFF' } };
+    tc.fill = { type:'pattern', pattern:'solid', fgColor:{ argb:'FFC2410C' } };
+    tc.alignment = { horizontal:'center', vertical:'middle' };
+    sh.getRow(1).height = 30;
+    const hr = sh.addRow(['FİRMA','NUMUNE','FİYAT','DURUM','NOTLAR','TARİH']);
+    hr.eachCell(c => {
+      c.fill = { type:'pattern', pattern:'solid', fgColor:{ argb:'FFEA580C' } };
+      c.font = { color:{ argb:'FFFFFFFF' }, bold:true };
+      c.alignment = { horizontal:'center', vertical:'middle' };
+    });
+    hr.height = 22;
+    sh.columns = [{width:28},{width:30},{width:12},{width:14},{width:36},{width:14}];
+    filtered.forEach(s => {
+      const firma  = getVal(s,['firma','musteri','müşteri'],'') || '';
+      const numune = getVal(s,['numune','cinsi','cins','urun'],'') || '';
+      const rawF   = String(getVal(s,['fiyat','birimfiyat'],'') || '').replace(/^\$/,'');
+      const dur    = getDur(s);
+      const label  = SHORT[dur] || dur;
+      const acik   = getVal(s,['aciklama','not','çözüm'],'') || '';
+      const tarih  = fmtDate(s.updated_at || s.created_at || '');
+      const row = sh.addRow([firma, numune, rawF ? '$'+rawF : '', label, acik, tarih]);
+      row.getCell(1).font = { bold:true };
+      if (rawF) { row.getCell(3).font = { color:{ argb:'FF15803D' }, bold:true }; row.getCell(3).alignment = { horizontal:'right' }; }
+    });
+    const buf = await wb.xlsx.writeBuffer();
+    const blob = new Blob([buf], { type:'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
     const a = document.createElement('a');
-    a.href = 'data:text/csv;charset=utf-8,\uFEFF'+encodeURIComponent(csv);
-    a.download = 'numuneler.csv'; a.click();
+    a.href = URL.createObjectURL(blob);
+    a.download = 'Yanteks_Numune_' + dt.replace(/\./g,'-') + '.xlsx';
+    a.click(); URL.revokeObjectURL(a.href);
   };
 
   return (
@@ -687,7 +819,7 @@ function SamplesView({ data, tbl, onRefresh }) {
               <label style={{ fontSize:10, fontWeight:700, color:C.txt2, display:'block', marginBottom:5, textTransform:'uppercase', letterSpacing:'.08em' }}>Durum</label>
               <select value={form.durum} onChange={e=>setForm(f=>({...f,durum:e.target.value}))}
                 style={{ width:'100%', padding:'9px 12px', border:`1px solid ${C.border2}`, borderRadius:9, fontSize:13, fontFamily:'Inter,sans-serif', outline:'none', color:C.txt, background:'#fff', cursor:'pointer' }}>
-                {STATUSES.map(s=><option key={s}>{EMO[s]} {s}</option>)}
+                {STATUSES.map(s=><option key={s} value={s}>{EMO[s]} {LABELS[s]||s}</option>)}
               </select>
             </div>
             <div style={{ display:'flex', gap:10 }}>
@@ -707,10 +839,10 @@ function SamplesView({ data, tbl, onRefresh }) {
       <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', flexWrap:'wrap', gap:10 }}>
         <div>
           <h2 style={{ fontSize:22, fontWeight:900, color:C.txt, letterSpacing:'-.02em' }}>Numune Takibi</h2>
-          <p style={{ fontSize:12, color:C.txt2, marginTop:2 }}>{filtered.length} / {data.length} kayıt</p>
+          <p style={{ fontSize:12, color:C.txt2, marginTop:2 }}>{filtered.length} / {data.filter(i=>!isArsiv(i)).length} kayıt</p>
         </div>
         <div style={{ display:'flex', gap:8 }}>
-          <button onClick={exportCSV} style={{ background:'none', border:`1px solid ${C.border2}`, borderRadius:10,
+          <button onClick={exportXL} style={{ background:'none', border:`1px solid ${C.border2}`, borderRadius:10,
             padding:'8px 14px', fontSize:12, fontWeight:700, color:C.txt2, cursor:'pointer',
             display:'flex', alignItems:'center', gap:5 }}>📊 Excel</button>
           <button onClick={()=>setShowAdd(true)} style={{ background:'linear-gradient(135deg,#C2410C,#EA580C)',
@@ -740,7 +872,7 @@ function SamplesView({ data, tbl, onRefresh }) {
 
       {/* ── Durum Filtreleri ── */}
       <div style={{ display:'flex', gap:7, flexWrap:'wrap' }}>
-        {[['all','Tümü',data.length,'#0891B2','rgba(8,145,178,.1)'],...STATUSES.map(s=>[s,`${EMO[s]} ${s}`,counts[s]||0,...(CLRS[s]||[C.border2,C.txt2]).reverse()])].map(([val,lbl,cnt,col,bg])=>{
+        {[['all','Tümü',data.filter(i=>!isArsiv(i)).length,'#0891B2','rgba(8,145,178,.1)'],...STATUSES.map(s=>[s,LABELS[s]||s,counts[s]||0,...(CLRS[s]||[C.border2,C.txt2]).reverse()])].map(([val,lbl,cnt,col,bg])=>{
           const active = sf === val;
           return (
             <button key={val} onClick={()=>setSf(active&&val!=='all'?'all':val)}
@@ -753,6 +885,46 @@ function SamplesView({ data, tbl, onRefresh }) {
         })}
       </div>
 
+      {/* ── Toplu Seçim Araç Çubuğu ── */}
+      {selIds.size > 0 && (
+        <div style={{ display:'flex', alignItems:'center', gap:8, padding:'10px 14px',
+          background:'#1E293B', borderRadius:12, flexWrap:'wrap' }}>
+          <span style={{ fontSize:13, fontWeight:700, color:'#fff', flex:1 }}>
+            ✅ {selIds.size} seçili
+          </span>
+          {['Beklemede','Takip Et','Gönderildi','Onaylandı','Reddedildi','Arşiv'].map(st => (
+            <button key={st} onClick={()=>bulkStatus(st)} disabled={bulkBusy}
+              style={{ padding:'5px 10px', borderRadius:7, border:'none',
+                background:DCLR[st]||'#475569', color:'#fff', fontSize:11, fontWeight:700, cursor:'pointer' }}>
+              {SHORT[st]}
+            </button>
+          ))}
+          <button onClick={bulkDelete} disabled={bulkBusy}
+            style={{ padding:'5px 10px', borderRadius:7, border:'1px solid #DC2626',
+              background:'transparent', color:'#DC2626', fontSize:11, fontWeight:700, cursor:'pointer' }}>
+            🗑 Sil
+          </button>
+          <button onClick={clearSel}
+            style={{ padding:'5px 10px', borderRadius:7, border:'1px solid #475569',
+              background:'transparent', color:'#94A3B8', fontSize:11, cursor:'pointer' }}>
+            İptal
+          </button>
+        </div>
+      )}
+
+      {/* ── Tümünü Seç ── */}
+      {filtered.length > 0 && (
+        <div style={{ display:'flex', alignItems:'center', gap:8, paddingLeft:4 }}>
+          <input type="checkbox"
+            checked={selIds.size > 0 && selIds.size === filtered.length}
+            onChange={toggleAll}
+            style={{ width:15, height:15, cursor:'pointer', accentColor:C.teal }} />
+          <span style={{ fontSize:12, color:C.txt2 }} onClick={toggleAll}>
+            {selIds.size > 0 ? selIds.size + ' / ' + filtered.length + ' seçili' : 'Tümünü seç'}
+          </span>
+        </div>
+      )}
+
       {/* ── Kartlar ── */}
       <div style={{ display:'flex', flexDirection:'column', gap:8 }}>
         {filtered.length === 0
@@ -760,42 +932,47 @@ function SamplesView({ data, tbl, onRefresh }) {
               {q || sf !== 'all' ? 'Filtreye uyan kayıt yok.' : 'Henüz numune kaydı yok.'}
             </div>
           : filtered.map(s => {
-            const dur = getVal(s,['durum','status'],'') || 'Bekle';
-            const [badgeBg, badgeCol] = CLRS[dur] || ['rgba(71,85,105,.12)','#475569'];
+            const dur = getDur(s);
             const isBusy = busy === s.id;
+            const isSel = selIds.has(s.id);
+            const rawFiyat = getVal(s,['fiyat','birimfiyat','price'],'');
+            const fiyatStr = rawFiyat ? String(rawFiyat).replace(/^\$/,'') : '';
+            const dateStr = relDate(s.updated_at || s.created_at || getVal(s,['tarih','date'],''));
             return (
               <div key={s.id||Math.random()}
-                style={{ background:C.surface, border:`1px solid ${C.border}`, borderRadius:13,
-                  padding:'12px 16px', display:'flex', alignItems:'flex-start', gap:12,
-                  opacity:isBusy?0.55:1, transition:'opacity .2s' }}>
-                <div style={{ width:40, height:40, borderRadius:11, background:C.tealS,
-                  display:'flex', alignItems:'center', justifyContent:'center', color:C.teal, flexShrink:0, marginTop:2 }}>
-                  <IcoPkg size={18}/>
-                </div>
+                style={{ background: isSel ? 'rgba(8,145,178,.07)' : C.surface,
+                  border:`1.5px solid ${isSel ? C.teal : C.border}`, borderRadius:13,
+                  padding:'12px 16px', display:'flex', alignItems:'flex-start', gap:10,
+                  opacity:isBusy?0.55:1, transition:'all .15s' }}>
+                {/* Checkbox */}
+                <input type="checkbox" checked={isSel} onChange={()=>toggleSel(s.id)}
+                  style={{ width:15, height:15, cursor:'pointer', accentColor:C.teal, flexShrink:0, marginTop:3 }} />
                 <div style={{ flex:1, minWidth:0 }}>
-                  <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', gap:8, flexWrap:'wrap' }}>
-                    <h4 style={{ fontWeight:800, fontSize:14, color:C.txt, margin:0 }}>
-                      {getVal(s,['musteri','müşteri','firma','firmaadi','firmaadı','customer','isim','kime']) || '—'}
+                  <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', gap:8 }}>
+                    <h4 style={{ fontWeight:800, fontSize:14, color:C.txt, margin:0, flex:1, minWidth:0,
+                      overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>
+                      {getVal(s,['firma','musteri','müşteri','firmaadi','firmaadı','customer','isim','kime']) || '—'}
                     </h4>
                     <select value={dur} disabled={isBusy} onChange={e=>setStatus(s,e.target.value)}
-                      style={{ padding:'4px 8px', borderRadius:7, border:`1.5px solid ${badgeCol}`,
-                        background:badgeBg, color:badgeCol, fontSize:11, fontWeight:700,
-                        cursor:'pointer', fontFamily:'Inter,sans-serif', outline:'none' }}>
-                      {STATUSES.map(st=><option key={st} value={st}>{EMO[st]} {st}</option>)}
+                      style={{ flexShrink:0, padding:'5px 8px', borderRadius:7, border:'none',
+                        background:DCLR[dur]||'#475569', color:'#fff', fontSize:12, fontWeight:700,
+                        cursor:'pointer', fontFamily:'Inter,sans-serif', outline:'none', minWidth:72 }}>
+                      {STATUSES.map(st=><option key={st} value={st}>{SHORT[st]||st}</option>)}
                     </select>
                   </div>
                   <div style={{ display:'flex', flexWrap:'wrap', gap:'3px 14px', marginTop:5, fontSize:12, color:C.txt2 }}>
-                    {getVal(s,['cinsi','cins','urun','ürün','kalite']) &&
-                      <span><strong style={{color:C.txt}}>{getVal(s,['cinsi','cins','urun','ürün','kalite'])}</strong></span>}
+                    {getVal(s,['numune','cinsi','cins','urun','ürün','kalite']) &&
+                      <span><strong style={{color:C.txt}}>{getVal(s,['numune','cinsi','cins','urun','ürün','kalite'])}</strong></span>}
                     {getVal(s,['miktar','adet','kg','quantity']) &&
                       <span style={{color:C.teal,fontWeight:700}}>{getVal(s,['miktar','adet','kg','quantity'])}</span>}
-                    {getVal(s,['fiyat','birimfiyat','price']) &&
-                      <span style={{color:C.green,fontWeight:700,fontFamily:'monospace'}}>${getVal(s,['fiyat','birimfiyat','price'])}</span>}
-                    <span style={{fontFamily:'monospace',fontSize:11,color:C.txt2}}>{fmtDate(s.created_at||getVal(s,['tarih','date'],''))}</span>
+                    {fiyatStr &&
+                      <span style={{color:C.green,fontWeight:700,fontFamily:'monospace'}}>${fiyatStr}</span>}
+                    {dateStr && <span style={{fontFamily:'monospace',fontSize:11,color:C.txt2,
+                      background:C.page,padding:'1px 5px',borderRadius:4}}>{dateStr}</span>}
                   </div>
-                  {getVal(s,['not','aciklama','açıklama','note']) &&
+                  {getVal(s,['aciklama','not','açıklama','note']) &&
                     <p style={{ margin:'5px 0 0', fontSize:11, color:C.txt2, fontStyle:'italic', lineHeight:1.4 }}>
-                      💬 {getVal(s,['not','aciklama','açıklama','note'])}
+                      💬 {getVal(s,['aciklama','not','açıklama','note'])}
                     </p>}
                 </div>
                 <button onClick={()=>delItem(s)} disabled={isBusy}
@@ -968,6 +1145,79 @@ function PricesView({ data, onRefresh }) {
 
   return (
     <div style={{ display:'flex', flexDirection:'column', gap:14 }}>
+
+      {/* Import Modal */}
+      {impModal && (
+        <div onClick={e=>e.target===e.currentTarget&&setImpModal(false)}
+          style={{ position:'fixed',inset:0,background:'rgba(0,0,0,.55)',zIndex:50,
+            display:'flex',alignItems:'center',justifyContent:'center',padding:16 }}>
+          <div style={{ background:'#fff',borderRadius:20,padding:24,width:'100%',maxWidth:420,
+            boxShadow:'0 20px 60px rgba(0,0,0,.3)', maxHeight:'90vh', overflowY:'auto' }}>
+            <div style={{ display:'flex',justifyContent:'space-between',alignItems:'center',marginBottom:16 }}>
+              <h3 style={{ fontSize:17,fontWeight:800,color:C.txt }}>📥 Excel'den Aktar</h3>
+              <button onClick={()=>setImpModal(false)} style={{ background:'none',border:'none',cursor:'pointer',color:C.txt2,display:'flex' }}><IcoX size={20}/></button>
+            </div>
+            <p style={{ fontSize:12,color:C.txt2,marginBottom:14 }}>
+              Firma seç, ardından Excel yükle.<br/>
+              <span style={{ fontFamily:'monospace',fontSize:11 }}>A=Ürün Adı · B=Fiyat ($) · 3. satırdan başlar</span>
+            </p>
+            {/* Firma */}
+            <div style={{ marginBottom:12 }}>
+              <label style={{ fontSize:10,fontWeight:700,color:C.txt2,display:'block',marginBottom:5,textTransform:'uppercase',letterSpacing:'.08em' }}>Firma *</label>
+              <FirmaInput value={impFirma} onChange={setImpFirma}
+                firmalar={firmalar}
+                style={{ width:'100%',padding:'9px 12px',border:`1px solid ${C.border2}`,borderRadius:9,fontSize:13,fontFamily:'Inter,sans-serif',outline:'none',color:C.txt }} />
+            </div>
+            {/* Tarih + Durum */}
+            <div style={{ display:'grid',gridTemplateColumns:'1fr 1fr',gap:10,marginBottom:12 }}>
+              <div>
+                <label style={{ fontSize:10,fontWeight:700,color:C.txt2,display:'block',marginBottom:5,textTransform:'uppercase',letterSpacing:'.08em' }}>Teklif Tarihi</label>
+                <input type="date" value={impDate} onChange={e=>setImpDate(e.target.value)}
+                  style={{ width:'100%',padding:'9px 12px',border:`1px solid ${C.border2}`,borderRadius:9,fontSize:13,outline:'none',color:C.txt }} />
+              </div>
+              <div>
+                <label style={{ fontSize:10,fontWeight:700,color:C.txt2,display:'block',marginBottom:5,textTransform:'uppercase',letterSpacing:'.08em' }}>Durum</label>
+                <select value={impDurum} onChange={e=>setImpDurum(e.target.value)}
+                  style={{ width:'100%',padding:'9px 12px',border:`1px solid ${C.border2}`,borderRadius:9,fontSize:13,outline:'none',color:C.txt,background:'#fff',cursor:'pointer' }}>
+                  {DURUMLAR.map(d=><option key={d}>{d}</option>)}
+                </select>
+              </div>
+            </div>
+            {/* Excel dosyası */}
+            <div style={{ marginBottom:12 }}>
+              <label style={{ fontSize:10,fontWeight:700,color:C.txt2,display:'block',marginBottom:5,textTransform:'uppercase',letterSpacing:'.08em' }}>Excel Dosyası *</label>
+              <input type="file" accept=".xlsx,.xls" onChange={e=>previewImport(e.target.files[0])}
+                style={{ width:'100%',padding:'9px 12px',border:`1px solid ${C.border2}`,borderRadius:9,fontSize:12,color:C.txt,background:'#F8FAFC' }} />
+            </div>
+            {/* Önizleme */}
+            {impRows.length > 0 && (
+              <div style={{ marginBottom:14 }}>
+                <div style={{ fontSize:10,fontWeight:700,color:C.txt2,textTransform:'uppercase',letterSpacing:'.08em',marginBottom:6 }}>
+                  Önizleme — {impRows.length} satır
+                </div>
+                <div style={{ maxHeight:160,overflowY:'auto',border:`1px solid ${C.border}`,borderRadius:10,background:C.page }}>
+                  {impRows.slice(0,20).map((r,i)=>(
+                    <div key={i} style={{ display:'flex',justifyContent:'space-between',padding:'7px 12px',borderBottom:`1px solid ${C.border}`,fontSize:12 }}>
+                      <span style={{ color:C.txt,fontWeight:600 }}>{r.urun}</span>
+                      <span style={{ color:C.green,fontFamily:'monospace',fontWeight:700 }}>{r.fiyat ? '$'+r.fiyat : '—'}</span>
+                    </div>
+                  ))}
+                  {impRows.length > 20 && <div style={{ padding:'6px 12px',fontSize:11,color:C.txt2 }}>+{impRows.length-20} daha…</div>}
+                </div>
+              </div>
+            )}
+            <div style={{ display:'flex',gap:10 }}>
+              <button onClick={()=>setImpModal(false)} style={{ flex:1,padding:10,border:`1px solid ${C.border2}`,borderRadius:10,cursor:'pointer',background:'none',fontSize:13,fontWeight:600,color:C.txt2 }}>İptal</button>
+              <button onClick={doImport} disabled={impSaving||!impFirma.trim()||!impRows.length}
+                style={{ flex:2,padding:10,border:'none',borderRadius:10,cursor:'pointer',
+                  background:'linear-gradient(135deg,#0672A0,#0891B2)',color:'#fff',fontSize:13,fontWeight:700,
+                  opacity:impSaving||!impFirma.trim()||!impRows.length?0.5:1 }}>
+                {impSaving ? 'Aktarılıyor…' : `📥 ${impRows.length} Teklifi Aktar`}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Modal */}
       {modal !== null && (
@@ -1517,6 +1767,47 @@ function OffersView({ data, customers, onRefresh }) {
   const [saving, setSaving] = React.useState(false);
   const [openFirms, setOpenFirms] = React.useState(new Set());
 
+  const [impModal, setImpModal] = React.useState(false);
+  const [impFirma, setImpFirma] = React.useState('');
+  const [impDate, setImpDate]   = React.useState(new Date().toISOString().slice(0,10));
+  const [impDurum, setImpDurum] = React.useState('Teklif Verildi');
+  const [impRows, setImpRows]   = React.useState([]);
+  const [impSaving, setImpSaving] = React.useState(false);
+
+  const previewImport = async (file) => {
+    if (!file) return;
+    try {
+      const buf = await file.arrayBuffer();
+      const wb = new ExcelJS.Workbook();
+      await wb.xlsx.load(buf);
+      const sh = wb.worksheets[0];
+      const rows = [];
+      sh.eachRow((row, rn) => {
+        if (rn < 3) return;
+        const urun  = String(row.getCell(1).value||'').trim();
+        const fiyat = parseFloat(row.getCell(2).value)||null;
+        if (urun) rows.push({ urun, fiyat });
+      });
+      setImpRows(rows);
+    } catch(e) { alert('Excel okunamadı: ' + e.message); }
+  };
+
+  const doImport = async () => {
+    if (!impFirma.trim() || !impRows.length) return;
+    setImpSaving(true);
+    const now = new Date().toISOString();
+    const payload = impRows.map(r => ({
+      firma_adi: impFirma.trim().toUpperCase(),
+      urun: r.urun, fiyat: r.fiyat,
+      durum: impDurum, teklif_tarihi: impDate||null,
+      updated_at: now, created_at: now
+    }));
+    await db.from('fiyat_teklifleri').insert(payload);
+    setImpSaving(false); setImpModal(false);
+    setImpFirma(''); setImpRows([]);
+    await onRefresh();
+  };
+
   const emptyForm = { firma_adi:'', urun:'', fiyat:'', durum:'Teklif Verildi',
     teklif_tarihi: new Date().toISOString().slice(0,10), gecerlilik_tarihi:'', notlar:'' };
   const [form, setForm] = React.useState(emptyForm);
@@ -1630,12 +1921,9 @@ function OffersView({ data, customers, onRefresh }) {
             {/* Firma */}
             <div style={{ marginBottom:12 }}>
               <label style={{ fontSize:10,fontWeight:700,color:C.txt2,display:'block',marginBottom:5,textTransform:'uppercase',letterSpacing:'.08em' }}>Firma Adı *</label>
-              <input list="firma-list" value={form.firma_adi} onChange={e=>setForm(f=>({...f,firma_adi:e.target.value}))}
-                placeholder="Firma seç veya yaz…"
+              <FirmaInput value={form.firma_adi} onChange={v=>setForm(f=>({...f,firma_adi:v}))}
+                firmalar={firmalar}
                 style={{ width:'100%',padding:'9px 12px',border:`1px solid ${C.border2}`,borderRadius:9,fontSize:13,fontFamily:'Inter,sans-serif',outline:'none',color:C.txt }} />
-              <datalist id="firma-list">
-                {firmalar.map(f=><option key={f} value={f}/>)}
-              </datalist>
             </div>
 
             {/* Ürün */}
@@ -1698,10 +1986,15 @@ function OffersView({ data, customers, onRefresh }) {
           <h2 style={{ fontSize:22,fontWeight:900,color:C.txt,letterSpacing:'-.02em' }}>Fiyat Teklifleri</h2>
           <p style={{ fontSize:12,color:C.txt2,marginTop:2 }}>{filtered.length} / {data.length} teklif · {sortedFirms.length} firma</p>
         </div>
-        <button onClick={()=>openAdd()} style={{ background:'linear-gradient(135deg,#0672A0,#0891B2)',
-          color:'#fff',border:'none',borderRadius:10,padding:'8px 16px',fontSize:13,
-          fontWeight:700,cursor:'pointer',display:'flex',alignItems:'center',gap:5,
-          boxShadow:'0 4px 12px rgba(8,145,178,.3)' }}><IcoPlus size={16}/> Yeni Teklif</button>
+        <div style={{ display:'flex',gap:8 }}>
+          <button onClick={()=>setImpModal(true)} style={{ background:'none',border:`1px solid ${C.border2}`,borderRadius:10,
+            padding:'8px 14px',fontSize:12,fontWeight:700,color:C.txt2,cursor:'pointer',
+            display:'flex',alignItems:'center',gap:5 }}>📥 İçe Aktar</button>
+          <button onClick={()=>openAdd()} style={{ background:'linear-gradient(135deg,#0672A0,#0891B2)',
+            color:'#fff',border:'none',borderRadius:10,padding:'8px 16px',fontSize:13,
+            fontWeight:700,cursor:'pointer',display:'flex',alignItems:'center',gap:5,
+            boxShadow:'0 4px 12px rgba(8,145,178,.3)' }}><IcoPlus size={16}/> Yeni Teklif</button>
+        </div>
       </div>
 
       {/* KPI satırı */}
@@ -1857,7 +2150,55 @@ function OffersView({ data, customers, onRefresh }) {
 }
 
 // ── NOTLARIM (TAM FONKSİYONEL) ───────────────────────────────────────────
-function NotesView({ data, onRefresh }) {
+
+// ── Firma Autocomplete Input ──────────────────────────────────────────────
+function FirmaInput({ value, onChange, firmalar, placeholder, style }) {
+  const [open, setOpen] = React.useState(false);
+  const [touched, setTouched] = React.useState(false);
+  const ref = React.useRef(null);
+
+  const matches = React.useMemo(() => {
+    if (!touched || !value) return firmalar.slice(0, 8);
+    const q = value.toLowerCase();
+    return firmalar.filter(f => f.toLowerCase().includes(q)).slice(0, 10);
+  }, [value, firmalar, touched]);
+
+  // Close on outside click
+  React.useEffect(() => {
+    const handler = (e) => { if (ref.current && !ref.current.contains(e.target)) setOpen(false); };
+    document.addEventListener('mousedown', handler);
+    return () => document.removeEventListener('mousedown', handler);
+  }, []);
+
+  return (
+    <div ref={ref} style={{ position:'relative' }}>
+      <input value={value}
+        onChange={e => { onChange(e.target.value); setOpen(true); setTouched(true); }}
+        onFocus={() => { setOpen(true); setTouched(true); }}
+        placeholder={placeholder || "Firma ara veya yaz…"}
+        style={style} />
+      {open && matches.length > 0 && (
+        <div style={{ position:'absolute', top:'100%', left:0, right:0, zIndex:200,
+          background:'#fff', border:`1px solid ${C.border2}`, borderRadius:10,
+          boxShadow:'0 8px 24px rgba(0,0,0,.15)', maxHeight:220, overflowY:'auto', marginTop:4 }}>
+          {matches.map(f => (
+            <div key={f}
+              onMouseDown={e => { e.preventDefault(); onChange(f); setOpen(false); }}
+              onTouchEnd={e => { e.preventDefault(); onChange(f); setOpen(false); }}
+              style={{ padding:'10px 14px', fontSize:13, fontWeight:600, color:C.txt,
+                cursor:'pointer', borderBottom:`1px solid ${C.border}` }}
+              onMouseEnter={e => e.currentTarget.style.background = C.greenS}
+              onMouseLeave={e => e.currentTarget.style.background = 'transparent'}>
+              🏢 {f}
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
+function NotesView({ data, customers, onRefresh }) {
   const [q, setQ]       = React.useState('');
   const [rf, setRf]     = React.useState('all');
   const [sort, setSort] = React.useState('new');
@@ -1874,6 +2215,44 @@ function NotesView({ data, onRefresh }) {
     pembe:   { bg:'#FDF2F8', border:'#FBCFE8', txt:'#701A75', label:'🩷 Pembe'      },
     turuncu: { bg:'#FFF7ED', border:'#FED7AA', txt:'#7C2D12', label:'🟠 Turuncu'    },
     mor:     { bg:'#F5F3FF', border:'#DDD6FE', txt:'#4C1D95', label:'🟣 Mor'        },
+  };
+
+  const firmalar = [...new Set((customers||[]).map(c=>c.firma_adi).filter(Boolean))].sort();
+
+  const handleNoteKey = (e) => {
+    if (e.key !== 'Enter') return;
+    const ta = e.target;
+    const s = ta.selectionStart, en = ta.selectionEnd, val = ta.value;
+    const lineStart = val.lastIndexOf('\n', s-1) + 1;
+    const curLine = val.substring(lineStart, s);
+    const hasBullet = /^\s*- /.test(curLine);
+    const isEmpty = curLine.trim() === '-' || curLine.trim() === '- ' || curLine.trim() === '';
+    if (hasBullet && isEmpty) return; // normal enter to break out
+    if (hasBullet) {
+      e.preventDefault();
+      const ins = '\n- ';
+      const nv = val.substring(0,s) + ins + val.substring(en);
+      setForm(f=>({...f, icerik:nv}));
+      setTimeout(()=>{ ta.selectionStart = ta.selectionEnd = s + ins.length; }, 0);
+    }
+  };
+
+  const renderBody = (icerik, renk) => {
+    if (!icerik) return null;
+    const lines = icerik.split('\n');
+    return lines.map((line, i) => {
+      if (line.trim() === '---' || line.trim() === '—') return (
+        <hr key={i} style={{ border:'none', borderTop:`1px solid ${renk.border}`, margin:'6px 0', opacity:.6 }} />
+      );
+      if (/^\s*- (.+)/.test(line)) return (
+        <div key={i} style={{ display:'flex', gap:6, alignItems:'flex-start', fontSize:12, color:renk.txt, lineHeight:1.6 }}>
+          <span style={{ marginTop:2, opacity:.5, flexShrink:0 }}>•</span>
+          <span style={{ opacity:.8 }}>{line.replace(/^\s*- /,'')}</span>
+        </div>
+      );
+      if (line.trim() === '') return <div key={i} style={{ height:6 }} />;
+      return <div key={i} style={{ fontSize:12, color:renk.txt, opacity:.8, lineHeight:1.6 }}>{line}</div>;
+    });
   };
 
   const getTitle = (icerik) => {
@@ -1960,17 +2339,28 @@ function NotesView({ data, onRefresh }) {
             {/* Firma */}
             <div style={{ marginBottom:12 }}>
               <label style={{ fontSize:10,fontWeight:700,color:C.txt2,display:'block',marginBottom:5,textTransform:'uppercase',letterSpacing:'.08em' }}>🏢 Firma (opsiyonel)</label>
-              <input value={form.musteri} onChange={e=>setForm(f=>({...f,musteri:e.target.value}))}
-                placeholder="Firma adı…"
+              <FirmaInput value={form.musteri} onChange={v=>setForm(f=>({...f,musteri:v}))}
+                firmalar={firmalar}
                 style={{ width:'100%',padding:'8px 12px',border:`1px solid ${RENKLER[form.renk]?.border||C.border2}`,borderRadius:9,fontSize:13,fontFamily:'Inter,sans-serif',outline:'none',color:C.txt,background:'rgba(255,255,255,.6)' }} />
             </div>
 
             {/* İçerik */}
             <div style={{ marginBottom:18 }}>
               <label style={{ fontSize:10,fontWeight:700,color:C.txt2,display:'block',marginBottom:5,textTransform:'uppercase',letterSpacing:'.08em' }}>Not İçeriği *</label>
+              <div style={{ marginBottom:6, display:'flex', gap:6 }}>
+                {[['- ','• Madde'],['---\n','── Çizgi']].map(([ins,lbl])=>(
+                  <button key={lbl} type="button"
+                    onClick={()=>setForm(f=>({...f,icerik:f.icerik+(f.icerik&&!f.icerik.endsWith('\n')?'\n':'')+ins}))}
+                    style={{ padding:'3px 8px', fontSize:11, borderRadius:6, border:`1px solid ${RENKLER[form.renk]?.border||C.border2}`,
+                      background:'rgba(255,255,255,.5)', color:C.txt2, cursor:'pointer', fontWeight:600 }}>
+                    {lbl}
+                  </button>
+                ))}
+              </div>
               <textarea value={form.icerik} onChange={e=>setForm(f=>({...f,icerik:e.target.value}))}
-                rows={6} placeholder="Notunuzu buraya yazın…"
-                style={{ width:'100%',padding:'10px 12px',border:`1px solid ${RENKLER[form.renk]?.border||C.border2}`,borderRadius:9,fontSize:13,fontFamily:'Inter,sans-serif',outline:'none',color:RENKLER[form.renk]?.txt||C.txt,background:'rgba(255,255,255,.6)',resize:'vertical',lineHeight:1.6 }} />
+                onKeyDown={handleNoteKey}
+                rows={7} placeholder={"Notunuzu buraya yazın…\n- madde ile başlayın\n--- çizgi ekleyin"}
+                style={{ width:'100%',padding:'10px 12px',border:`1px solid ${RENKLER[form.renk]?.border||C.border2}`,borderRadius:9,fontSize:13,fontFamily:'Inter,sans-serif',outline:'none',color:RENKLER[form.renk]?.txt||C.txt,background:'rgba(255,255,255,.6)',resize:'vertical',lineHeight:1.7 }} />
             </div>
 
             <div style={{ display:'flex', gap:10 }}>
@@ -2072,11 +2462,9 @@ function NotesView({ data, onRefresh }) {
 
                 {/* Gövde */}
                 {body && (
-                  <p style={{ fontSize:12, color:renk.txt, opacity:.75, lineHeight:1.6,
-                    marginBottom:28, overflow:'hidden', display:'-webkit-box',
-                    WebkitLineClamp:4, WebkitBoxOrient:'vertical', wordBreak:'break-word' }}>
-                    {body}
-                  </p>
+                  <div style={{ marginBottom:28, overflow:'hidden', maxHeight:90 }}>
+                    {renderBody(body, renk)}
+                  </div>
                 )}
 
                 {/* Alt: tarih */}
@@ -2368,7 +2756,7 @@ function App() {
                 {tab === 'samples'    && <SamplesView   data={samples} tbl={samplesTbl} onRefresh={loadData} />}
                 {tab === 'prices'     && <PricesView    data={prices}    onRefresh={loadData} />}
                 {tab === 'cost'       && <CostView      data={costs}     onRefresh={loadData} />}
-                {tab === 'notes'      && <NotesView     data={notes}     onRefresh={loadData} />}
+                {tab === 'notes'      && <NotesView     data={notes} customers={customers} onRefresh={loadData} />}
                 {tab === 'offers'     && <OffersView data={offers} customers={customers} onRefresh={loadData} />}
               </>
             )}
