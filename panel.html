@@ -301,63 +301,280 @@ function DashboardView({ customers, samples, prices, notes, onNav }) {
   );
 }
 
-// ── MÜŞTERİLER ───────────────────────────────────────────────────────────
-function CustomersView({ data }) {
+// ── MÜŞTERİLER (TAM FONKSİYONEL) ────────────────────────────────────────
+function CustomersView({ data, onRefresh }) {
+  const [q, setQ]           = React.useState('');
+  const [sf, setSf]         = React.useState('all');
+  const [sort, setSort]     = React.useState('az');
+  const [busy, setBusy]     = React.useState(null);
+  const [showAdd, setShowAdd]   = React.useState(false);
+  const [editItem, setEditItem] = React.useState(null);
+  const [saving, setSaving]     = React.useState(false);
+  const emptyForm = { firma_adi:'', bolge:'', son_ziyaret:'', ziyaret_durumu:'ziyaret edilecek', notlar:'' };
+  const [form, setForm]     = React.useState(emptyForm);
+
+  const tdy = () => new Date().toISOString().slice(0,10);
+
+  const daysSince = (d) => {
+    if (!d) return null;
+    const diff = Math.floor((Date.now() - new Date(d).getTime()) / 86400000);
+    return diff >= 0 ? diff : null;
+  };
+
+  const lateLevel = (m) => {
+    if (m.ziyaret_durumu !== 'ziyaret edildi') return null;
+    const ds = daysSince(m.son_ziyaret);
+    if (ds === null) return null;
+    if (ds >= 60) return 'red';
+    if (ds >= 30) return 'amber';
+    return null;
+  };
+
+  const visited = (m) => m.ziyaret_durumu === 'ziyaret edildi';
+
+  const filtered = data
+    .filter(m => {
+      if (sf === 'visited' && !visited(m)) return false;
+      if (sf === 'pending' && visited(m)) return false;
+      if (sf === 'late' && lateLevel(m) !== 'red' && lateLevel(m) !== 'amber') return false;
+      if (q) {
+        const Q = q.toLowerCase();
+        const f1 = (m.firma_adi||'').toLowerCase();
+        const f2 = (m.bolge||'').toLowerCase();
+        const f3 = (m.notlar||'').toLowerCase();
+        if (!f1.includes(Q) && !f2.includes(Q) && !f3.includes(Q)) return false;
+      }
+      return true;
+    })
+    .sort((a, b) => {
+      if (sort === 'az')   return (a.firma_adi||'').localeCompare(b.firma_adi||'', 'tr');
+      if (sort === 'late') return (daysSince(b.son_ziyaret)||0) - (daysSince(a.son_ziyaret)||0);
+      if (sort === 'bolge') return (a.bolge||'').localeCompare(b.bolge||'', 'tr');
+      return 0;
+    });
+
+  const visitToday = async (m) => {
+    setBusy(m.id);
+    await db.from('musteriler').update({ ziyaret_durumu:'ziyaret edildi', son_ziyaret: tdy() }).eq('id', m.id);
+    await onRefresh(); setBusy(null);
+  };
+
+  const delItem = async (m) => {
+    if (!window.confirm(`"${m.firma_adi}" silinsin mi?`)) return;
+    setBusy(m.id);
+    await db.from('musteriler').delete().eq('id', m.id);
+    await onRefresh(); setBusy(null);
+  };
+
+  const openAdd = () => { setForm(emptyForm); setEditItem(null); setShowAdd(true); };
+  const openEdit = (m) => {
+    setForm({ firma_adi:m.firma_adi||'', bolge:m.bolge||'', son_ziyaret:m.son_ziyaret||'', ziyaret_durumu:m.ziyaret_durumu||'ziyaret edilecek', notlar:m.notlar||'' });
+    setEditItem(m); setShowAdd(true);
+  };
+
+  const save = async () => {
+    if (!form.firma_adi.trim()) return;
+    setSaving(true);
+    const pay = { firma_adi: form.firma_adi.trim().toUpperCase(), bolge: form.bolge.trim().toUpperCase(), son_ziyaret: form.son_ziyaret || null, ziyaret_durumu: form.ziyaret_durumu, notlar: form.notlar.trim() || null };
+    if (editItem) await db.from('musteriler').update(pay).eq('id', editItem.id);
+    else           await db.from('musteriler').insert([pay]);
+    setSaving(false); setShowAdd(false); setEditItem(null);
+    await onRefresh();
+  };
+
+  const cntV = data.filter(visited).length;
+  const cntP = data.length - cntV;
+  const cntL = data.filter(m => lateLevel(m) !== null).length;
+
+  const FILTERS = [
+    ['all','Tümü',data.length,C.teal,C.tealS],
+    ['visited','✅ Gidilen',cntV,C.green,C.greenS],
+    ['pending','⏳ Bekleyen',cntP,C.amber,C.amberS],
+    ['late','🔴 Geciken',cntL,C.red,C.redS],
+  ];
+
   return (
-    <div style={{ background:C.surface, borderRadius:20, border:`1px solid ${C.border}`, overflow:'hidden' }}>
-      <div style={{ padding:'20px 28px', borderBottom:`1px solid ${C.border}`,
-        display:'flex', justifyContent:'space-between', alignItems:'center' }}>
-        <div>
-          <h3 style={{ fontSize:17, fontWeight:800, color:C.txt }}>Müşteri Portföyü</h3>
-          <p style={{ fontSize:12, color:C.txt2, marginTop:3 }}>Sistemde kayıtlı tüm firmalar ve iletişim bilgileri.</p>
+    <div style={{ display:'flex', flexDirection:'column', gap:14 }}>
+
+      {/* Modal: Yeni / Düzenle */}
+      {showAdd && (
+        <div onClick={e=>e.target===e.currentTarget&&setShowAdd(false)}
+          style={{ position:'fixed', inset:0, background:'rgba(0,0,0,.55)', zIndex:50,
+            display:'flex', alignItems:'center', justifyContent:'center', padding:16 }}>
+          <div style={{ background:'#fff', borderRadius:20, padding:24, width:'100%', maxWidth:420,
+            boxShadow:'0 20px 60px rgba(0,0,0,.3)' }}>
+            <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:18 }}>
+              <h3 style={{ fontSize:17, fontWeight:800, color:C.txt }}>{editItem ? '✏️ Düzenle' : '➕ Yeni Müşteri'}</h3>
+              <button onClick={()=>setShowAdd(false)} style={{ background:'none',border:'none',cursor:'pointer',color:C.txt2,display:'flex' }}><IcoX size={20}/></button>
+            </div>
+            {[['Firma Adı *','firma_adi','text'],['Bölge','bolge','text'],['Son Ziyaret','son_ziyaret','date']].map(([lbl,key,type])=>(
+              <div key={key} style={{ marginBottom:12 }}>
+                <label style={{ fontSize:10,fontWeight:700,color:C.txt2,display:'block',marginBottom:5,textTransform:'uppercase',letterSpacing:'.08em' }}>{lbl}</label>
+                <input type={type} value={form[key]} onChange={e=>setForm(f=>({...f,[key]:e.target.value}))}
+                  style={{ width:'100%',padding:'9px 12px',border:`1px solid ${C.border2}`,borderRadius:9,fontSize:13,fontFamily:'Inter,sans-serif',outline:'none',color:C.txt }} />
+              </div>
+            ))}
+            <div style={{ marginBottom:12 }}>
+              <label style={{ fontSize:10,fontWeight:700,color:C.txt2,display:'block',marginBottom:5,textTransform:'uppercase',letterSpacing:'.08em' }}>Durum</label>
+              <select value={form.ziyaret_durumu} onChange={e=>setForm(f=>({...f,ziyaret_durumu:e.target.value}))}
+                style={{ width:'100%',padding:'9px 12px',border:`1px solid ${C.border2}`,borderRadius:9,fontSize:13,fontFamily:'Inter,sans-serif',outline:'none',color:C.txt,background:'#fff',cursor:'pointer' }}>
+                <option value="ziyaret edilecek">⏳ Ziyaret Edilecek</option>
+                <option value="ziyaret edildi">✅ Ziyaret Edildi</option>
+              </select>
+            </div>
+            <div style={{ marginBottom:18 }}>
+              <label style={{ fontSize:10,fontWeight:700,color:C.txt2,display:'block',marginBottom:5,textTransform:'uppercase',letterSpacing:'.08em' }}>Notlar</label>
+              <textarea value={form.notlar} onChange={e=>setForm(f=>({...f,notlar:e.target.value}))} rows={2}
+                style={{ width:'100%',padding:'9px 12px',border:`1px solid ${C.border2}`,borderRadius:9,fontSize:13,fontFamily:'Inter,sans-serif',outline:'none',color:C.txt,resize:'vertical' }} />
+            </div>
+            <div style={{ display:'flex', gap:10 }}>
+              <button onClick={()=>setShowAdd(false)} style={{ flex:1,padding:10,border:`1px solid ${C.border2}`,borderRadius:10,cursor:'pointer',background:'none',fontSize:13,fontWeight:600,color:C.txt2 }}>İptal</button>
+              <button onClick={save} disabled={saving||!form.firma_adi.trim()}
+                style={{ flex:2,padding:10,border:'none',borderRadius:10,cursor:'pointer',
+                  background:'linear-gradient(135deg,#0672A0,#0891B2)',color:'#fff',fontSize:13,fontWeight:700,
+                  opacity:saving||!form.firma_adi.trim()?0.5:1 }}>
+                {saving ? 'Kaydediliyor…' : '💾 Kaydet'}
+              </button>
+            </div>
+          </div>
         </div>
-        <button style={{ background:C.navActive, color:'#fff', border:'none', borderRadius:12,
-          padding:'10px 18px', fontSize:13, fontWeight:700, cursor:'pointer',
-          display:'flex', alignItems:'center', gap:6, boxShadow:'0 4px 12px rgba(8,145,178,.35)' }}>
-          <IcoPlus size={16} /> Yeni Müşteri
-        </button>
+      )}
+
+      {/* Başlık */}
+      <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', flexWrap:'wrap', gap:10 }}>
+        <div>
+          <h2 style={{ fontSize:22, fontWeight:900, color:C.txt, letterSpacing:'-.02em' }}>Müşteri Portföyü</h2>
+          <p style={{ fontSize:12, color:C.txt2, marginTop:2 }}>{filtered.length} / {data.length} firma</p>
+        </div>
+        <button onClick={openAdd} style={{ background:'linear-gradient(135deg,#0672A0,#0891B2)',
+          color:'#fff', border:'none', borderRadius:10, padding:'8px 16px', fontSize:13,
+          fontWeight:700, cursor:'pointer', display:'flex', alignItems:'center', gap:5,
+          boxShadow:'0 4px 12px rgba(8,145,178,.3)' }}><IcoPlus size={16}/> Yeni Müşteri</button>
       </div>
-      <div style={{ overflowX:'auto' }}>
-        <table style={{ width:'100%', borderCollapse:'collapse', fontSize:13 }}>
-          <thead>
-            <tr style={{ background:C.page, fontSize:11, fontWeight:700, color:C.txt2,
-              textTransform:'uppercase', letterSpacing:'.07em' }}>
-              {['Firma Adı','İletişim Kişisi','Telefon','Durum','İşlem'].map((h,i) => (
-                <th key={i} style={{ padding:'12px 24px', textAlign:i===4?'right':'left',
-                  borderBottom:`1px solid ${C.border2}`, whiteSpace:'nowrap' }}>{h}</th>
-              ))}
-            </tr>
-          </thead>
-          <tbody>
-            {data.length === 0
-              ? <tr><td colSpan="5" style={{ padding:28, textAlign:'center', color:C.txt2 }}>Kayıt bulunamadı.</td></tr>
-              : data.map((c,i) => (
-                <tr key={c.id||i} style={{ borderBottom:`1px solid ${C.border}`, transition:'background .15s' }}
-                  onMouseEnter={e=>e.currentTarget.style.background=C.tealS}
-                  onMouseLeave={e=>e.currentTarget.style.background='transparent'}>
-                  <td style={{ padding:'14px 24px', fontWeight:700, color:C.txt }}>
-                    {getVal(c,['firma','firmaadi','firmaadı','name','musteri','müşteri','unvan'])}
-                  </td>
-                  <td style={{ padding:'14px 24px', color:C.txt2 }}>
-                    {getVal(c,['yetkili','contact','isim','iletisim','iletişim','kisi','kişi'])}
-                  </td>
-                  <td style={{ padding:'14px 24px', color:C.txt2, fontFamily:'monospace' }}>
-                    {getVal(c,['telefon','tel','phone','cep','gsm','numara'])}
-                  </td>
-                  <td style={{ padding:'14px 24px' }}>
-                    <StatusBadge status={getVal(c,['durum','status'],'Aktif')} />
-                  </td>
-                  <td style={{ padding:'14px 24px', textAlign:'right' }}>
-                    <button style={{ background:'none', border:'none', cursor:'pointer', color:C.border2, padding:6, borderRadius:8 }}
-                      onMouseEnter={e=>e.currentTarget.style.color=C.teal}
-                      onMouseLeave={e=>e.currentTarget.style.color=C.border2}>
-                      <IcoEdit size={16} />
-                    </button>
-                  </td>
-                </tr>
-              ))}
-          </tbody>
-        </table>
+
+      {/* Arama + Sıralama */}
+      <div style={{ display:'flex', gap:10, flexWrap:'wrap' }}>
+        <div style={{ position:'relative', flex:1, minWidth:200 }}>
+          <span style={{ position:'absolute', left:11, top:'50%', transform:'translateY(-50%)', color:C.txt2, display:'flex' }}><IcoSearch size={14}/></span>
+          <input placeholder="Firma adı, bölge veya not ara…" value={q} onChange={e=>setQ(e.target.value)}
+            style={{ width:'100%', paddingLeft:34, paddingRight:12, paddingTop:9, paddingBottom:9,
+              border:`1px solid ${C.border2}`, borderRadius:10, fontSize:13, fontFamily:'Inter,sans-serif',
+              outline:'none', color:C.txt, background:C.surface }} />
+        </div>
+        <select value={sort} onChange={e=>setSort(e.target.value)}
+          style={{ padding:'9px 12px', border:`1px solid ${C.border2}`, borderRadius:10, fontSize:13,
+            fontFamily:'Inter,sans-serif', outline:'none', color:C.txt, background:C.surface, cursor:'pointer' }}>
+          <option value="az">🔤 A-Z</option>
+          <option value="late">📅 Son Ziyarete Göre</option>
+          <option value="bolge">📍 Bölgeye Göre</option>
+        </select>
+      </div>
+
+      {/* Filtre çipleri */}
+      <div style={{ display:'flex', gap:7, flexWrap:'wrap' }}>
+        {FILTERS.map(([val,lbl,cnt,col,bg]) => {
+          const active = sf === val;
+          return (
+            <button key={val} onClick={()=>setSf(val)}
+              style={{ padding:'6px 13px', borderRadius:18, border:`2px solid ${active?col:C.border}`,
+                background:active?bg:'transparent', color:active?col:C.txt2, fontSize:12,
+                fontWeight:700, cursor:'pointer', transition:'all .15s', whiteSpace:'nowrap' }}>
+              {lbl} <span style={{ opacity:.7 }}>{cnt}</span>
+            </button>
+          );
+        })}
+      </div>
+
+      {/* Tablo */}
+      <div style={{ background:C.surface, borderRadius:16, border:`1px solid ${C.border}`, overflow:'hidden' }}>
+        <div style={{ overflowX:'auto' }}>
+          <table style={{ width:'100%', borderCollapse:'collapse', fontSize:13 }}>
+            <thead>
+              <tr style={{ background:C.page, fontSize:11, fontWeight:700, color:C.txt2,
+                textTransform:'uppercase', letterSpacing:'.07em' }}>
+                {['Firma Adı','Bölge','Son Ziyaret','Süre','Durum','İşlem'].map((h,i)=>(
+                  <th key={i} style={{ padding:'11px 20px', textAlign:i===5?'center':'left',
+                    borderBottom:`1px solid ${C.border2}`, whiteSpace:'nowrap' }}>{h}</th>
+                ))}
+              </tr>
+            </thead>
+            <tbody>
+              {filtered.length === 0
+                ? <tr><td colSpan="6" style={{ padding:32, textAlign:'center', color:C.txt2 }}>
+                    {q||sf!=='all' ? 'Filtreye uyan kayıt yok.' : 'Henüz müşteri kaydı yok.'}
+                  </td></tr>
+                : filtered.map((m, i) => {
+                  const done = visited(m);
+                  const lv   = lateLevel(m);
+                  const ds   = daysSince(m.son_ziyaret);
+                  const isBusy = busy === m.id;
+                  return (
+                    <tr key={m.id||i} style={{ borderBottom:`1px solid ${C.border}`, transition:'background .15s', opacity:isBusy?0.5:1 }}
+                      onMouseEnter={e=>e.currentTarget.style.background=C.tealS}
+                      onMouseLeave={e=>e.currentTarget.style.background='transparent'}>
+                      <td style={{ padding:'13px 20px', fontWeight:700, color:C.txt, maxWidth:200 }}>
+                        <div style={{ display:'flex', alignItems:'center', gap:8 }}>
+                          <div style={{ width:32, height:32, borderRadius:9, background:done?C.greenS:C.tealS,
+                            display:'flex', alignItems:'center', justifyContent:'center',
+                            color:done?C.green:C.teal, fontSize:13, fontWeight:800, flexShrink:0 }}>
+                            {(m.firma_adi||'?')[0]}
+                          </div>
+                          <span style={{ overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>
+                            {m.firma_adi || '—'}
+                          </span>
+                        </div>
+                      </td>
+                      <td style={{ padding:'13px 20px', color:C.txt2, fontSize:12 }}>
+                        <span style={{ background:C.page, border:`1px solid ${C.border}`,
+                          padding:'3px 8px', borderRadius:6, fontWeight:600, fontSize:11 }}>
+                          📍 {m.bolge || '—'}
+                        </span>
+                      </td>
+                      <td style={{ padding:'13px 20px', color:C.txt2, fontFamily:'monospace', fontSize:12 }}>
+                        {fmtDate(m.son_ziyaret) || '—'}
+                      </td>
+                      <td style={{ padding:'13px 20px' }}>
+                        {ds !== null ? (
+                          <span style={{ fontWeight:700, fontSize:12, fontFamily:'monospace',
+                            color: lv==='red'?C.red : lv==='amber'?C.amber : C.green }}>
+                            {lv==='red'?'🔴':lv==='amber'?'🟡':'✅'} {ds} gün
+                          </span>
+                        ) : <span style={{ color:C.txt2, fontSize:12 }}>—</span>}
+                      </td>
+                      <td style={{ padding:'13px 20px' }}>
+                        <span style={{ padding:'4px 10px', borderRadius:7, fontSize:11, fontWeight:700,
+                          background: done?C.greenS:C.amberS, color: done?C.green:C.amber,
+                          border: `1px solid ${done?'rgba(21,128,61,.2)':'rgba(180,83,9,.2)'}`,
+                          whiteSpace:'nowrap' }}>
+                          {done ? '✅ Gidildi' : '⏳ Bekliyor'}
+                        </span>
+                      </td>
+                      <td style={{ padding:'13px 20px', textAlign:'center' }}>
+                        <div style={{ display:'flex', justifyContent:'center', gap:4 }}>
+                          {!done && (
+                            <button onClick={()=>visitToday(m)} disabled={isBusy} title="Bugün Ziyaret Et"
+                              style={{ background:C.greenS, border:`1px solid rgba(21,128,61,.2)`, color:C.green,
+                                borderRadius:7, padding:'5px 8px', cursor:'pointer', fontSize:11, fontWeight:700 }}>
+                              ✓ Bugün
+                            </button>
+                          )}
+                          <button onClick={()=>openEdit(m)} disabled={isBusy}
+                            style={{ background:'none',border:'none',cursor:'pointer',color:C.border2,padding:5,borderRadius:7 }}
+                            onMouseEnter={e=>e.currentTarget.style.color=C.teal}
+                            onMouseLeave={e=>e.currentTarget.style.color=C.border2}><IcoEdit size={14}/></button>
+                          <button onClick={()=>delItem(m)} disabled={isBusy}
+                            style={{ background:'none',border:'none',cursor:'pointer',color:C.border2,padding:5,borderRadius:7 }}
+                            onMouseEnter={e=>e.currentTarget.style.color=C.red}
+                            onMouseLeave={e=>e.currentTarget.style.color=C.border2}><IcoTrash size={14}/></button>
+                        </div>
+                      </td>
+                    </tr>
+                  );
+                })
+              }
+            </tbody>
+          </table>
+        </div>
       </div>
     </div>
   );
@@ -1044,7 +1261,7 @@ function App() {
             ) : (
               <>
                 {tab === 'dashboard'  && <DashboardView customers={customers} samples={samples} prices={prices} notes={notes} onNav={goTo} />}
-                {tab === 'customers'  && <CustomersView data={customers} />}
+                {tab === 'customers'  && <CustomersView data={customers} onRefresh={loadData} />}
                 {tab === 'samples'    && <SamplesView   data={samples} tbl={samplesTbl} onRefresh={loadData} />}
                 {tab === 'prices'     && <PricesView    data={prices}    />}
                 {tab === 'cost'       && <CostView      data={costs}     />}
