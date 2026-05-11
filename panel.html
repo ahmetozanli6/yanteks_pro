@@ -1037,12 +1037,9 @@ function PricesView({ data, onRefresh }) {
             {/* Firma */}
             <div style={{ marginBottom:12 }}>
               <label style={{ fontSize:10,fontWeight:700,color:C.txt2,display:'block',marginBottom:5,textTransform:'uppercase',letterSpacing:'.08em' }}>Firma *</label>
-              <input list="imp-firma-list" value={impFirma} onChange={e=>setImpFirma(e.target.value)}
-                placeholder="Firma ara veya yaz…"
+              <FirmaInput value={impFirma} onChange={setImpFirma}
+                firmalar={firmalar}
                 style={{ width:'100%',padding:'9px 12px',border:`1px solid ${C.border2}`,borderRadius:9,fontSize:13,fontFamily:'Inter,sans-serif',outline:'none',color:C.txt }} />
-              <datalist id="imp-firma-list">
-                {firmalar.map(f=><option key={f} value={f}/>)}
-              </datalist>
             </div>
             {/* Tarih + Durum */}
             <div style={{ display:'grid',gridTemplateColumns:'1fr 1fr',gap:10,marginBottom:12 }}>
@@ -1797,12 +1794,9 @@ function OffersView({ data, customers, onRefresh }) {
             {/* Firma */}
             <div style={{ marginBottom:12 }}>
               <label style={{ fontSize:10,fontWeight:700,color:C.txt2,display:'block',marginBottom:5,textTransform:'uppercase',letterSpacing:'.08em' }}>Firma Adı *</label>
-              <input list="firma-list" value={form.firma_adi} onChange={e=>setForm(f=>({...f,firma_adi:e.target.value}))}
-                placeholder="Firma seç veya yaz…"
+              <FirmaInput value={form.firma_adi} onChange={v=>setForm(f=>({...f,firma_adi:v}))}
+                firmalar={firmalar}
                 style={{ width:'100%',padding:'9px 12px',border:`1px solid ${C.border2}`,borderRadius:9,fontSize:13,fontFamily:'Inter,sans-serif',outline:'none',color:C.txt }} />
-              <datalist id="firma-list">
-                {firmalar.map(f=><option key={f} value={f}/>)}
-              </datalist>
             </div>
 
             {/* Ürün */}
@@ -2029,6 +2023,54 @@ function OffersView({ data, customers, onRefresh }) {
 }
 
 // ── NOTLARIM (TAM FONKSİYONEL) ───────────────────────────────────────────
+
+// ── Firma Autocomplete Input ──────────────────────────────────────────────
+function FirmaInput({ value, onChange, firmalar, placeholder, style }) {
+  const [open, setOpen] = React.useState(false);
+  const [touched, setTouched] = React.useState(false);
+  const ref = React.useRef(null);
+
+  const matches = React.useMemo(() => {
+    if (!touched || !value) return firmalar.slice(0, 8);
+    const q = value.toLowerCase();
+    return firmalar.filter(f => f.toLowerCase().includes(q)).slice(0, 10);
+  }, [value, firmalar, touched]);
+
+  // Close on outside click
+  React.useEffect(() => {
+    const handler = (e) => { if (ref.current && !ref.current.contains(e.target)) setOpen(false); };
+    document.addEventListener('mousedown', handler);
+    return () => document.removeEventListener('mousedown', handler);
+  }, []);
+
+  return (
+    <div ref={ref} style={{ position:'relative' }}>
+      <input value={value}
+        onChange={e => { onChange(e.target.value); setOpen(true); setTouched(true); }}
+        onFocus={() => { setOpen(true); setTouched(true); }}
+        placeholder={placeholder || "Firma ara veya yaz…"}
+        style={style} />
+      {open && matches.length > 0 && (
+        <div style={{ position:'absolute', top:'100%', left:0, right:0, zIndex:200,
+          background:'#fff', border:`1px solid ${C.border2}`, borderRadius:10,
+          boxShadow:'0 8px 24px rgba(0,0,0,.15)', maxHeight:220, overflowY:'auto', marginTop:4 }}>
+          {matches.map(f => (
+            <div key={f}
+              onMouseDown={e => { e.preventDefault(); onChange(f); setOpen(false); }}
+              onTouchEnd={e => { e.preventDefault(); onChange(f); setOpen(false); }}
+              style={{ padding:'10px 14px', fontSize:13, fontWeight:600, color:C.txt,
+                cursor:'pointer', borderBottom:`1px solid ${C.border}` }}
+              onMouseEnter={e => e.currentTarget.style.background = C.greenS}
+              onMouseLeave={e => e.currentTarget.style.background = 'transparent'}>
+              🏢 {f}
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
 function NotesView({ data, customers, onRefresh }) {
   const [q, setQ]       = React.useState('');
   const [rf, setRf]     = React.useState('all');
@@ -2170,12 +2212,9 @@ function NotesView({ data, customers, onRefresh }) {
             {/* Firma */}
             <div style={{ marginBottom:12 }}>
               <label style={{ fontSize:10,fontWeight:700,color:C.txt2,display:'block',marginBottom:5,textTransform:'uppercase',letterSpacing:'.08em' }}>🏢 Firma (opsiyonel)</label>
-              <input list="note-firma-list" value={form.musteri} onChange={e=>setForm(f=>({...f,musteri:e.target.value}))}
-                placeholder="Firma ara veya yaz…"
+              <FirmaInput value={form.musteri} onChange={v=>setForm(f=>({...f,musteri:v}))}
+                firmalar={firmalar}
                 style={{ width:'100%',padding:'8px 12px',border:`1px solid ${RENKLER[form.renk]?.border||C.border2}`,borderRadius:9,fontSize:13,fontFamily:'Inter,sans-serif',outline:'none',color:C.txt,background:'rgba(255,255,255,.6)' }} />
-              <datalist id="note-firma-list">
-                {firmalar.map(f=><option key={f} value={f}/>)}
-              </datalist>
             </div>
 
             {/* İçerik */}
