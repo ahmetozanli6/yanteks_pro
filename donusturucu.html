@@ -53,7 +53,6 @@ a,button{-webkit-tap-highlight-color:transparent}
 
 .content{padding:16px 16px calc(80px + env(safe-area-inset-bottom));max-width:600px;margin:0 auto}
 
-/* ── Converter Card ── */
 .conv-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--r2);box-shadow:var(--shadow);overflow:hidden;margin-bottom:14px}
 .conv-card-head{padding:14px 18px;background:linear-gradient(135deg,#131E2B,#1E2D3D);display:flex;align-items:center;gap:10px}
 .conv-card-icon{width:36px;height:36px;border-radius:10px;background:rgba(8,145,178,.25);display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0}
@@ -61,7 +60,6 @@ a,button{-webkit-tap-highlight-color:transparent}
 .conv-card-sub{font-size:10px;color:rgba(255,255,255,.5);margin-top:1px}
 .conv-body{padding:18px}
 
-/* Input row */
 .inp-row{display:flex;align-items:center;gap:10px;margin-bottom:14px}
 .inp-group{flex:1;position:relative}
 .inp-label{font-size:9px;font-weight:800;color:var(--text3);text-transform:uppercase;letter-spacing:.1em;margin-bottom:5px;display:block}
@@ -87,11 +85,9 @@ a,button{-webkit-tap-highlight-color:transparent}
 .formula-note{font-size:11px;color:var(--text3);margin-top:14px;padding:10px 14px;border-radius:8px;background:var(--surface2);border:1px solid var(--border);line-height:1.6}
 .formula-note strong{color:var(--text2);font-weight:700}
 
-/* ── Section title ── */
 .sec-title{font-size:11px;font-weight:800;color:var(--text3);text-transform:uppercase;letter-spacing:.1em;margin:20px 0 10px;display:flex;align-items:center;gap:8px}
 .sec-title::after{content:'';flex:1;height:1px;background:var(--border)}
 
-/* ── Reference Table ── */
 .ref-table{background:var(--surface);border:1px solid var(--border);border-radius:var(--r2);box-shadow:var(--shadow);overflow:hidden}
 .ref-table-head{display:grid;grid-template-columns:1fr 1fr 1fr 1fr;background:linear-gradient(135deg,#131E2B,#1E2D3D);padding:10px 14px;gap:4px}
 .ref-th{font-size:9px;font-weight:800;color:rgba(255,255,255,.7);text-transform:uppercase;letter-spacing:.08em;text-align:center}
@@ -105,7 +101,6 @@ a,button{-webkit-tap-highlight-color:transparent}
 .ref-td.teal{color:#0891B2;font-weight:800}
 .ref-cat-label{font-size:9px;font-weight:800;color:#0891B2;text-transform:uppercase;letter-spacing:.08em;grid-column:1/-1;padding:2px 0 0}
 
-/* ── Nav ── */
 .bnav{position:fixed;bottom:0;left:0;right:0;height:calc(56px + env(safe-area-inset-bottom));background:linear-gradient(to top,#0F1A25,#1E2D3D);border-top:1px solid rgba(8,145,178,.55);display:flex;align-items:stretch;z-index:200;padding-bottom:env(safe-area-inset-bottom);box-shadow:0 -2px 20px rgba(8,18,32,.3)}
 .bnav-item{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;text-decoration:none;color:rgba(255,255,255,.4);font-size:9px;font-weight:700;letter-spacing:.04em;text-transform:uppercase;-webkit-tap-highlight-color:transparent;cursor:pointer;border:none;background:none;font-family:inherit;padding:0}
 .bnav-item.on{color:#38BDF8}
@@ -114,7 +109,6 @@ a,button{-webkit-tap-highlight-color:transparent}
 .bnav-mid{color:#fff !important;background:linear-gradient(135deg,#0672A0,#0891B2);border-radius:10px;margin:6px 1px;padding:2px 6px;flex:1.1;font-weight:800;box-shadow:0 2px 8px rgba(0,0,0,.25)}
 .bnav-spacer{height:calc(58px + env(safe-area-inset-bottom));flex-shrink:0;display:block}
 
-/* ── Splash ── */
 #splash{position:fixed;inset:0;background:linear-gradient(135deg,#0A1520,#1E2D3D);z-index:99999;display:flex;align-items:center;justify-content:center;transition:opacity .35s ease,transform .35s ease}
 #splash.hide{opacity:0;transform:scale(1.04);pointer-events:none}
 .splash-inner{display:flex;flex-direction:column;align-items:center;gap:18px;animation:splashIn .5s cubic-bezier(.32,.72,0,1) both}
@@ -127,7 +121,6 @@ a,button{-webkit-tap-highlight-color:transparent}
 
 @media(max-width:400px){.result-row{grid-template-columns:1fr 1fr}.inp-unit input{font-size:15px;padding:11px 46px 11px 11px}}
 
-/* ── DRAWER ── */
 .drw-ov{position:fixed;inset:0;z-index:500;background:rgba(0,0,0,0);pointer-events:none;transition:background .25s}
 .drw-ov.on{background:rgba(0,0,0,.55);pointer-events:all}
 .drw{position:fixed;top:0;left:0;bottom:0;width:230px;z-index:501;background:linear-gradient(160deg,#0A1520 0%,#1A2B3C 100%);transform:translateX(-100%);transition:transform .28s cubic-bezier(.32,.72,0,1);display:flex;flex-direction:column;box-shadow:6px 0 30px rgba(0,0,0,.4)}
@@ -169,12 +162,11 @@ a,button{-webkit-tap-highlight-color:transparent}
 
 <div class="content">
 
-  <!-- Denye ↔ Nm Converter -->
   <div class="conv-card">
     <div class="conv-card-head">
       <div class="conv-card-icon">🧵</div>
       <div>
-        <div class="conv-card-title">Denye ↔ Nm Dönüştürücü</div>
+        <div class="conv-card-title">Denye ⇄ Nm Dönüştürücü</div>
         <div class="conv-card-sub">İplik numarası çevirici</div>
       </div>
     </div>
@@ -230,7 +222,6 @@ a,button{-webkit-tap-highlight-color:transparent}
     </div>
   </div>
 
-  <!-- Reference Table -->
   <div class="sec-title">Hızlı Referans Tablosu</div>
 
   <div class="ref-table">
@@ -242,46 +233,19 @@ a,button{-webkit-tap-highlight-color:transparent}
     </div>
 
     <div class="ref-row cat"><div class="ref-cat-label">İnce İplikler</div></div>
-    <div class="ref-row" onclick="fillRow(20,450,2.22)">
-      <div class="ref-td">Çok İnce</div>
-      <div class="ref-td teal">20</div><div class="ref-td">450</div><div class="ref-td">2.2</div>
-    </div>
-    <div class="ref-row" onclick="fillRow(40,225,4.44)">
-      <div class="ref-td">İnce</div>
-      <div class="ref-td teal">40</div><div class="ref-td">225</div><div class="ref-td">4.4</div>
-    </div>
-    <div class="ref-row" onclick="fillRow(70,128.6,7.78)">
-      <div class="ref-td">İnce-Orta</div>
-      <div class="ref-td teal">70</div><div class="ref-td">128.6</div><div class="ref-td">7.8</div>
-    </div>
+    <div class="ref-row" onclick="fillRow(20,450,2.22)"><div class="ref-td">Çok İnce</div><div class="ref-td teal">20</div><div class="ref-td">450</div><div class="ref-td">2.2</div></div>
+    <div class="ref-row" onclick="fillRow(40,225,4.44)"><div class="ref-td">İnce</div><div class="ref-td teal">40</div><div class="ref-td">225</div><div class="ref-td">4.4</div></div>
+    <div class="ref-row" onclick="fillRow(70,128.6,7.78)"><div class="ref-td">İnce-Orta</div><div class="ref-td teal">70</div><div class="ref-td">128.6</div><div class="ref-td">7.8</div></div>
 
     <div class="ref-row cat"><div class="ref-cat-label">Orta İplikler</div></div>
-    <div class="ref-row" onclick="fillRow(100,90,11.11)">
-      <div class="ref-td">Standart</div>
-      <div class="ref-td teal">100</div><div class="ref-td">90</div><div class="ref-td">11.1</div>
-    </div>
-    <div class="ref-row" onclick="fillRow(150,60,16.67)">
-      <div class="ref-td">Orta</div>
-      <div class="ref-td teal">150</div><div class="ref-td">60</div><div class="ref-td">16.7</div>
-    </div>
-    <div class="ref-row" onclick="fillRow(200,45,22.22)">
-      <div class="ref-td">Orta-Kalın</div>
-      <div class="ref-td teal">200</div><div class="ref-td">45</div><div class="ref-td">22.2</div>
-    </div>
+    <div class="ref-row" onclick="fillRow(100,90,11.11)"><div class="ref-td">Standart</div><div class="ref-td teal">100</div><div class="ref-td">90</div><div class="ref-td">11.1</div></div>
+    <div class="ref-row" onclick="fillRow(150,60,16.67)"><div class="ref-td">Orta</div><div class="ref-td teal">150</div><div class="ref-td">60</div><div class="ref-td">16.7</div></div>
+    <div class="ref-row" onclick="fillRow(200,45,22.22)"><div class="ref-td">Orta-Kalın</div><div class="ref-td teal">200</div><div class="ref-td">45</div><div class="ref-td">22.2</div></div>
 
     <div class="ref-row cat"><div class="ref-cat-label">Kalın İplikler</div></div>
-    <div class="ref-row" onclick="fillRow(300,30,33.33)">
-      <div class="ref-td">Kalın</div>
-      <div class="ref-td teal">300</div><div class="ref-td">30</div><div class="ref-td">33.3</div>
-    </div>
-    <div class="ref-row" onclick="fillRow(450,20,50)">
-      <div class="ref-td">Çok Kalın</div>
-      <div class="ref-td teal">450</div><div class="ref-td">20</div><div class="ref-td">50</div>
-    </div>
-    <div class="ref-row" onclick="fillRow(600,15,66.67)">
-      <div class="ref-td">Halat Tipi</div>
-      <div class="ref-td teal">600</div><div class="ref-td">15</div><div class="ref-td">66.7</div>
-    </div>
+    <div class="ref-row" onclick="fillRow(300,30,33.33)"><div class="ref-td">Kalın</div><div class="ref-td teal">300</div><div class="ref-td">30</div><div class="ref-td">33.3</div></div>
+    <div class="ref-row" onclick="fillRow(450,20,50)"><div class="ref-td">Çok Kalın</div><div class="ref-td teal">450</div><div class="ref-td">20</div><div class="ref-td">50</div></div>
+    <div class="ref-row" onclick="fillRow(600,15,66.67)"><div class="ref-td">Halat Tipi</div><div class="ref-td teal">600</div><div class="ref-td">15</div><div class="ref-td">66.7</div></div>
   </div>
 
   <div style="font-size:10px;color:var(--text3);text-align:center;margin-top:12px;padding-bottom:4px">
@@ -307,7 +271,6 @@ function fmt(v) {
   if (v >= 10)   return v.toFixed(2);
   return v.toFixed(3);
 }
-
 function calc(den, nm) {
   const tex = den / 9;
   const ne  = nm / 1.6935;
@@ -316,7 +279,6 @@ function calc(den, nm) {
   document.getElementById('r-tex').textContent = fmt(tex);
   document.getElementById('r-ne').textContent  = fmt(ne);
 }
-
 function fromDen(val) {
   const den = parseFloat(val);
   if (!val || isNaN(den) || den <= 0) { reset(); return; }
@@ -326,7 +288,6 @@ function fromDen(val) {
   document.getElementById('inp-den').classList.remove('result');
   calc(den, nm);
 }
-
 function fromNm(val) {
   const nm = parseFloat(val);
   if (!val || isNaN(nm) || nm <= 0) { reset(); return; }
@@ -336,11 +297,9 @@ function fromNm(val) {
   document.getElementById('inp-nm').classList.remove('result');
   calc(den, nm);
 }
-
 function reset() {
   ['r-den','r-nm','r-tex','r-ne'].forEach(id => document.getElementById(id).textContent = '—');
 }
-
 function clearAll() {
   document.getElementById('inp-den').value = '';
   document.getElementById('inp-nm').value  = '';
@@ -348,20 +307,15 @@ function clearAll() {
   document.getElementById('inp-nm').classList.remove('result');
   reset();
 }
-
 function fillRow(den, nm, tex) {
   clearAll();
   document.getElementById('inp-den').value = den;
   fromDen(den);
 }
-
-
 </script>
 <script>(function(){var sp=document.getElementById('splash');if(!sp)return;setTimeout(function(){sp.classList.add('hide');setTimeout(function(){sp.remove();},400);},600);})();</script>
 <script>if('serviceWorker' in navigator){window.addEventListener('load',()=>{navigator.serviceWorker.register('./sw.js').catch(()=>{});});}</script>
-
 <script>
-// iOS PWA: sayfalar arası geçişte standalone moddan çıkmasın
 document.addEventListener('click', function(e) {
   var a = e.target.closest('a[href]');
   if (!a) return;
@@ -379,6 +333,7 @@ document.addEventListener('click', function(e) {
     <div class="drw-sub">Yönetim Sistemi</div>
   </div>
   <nav class="drw-nav">
+    <a href="panel.html" class="drw-item"><span class="di">📊</span><span class="dt">Özet Panel</span></a>
     <a href="index.html" class="drw-item"><span class="di">📦</span><span class="dt">Numune</span></a>
     <a href="musteriler.html" class="drw-item"><span class="di">👥</span><span class="dt">Müşteri</span></a>
     <a href="fiyatlar.html" class="drw-item"><span class="di">💰</span><span class="dt">Fiyatlar</span></a>
