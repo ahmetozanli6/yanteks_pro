@@ -1019,6 +1019,82 @@ function PricesView({ data, onRefresh }) {
   return (
     <div style={{ display:'flex', flexDirection:'column', gap:14 }}>
 
+      {/* Import Modal */}
+      {impModal && (
+        <div onClick={e=>e.target===e.currentTarget&&setImpModal(false)}
+          style={{ position:'fixed',inset:0,background:'rgba(0,0,0,.55)',zIndex:50,
+            display:'flex',alignItems:'center',justifyContent:'center',padding:16 }}>
+          <div style={{ background:'#fff',borderRadius:20,padding:24,width:'100%',maxWidth:420,
+            boxShadow:'0 20px 60px rgba(0,0,0,.3)', maxHeight:'90vh', overflowY:'auto' }}>
+            <div style={{ display:'flex',justifyContent:'space-between',alignItems:'center',marginBottom:16 }}>
+              <h3 style={{ fontSize:17,fontWeight:800,color:C.txt }}>📥 Excel'den Aktar</h3>
+              <button onClick={()=>setImpModal(false)} style={{ background:'none',border:'none',cursor:'pointer',color:C.txt2,display:'flex' }}><IcoX size={20}/></button>
+            </div>
+            <p style={{ fontSize:12,color:C.txt2,marginBottom:14 }}>
+              Firma seç, ardından Excel yükle.<br/>
+              <span style={{ fontFamily:'monospace',fontSize:11 }}>A=Ürün Adı · B=Fiyat ($) · 3. satırdan başlar</span>
+            </p>
+            {/* Firma */}
+            <div style={{ marginBottom:12 }}>
+              <label style={{ fontSize:10,fontWeight:700,color:C.txt2,display:'block',marginBottom:5,textTransform:'uppercase',letterSpacing:'.08em' }}>Firma *</label>
+              <input list="imp-firma-list" value={impFirma} onChange={e=>setImpFirma(e.target.value)}
+                placeholder="Firma ara veya yaz…"
+                style={{ width:'100%',padding:'9px 12px',border:`1px solid ${C.border2}`,borderRadius:9,fontSize:13,fontFamily:'Inter,sans-serif',outline:'none',color:C.txt }} />
+              <datalist id="imp-firma-list">
+                {firmalar.map(f=><option key={f} value={f}/>)}
+              </datalist>
+            </div>
+            {/* Tarih + Durum */}
+            <div style={{ display:'grid',gridTemplateColumns:'1fr 1fr',gap:10,marginBottom:12 }}>
+              <div>
+                <label style={{ fontSize:10,fontWeight:700,color:C.txt2,display:'block',marginBottom:5,textTransform:'uppercase',letterSpacing:'.08em' }}>Teklif Tarihi</label>
+                <input type="date" value={impDate} onChange={e=>setImpDate(e.target.value)}
+                  style={{ width:'100%',padding:'9px 12px',border:`1px solid ${C.border2}`,borderRadius:9,fontSize:13,outline:'none',color:C.txt }} />
+              </div>
+              <div>
+                <label style={{ fontSize:10,fontWeight:700,color:C.txt2,display:'block',marginBottom:5,textTransform:'uppercase',letterSpacing:'.08em' }}>Durum</label>
+                <select value={impDurum} onChange={e=>setImpDurum(e.target.value)}
+                  style={{ width:'100%',padding:'9px 12px',border:`1px solid ${C.border2}`,borderRadius:9,fontSize:13,outline:'none',color:C.txt,background:'#fff',cursor:'pointer' }}>
+                  {DURUMLAR.map(d=><option key={d}>{d}</option>)}
+                </select>
+              </div>
+            </div>
+            {/* Excel dosyası */}
+            <div style={{ marginBottom:12 }}>
+              <label style={{ fontSize:10,fontWeight:700,color:C.txt2,display:'block',marginBottom:5,textTransform:'uppercase',letterSpacing:'.08em' }}>Excel Dosyası *</label>
+              <input type="file" accept=".xlsx,.xls" onChange={e=>previewImport(e.target.files[0])}
+                style={{ width:'100%',padding:'9px 12px',border:`1px solid ${C.border2}`,borderRadius:9,fontSize:12,color:C.txt,background:'#F8FAFC' }} />
+            </div>
+            {/* Önizleme */}
+            {impRows.length > 0 && (
+              <div style={{ marginBottom:14 }}>
+                <div style={{ fontSize:10,fontWeight:700,color:C.txt2,textTransform:'uppercase',letterSpacing:'.08em',marginBottom:6 }}>
+                  Önizleme — {impRows.length} satır
+                </div>
+                <div style={{ maxHeight:160,overflowY:'auto',border:`1px solid ${C.border}`,borderRadius:10,background:C.page }}>
+                  {impRows.slice(0,20).map((r,i)=>(
+                    <div key={i} style={{ display:'flex',justifyContent:'space-between',padding:'7px 12px',borderBottom:`1px solid ${C.border}`,fontSize:12 }}>
+                      <span style={{ color:C.txt,fontWeight:600 }}>{r.urun}</span>
+                      <span style={{ color:C.green,fontFamily:'monospace',fontWeight:700 }}>{r.fiyat ? '$'+r.fiyat : '—'}</span>
+                    </div>
+                  ))}
+                  {impRows.length > 20 && <div style={{ padding:'6px 12px',fontSize:11,color:C.txt2 }}>+{impRows.length-20} daha…</div>}
+                </div>
+              </div>
+            )}
+            <div style={{ display:'flex',gap:10 }}>
+              <button onClick={()=>setImpModal(false)} style={{ flex:1,padding:10,border:`1px solid ${C.border2}`,borderRadius:10,cursor:'pointer',background:'none',fontSize:13,fontWeight:600,color:C.txt2 }}>İptal</button>
+              <button onClick={doImport} disabled={impSaving||!impFirma.trim()||!impRows.length}
+                style={{ flex:2,padding:10,border:'none',borderRadius:10,cursor:'pointer',
+                  background:'linear-gradient(135deg,#0672A0,#0891B2)',color:'#fff',fontSize:13,fontWeight:700,
+                  opacity:impSaving||!impFirma.trim()||!impRows.length?0.5:1 }}>
+                {impSaving ? 'Aktarılıyor…' : `📥 ${impRows.length} Teklifi Aktar`}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Modal */}
       {modal !== null && (
         <div onClick={e=>e.target===e.currentTarget&&setModal(null)}
@@ -1567,6 +1643,47 @@ function OffersView({ data, customers, onRefresh }) {
   const [saving, setSaving] = React.useState(false);
   const [openFirms, setOpenFirms] = React.useState(new Set());
 
+  const [impModal, setImpModal] = React.useState(false);
+  const [impFirma, setImpFirma] = React.useState('');
+  const [impDate, setImpDate]   = React.useState(new Date().toISOString().slice(0,10));
+  const [impDurum, setImpDurum] = React.useState('Teklif Verildi');
+  const [impRows, setImpRows]   = React.useState([]);
+  const [impSaving, setImpSaving] = React.useState(false);
+
+  const previewImport = async (file) => {
+    if (!file) return;
+    try {
+      const buf = await file.arrayBuffer();
+      const wb = new ExcelJS.Workbook();
+      await wb.xlsx.load(buf);
+      const sh = wb.worksheets[0];
+      const rows = [];
+      sh.eachRow((row, rn) => {
+        if (rn < 3) return;
+        const urun  = String(row.getCell(1).value||'').trim();
+        const fiyat = parseFloat(row.getCell(2).value)||null;
+        if (urun) rows.push({ urun, fiyat });
+      });
+      setImpRows(rows);
+    } catch(e) { alert('Excel okunamadı: ' + e.message); }
+  };
+
+  const doImport = async () => {
+    if (!impFirma.trim() || !impRows.length) return;
+    setImpSaving(true);
+    const now = new Date().toISOString();
+    const payload = impRows.map(r => ({
+      firma_adi: impFirma.trim().toUpperCase(),
+      urun: r.urun, fiyat: r.fiyat,
+      durum: impDurum, teklif_tarihi: impDate||null,
+      updated_at: now, created_at: now
+    }));
+    await db.from('fiyat_teklifleri').insert(payload);
+    setImpSaving(false); setImpModal(false);
+    setImpFirma(''); setImpRows([]);
+    await onRefresh();
+  };
+
   const emptyForm = { firma_adi:'', urun:'', fiyat:'', durum:'Teklif Verildi',
     teklif_tarihi: new Date().toISOString().slice(0,10), gecerlilik_tarihi:'', notlar:'' };
   const [form, setForm] = React.useState(emptyForm);
@@ -1748,10 +1865,15 @@ function OffersView({ data, customers, onRefresh }) {
           <h2 style={{ fontSize:22,fontWeight:900,color:C.txt,letterSpacing:'-.02em' }}>Fiyat Teklifleri</h2>
           <p style={{ fontSize:12,color:C.txt2,marginTop:2 }}>{filtered.length} / {data.length} teklif · {sortedFirms.length} firma</p>
         </div>
-        <button onClick={()=>openAdd()} style={{ background:'linear-gradient(135deg,#0672A0,#0891B2)',
-          color:'#fff',border:'none',borderRadius:10,padding:'8px 16px',fontSize:13,
-          fontWeight:700,cursor:'pointer',display:'flex',alignItems:'center',gap:5,
-          boxShadow:'0 4px 12px rgba(8,145,178,.3)' }}><IcoPlus size={16}/> Yeni Teklif</button>
+        <div style={{ display:'flex',gap:8 }}>
+          <button onClick={()=>setImpModal(true)} style={{ background:'none',border:`1px solid ${C.border2}`,borderRadius:10,
+            padding:'8px 14px',fontSize:12,fontWeight:700,color:C.txt2,cursor:'pointer',
+            display:'flex',alignItems:'center',gap:5 }}>📥 İçe Aktar</button>
+          <button onClick={()=>openAdd()} style={{ background:'linear-gradient(135deg,#0672A0,#0891B2)',
+            color:'#fff',border:'none',borderRadius:10,padding:'8px 16px',fontSize:13,
+            fontWeight:700,cursor:'pointer',display:'flex',alignItems:'center',gap:5,
+            boxShadow:'0 4px 12px rgba(8,145,178,.3)' }}><IcoPlus size={16}/> Yeni Teklif</button>
+        </div>
       </div>
 
       {/* KPI satırı */}
@@ -1907,7 +2029,7 @@ function OffersView({ data, customers, onRefresh }) {
 }
 
 // ── NOTLARIM (TAM FONKSİYONEL) ───────────────────────────────────────────
-function NotesView({ data, onRefresh }) {
+function NotesView({ data, customers, onRefresh }) {
   const [q, setQ]       = React.useState('');
   const [rf, setRf]     = React.useState('all');
   const [sort, setSort] = React.useState('new');
@@ -1924,6 +2046,44 @@ function NotesView({ data, onRefresh }) {
     pembe:   { bg:'#FDF2F8', border:'#FBCFE8', txt:'#701A75', label:'🩷 Pembe'      },
     turuncu: { bg:'#FFF7ED', border:'#FED7AA', txt:'#7C2D12', label:'🟠 Turuncu'    },
     mor:     { bg:'#F5F3FF', border:'#DDD6FE', txt:'#4C1D95', label:'🟣 Mor'        },
+  };
+
+  const firmalar = [...new Set((customers||[]).map(c=>c.firma_adi).filter(Boolean))].sort();
+
+  const handleNoteKey = (e) => {
+    if (e.key !== 'Enter') return;
+    const ta = e.target;
+    const s = ta.selectionStart, en = ta.selectionEnd, val = ta.value;
+    const lineStart = val.lastIndexOf('\n', s-1) + 1;
+    const curLine = val.substring(lineStart, s);
+    const hasBullet = /^\s*- /.test(curLine);
+    const isEmpty = curLine.trim() === '-' || curLine.trim() === '- ' || curLine.trim() === '';
+    if (hasBullet && isEmpty) return; // normal enter to break out
+    if (hasBullet) {
+      e.preventDefault();
+      const ins = '\n- ';
+      const nv = val.substring(0,s) + ins + val.substring(en);
+      setForm(f=>({...f, icerik:nv}));
+      setTimeout(()=>{ ta.selectionStart = ta.selectionEnd = s + ins.length; }, 0);
+    }
+  };
+
+  const renderBody = (icerik, renk) => {
+    if (!icerik) return null;
+    const lines = icerik.split('\n');
+    return lines.map((line, i) => {
+      if (line.trim() === '---' || line.trim() === '—') return (
+        <hr key={i} style={{ border:'none', borderTop:`1px solid ${renk.border}`, margin:'6px 0', opacity:.6 }} />
+      );
+      if (/^\s*- (.+)/.test(line)) return (
+        <div key={i} style={{ display:'flex', gap:6, alignItems:'flex-start', fontSize:12, color:renk.txt, lineHeight:1.6 }}>
+          <span style={{ marginTop:2, opacity:.5, flexShrink:0 }}>•</span>
+          <span style={{ opacity:.8 }}>{line.replace(/^\s*- /,'')}</span>
+        </div>
+      );
+      if (line.trim() === '') return <div key={i} style={{ height:6 }} />;
+      return <div key={i} style={{ fontSize:12, color:renk.txt, opacity:.8, lineHeight:1.6 }}>{line}</div>;
+    });
   };
 
   const getTitle = (icerik) => {
@@ -2010,17 +2170,31 @@ function NotesView({ data, onRefresh }) {
             {/* Firma */}
             <div style={{ marginBottom:12 }}>
               <label style={{ fontSize:10,fontWeight:700,color:C.txt2,display:'block',marginBottom:5,textTransform:'uppercase',letterSpacing:'.08em' }}>🏢 Firma (opsiyonel)</label>
-              <input value={form.musteri} onChange={e=>setForm(f=>({...f,musteri:e.target.value}))}
-                placeholder="Firma adı…"
+              <input list="note-firma-list" value={form.musteri} onChange={e=>setForm(f=>({...f,musteri:e.target.value}))}
+                placeholder="Firma ara veya yaz…"
                 style={{ width:'100%',padding:'8px 12px',border:`1px solid ${RENKLER[form.renk]?.border||C.border2}`,borderRadius:9,fontSize:13,fontFamily:'Inter,sans-serif',outline:'none',color:C.txt,background:'rgba(255,255,255,.6)' }} />
+              <datalist id="note-firma-list">
+                {firmalar.map(f=><option key={f} value={f}/>)}
+              </datalist>
             </div>
 
             {/* İçerik */}
             <div style={{ marginBottom:18 }}>
               <label style={{ fontSize:10,fontWeight:700,color:C.txt2,display:'block',marginBottom:5,textTransform:'uppercase',letterSpacing:'.08em' }}>Not İçeriği *</label>
+              <div style={{ marginBottom:6, display:'flex', gap:6 }}>
+                {['- Madde', '---'].map(ins=>(
+                  <button key={ins} type="button"
+                    onClick={()=>setForm(f=>({...f,icerik:f.icerik+(f.icerik&&!f.icerik.endsWith('\n')?'\n':'')+ins+(ins==='---'?'':'')}))}
+                    style={{ padding:'3px 8px', fontSize:11, borderRadius:6, border:`1px solid ${RENKLER[form.renk]?.border||C.border2}`,
+                      background:'rgba(255,255,255,.5)', color:C.txt2, cursor:'pointer', fontWeight:600 }}>
+                    {ins==='---'?'── Çizgi':'• Madde'}
+                  </button>
+                ))}
+              </div>
               <textarea value={form.icerik} onChange={e=>setForm(f=>({...f,icerik:e.target.value}))}
-                rows={6} placeholder="Notunuzu buraya yazın…"
-                style={{ width:'100%',padding:'10px 12px',border:`1px solid ${RENKLER[form.renk]?.border||C.border2}`,borderRadius:9,fontSize:13,fontFamily:'Inter,sans-serif',outline:'none',color:RENKLER[form.renk]?.txt||C.txt,background:'rgba(255,255,255,.6)',resize:'vertical',lineHeight:1.6 }} />
+                onKeyDown={handleNoteKey}
+                rows={7} placeholder={"Notunuzu buraya yazın…\n- madde ile başlayın\n--- çizgi ekleyin"}
+                style={{ width:'100%',padding:'10px 12px',border:`1px solid ${RENKLER[form.renk]?.border||C.border2}`,borderRadius:9,fontSize:13,fontFamily:'Inter,sans-serif',outline:'none',color:RENKLER[form.renk]?.txt||C.txt,background:'rgba(255,255,255,.6)',resize:'vertical',lineHeight:1.7 }} />
             </div>
 
             <div style={{ display:'flex', gap:10 }}>
@@ -2122,11 +2296,9 @@ function NotesView({ data, onRefresh }) {
 
                 {/* Gövde */}
                 {body && (
-                  <p style={{ fontSize:12, color:renk.txt, opacity:.75, lineHeight:1.6,
-                    marginBottom:28, overflow:'hidden', display:'-webkit-box',
-                    WebkitLineClamp:4, WebkitBoxOrient:'vertical', wordBreak:'break-word' }}>
-                    {body}
-                  </p>
+                  <div style={{ marginBottom:28, overflow:'hidden', maxHeight:90 }}>
+                    {renderBody(body, renk)}
+                  </div>
                 )}
 
                 {/* Alt: tarih */}
@@ -2418,7 +2590,7 @@ function App() {
                 {tab === 'samples'    && <SamplesView   data={samples} tbl={samplesTbl} onRefresh={loadData} />}
                 {tab === 'prices'     && <PricesView    data={prices}    onRefresh={loadData} />}
                 {tab === 'cost'       && <CostView      data={costs}     onRefresh={loadData} />}
-                {tab === 'notes'      && <NotesView     data={notes}     onRefresh={loadData} />}
+                {tab === 'notes'      && <NotesView     data={notes} customers={customers} onRefresh={loadData} />}
                 {tab === 'offers'     && <OffersView data={offers} customers={customers} onRefresh={loadData} />}
               </>
             )}
