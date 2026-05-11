@@ -15,6 +15,8 @@
 
 <!-- Babel (JSX çalıştırmak için) -->
 <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+<!-- ExcelJS -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/exceljs/4.3.0/exceljs.min.js"></script>
 
 <style>
   * { box-sizing: border-box; margin: 0; padding: 0; }
@@ -361,60 +363,233 @@ function CustomersView({ data }) {
   );
 }
 
-// ── NUMUNELER ────────────────────────────────────────────────────────────
-function SamplesView({ data }) {
+// ── NUMUNELER (TAM FONKSİYONEL) ──────────────────────────────────────────
+function SamplesView({ data, tbl, onRefresh }) {
+  const [q, setQ]       = React.useState('');
+  const [sf, setSf]     = React.useState('all');
+  const [sort, setSort] = React.useState('new');
+  const [busy, setBusy] = React.useState(null);
+  const [showAdd, setShowAdd] = React.useState(false);
+  const [form, setForm] = React.useState({ musteri:'', cinsi:'', miktar:'', fiyat:'', not:'', durum:'Bekle' });
+  const [saving, setSaving] = React.useState(false);
+
+  const STATUSES = ['Bekle','Takip','Gitti','Onay','Red','Arşiv'];
+  const EMO = { Bekle:'⏳', Takip:'👀', Gitti:'🚀', Onay:'✅', Red:'❌', Arşiv:'🗂️' };
+  const CLRS = {
+    Bekle: ['rgba(217,119,6,.12)','#B45309'],  Takip: ['rgba(8,145,178,.12)','#0891B2'],
+    Gitti: ['rgba(29,78,216,.12)','#1D4ED8'],  Onay:  ['rgba(21,128,61,.12)','#15803D'],
+    Red:   ['rgba(153,27,27,.12)','#991B1B'],  Arşiv: ['rgba(71,85,105,.12)','#475569'],
+  };
+
+  const filtered = data
+    .filter(s => {
+      const dur = getVal(s,['durum','status'],'') || '';
+      if (sf !== 'all' && dur !== sf) return false;
+      if (q) {
+        const Q = q.toLowerCase();
+        const f1 = String(getVal(s,['musteri','müşteri','firma','firmaadi','firmaadı'],'') || '').toLowerCase();
+        const f2 = String(getVal(s,['cinsi','cins','urun','ürün'],'') || '').toLowerCase();
+        const f3 = String(getVal(s,['not','aciklama','açıklama','note'],'') || '').toLowerCase();
+        const f4 = String(getVal(s,['kod','code','no'],'') || '').toLowerCase();
+        if (!f1.includes(Q) && !f2.includes(Q) && !f3.includes(Q) && !f4.includes(Q)) return false;
+      }
+      return true;
+    })
+    .sort((a,b) => {
+      if (sort==='new') return new Date(b.created_at||0)-new Date(a.created_at||0);
+      if (sort==='old') return new Date(a.created_at||0)-new Date(b.created_at||0);
+      const fa=String(getVal(a,['musteri','firma'],'') || '');
+      const fb=String(getVal(b,['musteri','firma'],'') || '');
+      return fa.localeCompare(fb,'tr');
+    });
+
+  const counts = {};
+  STATUSES.forEach(s => { counts[s] = data.filter(i => (getVal(i,['durum','status'],'') || '') === s).length; });
+
+  const setStatus = async (item, ns) => {
+    if (!item.id || !tbl) return;
+    setBusy(item.id);
+    await db.from(tbl).update({ durum: ns }).eq('id', item.id);
+    await onRefresh(); setBusy(null);
+  };
+
+  const delItem = async (item) => {
+    if (!item.id || !tbl) return;
+    const firma = getVal(item,['musteri','müşteri','firma'],'?');
+    if (!window.confirm(`"${firma}" silinsin mi?`)) return;
+    setBusy(item.id);
+    await db.from(tbl).delete().eq('id', item.id);
+    await onRefresh(); setBusy(null);
+  };
+
+  const addSample = async () => {
+    if (!tbl || !form.musteri.trim()) return;
+    setSaving(true);
+    await db.from(tbl).insert({ musteri:form.musteri, cinsi:form.cinsi, miktar:form.miktar, fiyat:form.fiyat, not:form.not, durum:form.durum, tarih:new Date().toISOString() });
+    setSaving(false); setShowAdd(false);
+    setForm({ musteri:'', cinsi:'', miktar:'', fiyat:'', not:'', durum:'Bekle' });
+    await onRefresh();
+  };
+
+  const exportCSV = () => {
+    const rows = [['Müşteri','Cinsi','Miktar','Fiyat','Durum','Tarih','Not']];
+    filtered.forEach(s => rows.push([
+      getVal(s,['musteri','müşteri','firma'],''), getVal(s,['cinsi','cins','urun'],''),
+      getVal(s,['miktar','adet','kg'],''),        getVal(s,['fiyat','birimfiyat'],''),
+      getVal(s,['durum','status'],''),            fmtDate(s.created_at||''),
+      getVal(s,['not','aciklama'],''),
+    ]));
+    const csv = rows.map(r=>r.map(v=>`"${String(v||'').replace(/"/g,'""')}"`).join(',')).join('\n');
+    const a = document.createElement('a');
+    a.href = 'data:text/csv;charset=utf-8,\uFEFF'+encodeURIComponent(csv);
+    a.download = 'numuneler.csv'; a.click();
+  };
+
   return (
-    <div style={{ background:C.surface, borderRadius:20, border:`1px solid ${C.border}`, overflow:'hidden' }}>
-      <div style={{ padding:'20px 28px', borderBottom:`1px solid ${C.border}`,
-        display:'flex', justifyContent:'space-between', alignItems:'center' }}>
-        <div>
-          <h3 style={{ fontSize:17, fontWeight:800, color:C.txt }}>Numune Takibi</h3>
-          <p style={{ fontSize:12, color:C.txt2, marginTop:3 }}>Müşterilere gönderilen numunelerin anlık durumları.</p>
-        </div>
-        <button style={{ background:'linear-gradient(135deg,#C2410C,#EA580C)',
-          color:'#fff', border:'none', borderRadius:12,
-          padding:'10px 18px', fontSize:13, fontWeight:700, cursor:'pointer',
-          display:'flex', alignItems:'center', gap:6,
-          boxShadow:'0 4px 12px rgba(234,88,12,.35)' }}>
-          <IcoPlus size={16} /> Numune Talebi
-        </button>
-      </div>
-      <div style={{ padding:20, display:'flex', flexDirection:'column', gap:12 }}>
-        {data.length === 0
-          ? <div style={{ padding:24, textAlign:'center', color:C.txt2, border:`1px solid ${C.border}`, borderRadius:14 }}>Kayıt bulunamadı.</div>
-          : data.map((s,i) => (
-            <div key={s.id||i} style={{ display:'flex', alignItems:'center', gap:16,
-              padding:'16px 20px', background:C.surface, border:`1px solid ${C.border}`,
-              borderRadius:16, cursor:'pointer', transition:'border-color .18s, box-shadow .18s' }}
-              onMouseEnter={e=>{ e.currentTarget.style.borderColor=C.teal; e.currentTarget.style.boxShadow=`0 4px 16px ${C.tealG}`; }}
-              onMouseLeave={e=>{ e.currentTarget.style.borderColor=C.border; e.currentTarget.style.boxShadow='none'; }}>
-              <div style={{ width:52, height:52, borderRadius:16, background:C.tealS,
-                display:'flex', alignItems:'center', justifyContent:'center', color:C.teal, flexShrink:0 }}>
-                <IcoPkg size={22} />
-              </div>
-              <div style={{ flex:1, minWidth:0 }}>
-                <div style={{ display:'flex', justifyContent:'space-between', alignItems:'flex-start', gap:8 }}>
-                  <h4 style={{ fontWeight:800, fontSize:14, color:C.txt }}>
-                    {getVal(s,['musteri','müşteri','firma','firmaadi','firmaadı','customer','isim','alici','alıcı','kime'])}
-                  </h4>
-                  <StatusBadge status={getVal(s,['durum','status','asama','aşama'],'Bekliyor')} />
-                </div>
-                <p style={{ fontSize:12, color:C.txt2, marginTop:4 }}>
-                  {debugVal(s,['cinsi','cins','urun','ürün','type','iplik','kalite','detay','aciklama','açıklama'])}
-                  <span style={{ margin:'0 6px', color:C.border2 }}>•</span>
-                  <strong style={{ color:C.teal }}>
-                    {debugVal(s,['miktar','quantity','kg','adet','agirlik','ağırlık','gramaj','kilo','bobin'])}
-                  </strong>
-                </p>
-                <div style={{ display:'flex', alignItems:'center', gap:5, marginTop:8,
-                  fontSize:11, color:C.txt2, fontWeight:600, textTransform:'uppercase',
-                  letterSpacing:'.06em', fontFamily:'monospace' }}>
-                  <IcoClock size={12} />
-                  {fmtDate(getVal(s,['tarih','date','created_at','zaman']))}
-                </div>
-              </div>
+    <div style={{ display:'flex', flexDirection:'column', gap:14 }}>
+
+      {/* ── Modal: Yeni Numune ── */}
+      {showAdd && (
+        <div onClick={e=>e.target===e.currentTarget&&setShowAdd(false)}
+          style={{ position:'fixed', inset:0, background:'rgba(0,0,0,.55)', zIndex:50,
+            display:'flex', alignItems:'center', justifyContent:'center', padding:16 }}>
+          <div style={{ background:'#fff', borderRadius:20, padding:24, width:'100%', maxWidth:420,
+            boxShadow:'0 20px 60px rgba(0,0,0,.3)' }}>
+            <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:18 }}>
+              <h3 style={{ fontSize:17, fontWeight:800, color:C.txt }}>Yeni Numune</h3>
+              <button onClick={()=>setShowAdd(false)} style={{ background:'none', border:'none', cursor:'pointer', color:C.txt2, display:'flex' }}><IcoX size={20}/></button>
             </div>
-          ))
+            {[['Müşteri / Firma *','musteri'],['Cinsi / Kalite','cinsi'],['Miktar','miktar'],['Fiyat ($)','fiyat'],['Not','not']].map(([lbl,key])=>(
+              <div key={key} style={{ marginBottom:12 }}>
+                <label style={{ fontSize:10, fontWeight:700, color:C.txt2, display:'block', marginBottom:5, textTransform:'uppercase', letterSpacing:'.08em' }}>{lbl}</label>
+                <input value={form[key]} onChange={e=>setForm(f=>({...f,[key]:e.target.value}))}
+                  style={{ width:'100%', padding:'9px 12px', border:`1px solid ${C.border2}`, borderRadius:9, fontSize:13, fontFamily:'Inter,sans-serif', outline:'none', color:C.txt }} />
+              </div>
+            ))}
+            <div style={{ marginBottom:18 }}>
+              <label style={{ fontSize:10, fontWeight:700, color:C.txt2, display:'block', marginBottom:5, textTransform:'uppercase', letterSpacing:'.08em' }}>Durum</label>
+              <select value={form.durum} onChange={e=>setForm(f=>({...f,durum:e.target.value}))}
+                style={{ width:'100%', padding:'9px 12px', border:`1px solid ${C.border2}`, borderRadius:9, fontSize:13, fontFamily:'Inter,sans-serif', outline:'none', color:C.txt, background:'#fff', cursor:'pointer' }}>
+                {STATUSES.map(s=><option key={s}>{EMO[s]} {s}</option>)}
+              </select>
+            </div>
+            <div style={{ display:'flex', gap:10 }}>
+              <button onClick={()=>setShowAdd(false)} style={{ flex:1, padding:10, border:`1px solid ${C.border2}`, borderRadius:10, cursor:'pointer', background:'none', fontSize:13, fontWeight:600, color:C.txt2 }}>İptal</button>
+              <button onClick={addSample} disabled={saving||!form.musteri.trim()}
+                style={{ flex:2, padding:10, border:'none', borderRadius:10, cursor:'pointer',
+                  background:'linear-gradient(135deg,#0672A0,#0891B2)', color:'#fff', fontSize:13, fontWeight:700,
+                  opacity:saving||!form.musteri.trim()?0.5:1 }}>
+                {saving ? 'Kaydediliyor…' : '💾 Kaydet'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ── Başlık ── */}
+      <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', flexWrap:'wrap', gap:10 }}>
+        <div>
+          <h2 style={{ fontSize:22, fontWeight:900, color:C.txt, letterSpacing:'-.02em' }}>Numune Takibi</h2>
+          <p style={{ fontSize:12, color:C.txt2, marginTop:2 }}>{filtered.length} / {data.length} kayıt</p>
+        </div>
+        <div style={{ display:'flex', gap:8 }}>
+          <button onClick={exportCSV} style={{ background:'none', border:`1px solid ${C.border2}`, borderRadius:10,
+            padding:'8px 14px', fontSize:12, fontWeight:700, color:C.txt2, cursor:'pointer',
+            display:'flex', alignItems:'center', gap:5 }}>📊 Excel</button>
+          <button onClick={()=>setShowAdd(true)} style={{ background:'linear-gradient(135deg,#C2410C,#EA580C)',
+            color:'#fff', border:'none', borderRadius:10, padding:'8px 16px', fontSize:13,
+            fontWeight:700, cursor:'pointer', display:'flex', alignItems:'center', gap:5,
+            boxShadow:'0 4px 12px rgba(234,88,12,.3)' }}><IcoPlus size={16}/> Yeni</button>
+        </div>
+      </div>
+
+      {/* ── Arama + Sıralama ── */}
+      <div style={{ display:'flex', gap:10, flexWrap:'wrap' }}>
+        <div style={{ position:'relative', flex:1, minWidth:200 }}>
+          <span style={{ position:'absolute', left:11, top:'50%', transform:'translateY(-50%)', color:C.txt2, display:'flex' }}><IcoSearch size={14}/></span>
+          <input placeholder="Firma, cinsi veya not ara…" value={q} onChange={e=>setQ(e.target.value)}
+            style={{ width:'100%', paddingLeft:34, paddingRight:12, paddingTop:9, paddingBottom:9,
+              border:`1px solid ${C.border2}`, borderRadius:10, fontSize:13, fontFamily:'Inter,sans-serif',
+              outline:'none', color:C.txt, background:C.surface }} />
+        </div>
+        <select value={sort} onChange={e=>setSort(e.target.value)}
+          style={{ padding:'9px 12px', border:`1px solid ${C.border2}`, borderRadius:10, fontSize:13,
+            fontFamily:'Inter,sans-serif', outline:'none', color:C.txt, background:C.surface, cursor:'pointer' }}>
+          <option value="new">⏱ En Yeni</option>
+          <option value="old">📅 En Eski</option>
+          <option value="az">🔤 A-Z</option>
+        </select>
+      </div>
+
+      {/* ── Durum Filtreleri ── */}
+      <div style={{ display:'flex', gap:7, flexWrap:'wrap' }}>
+        {[['all','Tümü',data.length,'#0891B2','rgba(8,145,178,.1)'],...STATUSES.map(s=>[s,`${EMO[s]} ${s}`,counts[s]||0,...(CLRS[s]||[C.border2,C.txt2]).reverse()])].map(([val,lbl,cnt,col,bg])=>{
+          const active = sf === val;
+          return (
+            <button key={val} onClick={()=>setSf(active&&val!=='all'?'all':val)}
+              style={{ padding:'6px 13px', borderRadius:18, border:`2px solid ${active?col:C.border}`,
+                background:active?bg:'transparent', color:active?col:C.txt2, fontSize:12,
+                fontWeight:700, cursor:'pointer', transition:'all .15s', whiteSpace:'nowrap' }}>
+              {lbl} <span style={{ opacity:.7 }}>{cnt}</span>
+            </button>
+          );
+        })}
+      </div>
+
+      {/* ── Kartlar ── */}
+      <div style={{ display:'flex', flexDirection:'column', gap:8 }}>
+        {filtered.length === 0
+          ? <div style={{ padding:32, textAlign:'center', color:C.txt2, background:C.surface, borderRadius:16, border:`1px solid ${C.border}` }}>
+              {q || sf !== 'all' ? 'Filtreye uyan kayıt yok.' : 'Henüz numune kaydı yok.'}
+            </div>
+          : filtered.map(s => {
+            const dur = getVal(s,['durum','status'],'') || 'Bekle';
+            const [badgeBg, badgeCol] = CLRS[dur] || ['rgba(71,85,105,.12)','#475569'];
+            const isBusy = busy === s.id;
+            return (
+              <div key={s.id||Math.random()}
+                style={{ background:C.surface, border:`1px solid ${C.border}`, borderRadius:13,
+                  padding:'12px 16px', display:'flex', alignItems:'flex-start', gap:12,
+                  opacity:isBusy?0.55:1, transition:'opacity .2s' }}>
+                <div style={{ width:40, height:40, borderRadius:11, background:C.tealS,
+                  display:'flex', alignItems:'center', justifyContent:'center', color:C.teal, flexShrink:0, marginTop:2 }}>
+                  <IcoPkg size={18}/>
+                </div>
+                <div style={{ flex:1, minWidth:0 }}>
+                  <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', gap:8, flexWrap:'wrap' }}>
+                    <h4 style={{ fontWeight:800, fontSize:14, color:C.txt, margin:0 }}>
+                      {getVal(s,['musteri','müşteri','firma','firmaadi','firmaadı','customer','isim','kime']) || '—'}
+                    </h4>
+                    <select value={dur} disabled={isBusy} onChange={e=>setStatus(s,e.target.value)}
+                      style={{ padding:'4px 8px', borderRadius:7, border:`1.5px solid ${badgeCol}`,
+                        background:badgeBg, color:badgeCol, fontSize:11, fontWeight:700,
+                        cursor:'pointer', fontFamily:'Inter,sans-serif', outline:'none' }}>
+                      {STATUSES.map(st=><option key={st} value={st}>{EMO[st]} {st}</option>)}
+                    </select>
+                  </div>
+                  <div style={{ display:'flex', flexWrap:'wrap', gap:'3px 14px', marginTop:5, fontSize:12, color:C.txt2 }}>
+                    {getVal(s,['cinsi','cins','urun','ürün','kalite']) &&
+                      <span><strong style={{color:C.txt}}>{getVal(s,['cinsi','cins','urun','ürün','kalite'])}</strong></span>}
+                    {getVal(s,['miktar','adet','kg','quantity']) &&
+                      <span style={{color:C.teal,fontWeight:700}}>{getVal(s,['miktar','adet','kg','quantity'])}</span>}
+                    {getVal(s,['fiyat','birimfiyat','price']) &&
+                      <span style={{color:C.green,fontWeight:700,fontFamily:'monospace'}}>${getVal(s,['fiyat','birimfiyat','price'])}</span>}
+                    <span style={{fontFamily:'monospace',fontSize:11,color:C.txt2}}>{fmtDate(s.created_at||getVal(s,['tarih','date'],''))}</span>
+                  </div>
+                  {getVal(s,['not','aciklama','açıklama','note']) &&
+                    <p style={{ margin:'5px 0 0', fontSize:11, color:C.txt2, fontStyle:'italic', lineHeight:1.4 }}>
+                      💬 {getVal(s,['not','aciklama','açıklama','note'])}
+                    </p>}
+                </div>
+                <button onClick={()=>delItem(s)} disabled={isBusy}
+                  style={{ background:'none', border:'none', cursor:'pointer', color:C.border2, padding:4, borderRadius:7, flexShrink:0 }}
+                  onMouseEnter={e=>e.currentTarget.style.color='#DC2626'}
+                  onMouseLeave={e=>e.currentTarget.style.color=C.border2}>
+                  <IcoTrash size={14}/>
+                </button>
+              </div>
+            );
+          })
         }
       </div>
     </div>
@@ -629,6 +804,7 @@ function App() {
   const [prices,    setPrices]    = useState([]);
   const [costs,     setCosts]     = useState([]);
   const [notes,     setNotes]     = useState([]);
+  const [samplesTbl, setSamplesTbl] = useState('numuneler');
 
   const nav = [
     { id:'dashboard', label:'Özet Panel',  Icon:IcoGrid },
@@ -647,9 +823,11 @@ function App() {
       const { data:cu, error:ce } = await db.from('musteriler').select('*');
       if (ce) errs.push(`Müşteriler: ${ce.message}`); else setCustomers(cu||[]);
 
-      let { data:sa } = await db.from('numuneler').select('*');
-      if (!sa) { const { data:sa2 } = await db.from('Numune takip').select('*'); sa = sa2; }
+      let stbl = 'numuneler';
+      let { data:sa, error:saErr } = await db.from('numuneler').select('*');
+      if (saErr || !sa || sa.length === 0) { const { data:sa2 } = await db.from('Numune takip').select('*'); if (sa2 && sa2.length > 0) { sa = sa2; stbl = 'Numune takip'; } }
       if (sa) setSamples(sa);
+      setSamplesTbl(stbl);
 
       const { data:pr, error:pe } = await db.from('fiyatlar').select('*');
       if (pe) errs.push(`Fiyatlar: ${pe.message}`); else setPrices(pr||[]);
@@ -867,7 +1045,7 @@ function App() {
               <>
                 {tab === 'dashboard'  && <DashboardView customers={customers} samples={samples} prices={prices} notes={notes} onNav={goTo} />}
                 {tab === 'customers'  && <CustomersView data={customers} />}
-                {tab === 'samples'    && <SamplesView   data={samples}   />}
+                {tab === 'samples'    && <SamplesView   data={samples} tbl={samplesTbl} onRefresh={loadData} />}
                 {tab === 'prices'     && <PricesView    data={prices}    />}
                 {tab === 'cost'       && <CostView      data={costs}     />}
                 {tab === 'notes'      && <NotesView     data={notes}     />}
