@@ -592,13 +592,20 @@ function SamplesView({ data, tbl, onRefresh }) {
 
   // DB'deki gerçek değerler
   const STATUSES    = ['Beklemede','Takip Et','Gönderildi','Onaylandı','Reddedildi','Arşiv'];
-  const LABELS      = { Beklemede:'⏳ Bekle', 'Takip Et':'👀 Takip', Gönderildi:'🚀 Gitti', Onaylandı:'✅ Onay', Reddedildi:'❌ Red', Arşiv:'🗂️ Arşiv' };
-  const SHORT       = { Beklemede:'Bekle', 'Takip Et':'Takip', Gönderildi:'Gitti', Onaylandı:'Onay', Reddedildi:'Red', Arşiv:'Arşiv' };
-  const EMO         = { Beklemede:'⏳', 'Takip Et':'👀', Gönderildi:'🚀', Onaylandı:'✅', Reddedildi:'❌', Arşiv:'🗂️' };
+  const LABELS = { Beklemede:'⏳ Bekle', 'Takip Et':'👀 Takip', Gönderildi:'🚀 Gitti', Onaylandı:'✅ Onay', Reddedildi:'❌ Red', Arşiv:'🗂️ Arşiv' };
+  const SHORT  = { Beklemede:'Bekle', 'Takip Et':'Takip', Gönderildi:'Gitti', Onaylandı:'Onay', Reddedildi:'Red', Arşiv:'Arşiv' };
+  const EMO    = { Beklemede:'⏳', 'Takip Et':'👀', Gönderildi:'🚀', Onaylandı:'✅', Reddedildi:'❌', Arşiv:'🗂️' };
+  // Chip renkleri (filtre çubukları için — alpha arka plan)
   const CLRS = {
     Beklemede:  ['rgba(217,119,6,.12)','#B45309'],  'Takip Et': ['rgba(8,145,178,.12)','#0891B2'],
     Gönderildi: ['rgba(29,78,216,.12)','#1D4ED8'],  Onaylandı:  ['rgba(21,128,61,.12)','#15803D'],
     Reddedildi: ['rgba(153,27,27,.12)','#991B1B'],  Arşiv:      ['rgba(71,85,105,.12)','#475569'],
+  };
+  // Dropdown renkleri (solid — iOS'ta alpha yok sayılıyor)
+  const DCLR = {
+    Beklemede: '#B45309', 'Takip Et': '#0891B2',
+    Gönderildi:'#1D4ED8', Onaylandı: '#15803D',
+    Reddedildi:'#991B1B', Arşiv:     '#475569',
   };
 
   const isArsiv = (s) => s.arsiv === true;
@@ -789,14 +796,15 @@ function SamplesView({ data, tbl, onRefresh }) {
                   <IcoPkg size={18}/>
                 </div>
                 <div style={{ flex:1, minWidth:0 }}>
-                  <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', gap:8, flexWrap:'wrap' }}>
-                    <h4 style={{ fontWeight:800, fontSize:14, color:C.txt, margin:0 }}>
+                  <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', gap:8 }}>
+                    <h4 style={{ fontWeight:800, fontSize:14, color:C.txt, margin:0, flex:1, minWidth:0,
+                      overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap', lineHeight:'1.3' }}>
                       {getVal(s,['firma','musteri','müşteri','firmaadi','firmaadı','customer','isim','kime']) || '—'}
                     </h4>
                     <select value={dur} disabled={isBusy} onChange={e=>setStatus(s,e.target.value)}
-                      style={{ padding:'4px 8px', borderRadius:7, border:`1.5px solid ${badgeCol}`,
-                        background:badgeBg, color:badgeCol, fontSize:11, fontWeight:700,
-                        cursor:'pointer', fontFamily:'Inter,sans-serif', outline:'none' }}>
+                      style={{ flexShrink:0, padding:'5px 8px', borderRadius:7, border:'none',
+                        background:DCLR[dur]||'#475569', color:'#fff', fontSize:12, fontWeight:700,
+                        cursor:'pointer', fontFamily:'Inter,sans-serif', outline:'none', minWidth:72 }}>
                       {STATUSES.map(st=><option key={st} value={st}>{SHORT[st]||st}</option>)}
                     </select>
                   </div>
