@@ -1331,7 +1331,354 @@ function CostView({ data, onRefresh }) {
   );
 }
 
-// ── NOTLARIM ────────────────────────────────────────────────────────────
+// ── TEKLİFLER (TAM FONKSİYONEL) ─────────────────────────────────────────
+function OffersView({ data, customers, onRefresh }) {
+  const [q, setQ]       = React.useState('');
+  const [sf, setSf]     = React.useState('all');
+  const [busy, setBusy] = React.useState(null);
+  const [modal, setModal]   = React.useState(null); // null | 'new' | item
+  const [saving, setSaving] = React.useState(false);
+  const [openFirms, setOpenFirms] = React.useState(new Set());
+
+  const emptyForm = { firma_adi:'', urun:'', fiyat:'', durum:'Teklif Verildi',
+    teklif_tarihi: new Date().toISOString().slice(0,10), gecerlilik_tarihi:'', notlar:'' };
+  const [form, setForm] = React.useState(emptyForm);
+
+  const DURUMLAR = ['Teklif Verildi', 'Onaylandı', 'Onaylanmadı'];
+  const DCLR = {
+    'Teklif Verildi': [C.tealS, C.teal, 'rgba(8,145,178,.2)'],
+    'Onaylandı':      [C.greenS, C.green, 'rgba(21,128,61,.2)'],
+    'Onaylanmadı':    [C.redS, C.red, 'rgba(153,27,27,.2)'],
+  };
+
+  const daysDiff = (d) => {
+    if (!d) return null;
+    return Math.floor((new Date(d) - Date.now()) / 86400000);
+  };
+
+  const filtered = data.filter(t => {
+    if (sf !== 'all' && t.durum !== sf) return false;
+    if (q) {
+      const Q = q.toLowerCase();
+      if (!(t.firma_adi||'').toLowerCase().includes(Q) &&
+          !(t.urun||'').toLowerCase().includes(Q) &&
+          !(t.notlar||'').toLowerCase().includes(Q)) return false;
+    }
+    return true;
+  });
+
+  // Firmaya göre grupla
+  const firmaMap = new Map();
+  filtered.forEach(t => {
+    if (!firmaMap.has(t.firma_adi)) firmaMap.set(t.firma_adi, []);
+    firmaMap.get(t.firma_adi).push(t);
+  });
+  const sortedFirms = [...firmaMap.entries()].sort((a,b) => {
+    const da = a[1][0]?.teklif_tarihi || a[1][0]?.created_at || '';
+    const db2 = b[1][0]?.teklif_tarihi || b[1][0]?.created_at || '';
+    return db2.localeCompare(da);
+  });
+
+  const toggleFirm = (name) => {
+    setOpenFirms(prev => {
+      const n = new Set(prev);
+      n.has(name) ? n.delete(name) : n.add(name);
+      return n;
+    });
+  };
+
+  const setDurum = async (t, durum) => {
+    setBusy(t.id);
+    await db.from('fiyat_teklifleri').update({ durum, updated_at: new Date().toISOString() }).eq('id', t.id);
+    await onRefresh(); setBusy(null);
+  };
+
+  const delItem = async (t) => {
+    if (!window.confirm(`"${t.urun||'Teklif'}" silinsin mi?`)) return;
+    setBusy(t.id);
+    await db.from('fiyat_teklifleri').delete().eq('id', t.id);
+    await onRefresh(); setBusy(null);
+  };
+
+  const openAdd = (firmaAdi = '') => {
+    setForm({ ...emptyForm, firma_adi: firmaAdi });
+    setModal('new');
+  };
+  const openEdit = (t) => {
+    setForm({ firma_adi:t.firma_adi||'', urun:t.urun||'', fiyat:String(t.fiyat||''),
+      durum:t.durum||'Teklif Verildi', teklif_tarihi:t.teklif_tarihi||'',
+      gecerlilik_tarihi:t.gecerlilik_tarihi||'', notlar:t.notlar||'' });
+    setModal(t);
+  };
+
+  const save = async () => {
+    if (!form.firma_adi.trim() || !form.urun.trim()) return;
+    setSaving(true);
+    const now = new Date().toISOString();
+    const pay = { firma_adi: form.firma_adi.trim().toUpperCase(), urun: form.urun.trim(),
+      fiyat: parseFloat(form.fiyat)||null, durum: form.durum,
+      teklif_tarihi: form.teklif_tarihi||null, gecerlilik_tarihi: form.gecerlilik_tarihi||null,
+      notlar: form.notlar.trim()||null, updated_at: now };
+    if (modal === 'new') await db.from('fiyat_teklifleri').insert([{ ...pay, created_at: now }]);
+    else await db.from('fiyat_teklifleri').update(pay).eq('id', modal.id);
+    setSaving(false); setModal(null);
+    await onRefresh();
+  };
+
+  // KPI'lar
+  const total  = data.length;
+  const onay   = data.filter(t => t.durum === 'Onaylandı').length;
+  const teklif = data.filter(t => t.durum === 'Teklif Verildi').length;
+  const ret    = data.filter(t => t.durum === 'Onaylanmadı').length;
+  const onayTutar = data.filter(t => t.durum === 'Onaylandı' && t.fiyat)
+    .reduce((s,t) => s + parseFloat(t.fiyat||0), 0);
+
+  const firmalar = [...new Set(customers.map(c => c.firma_adi).filter(Boolean))].sort();
+
+  return (
+    <div style={{ display:'flex', flexDirection:'column', gap:14 }}>
+
+      {/* Modal */}
+      {modal !== null && (
+        <div onClick={e=>e.target===e.currentTarget&&setModal(null)}
+          style={{ position:'fixed',inset:0,background:'rgba(0,0,0,.55)',zIndex:50,
+            display:'flex',alignItems:'center',justifyContent:'center',padding:16 }}>
+          <div style={{ background:'#fff',borderRadius:20,padding:24,width:'100%',maxWidth:440,
+            boxShadow:'0 20px 60px rgba(0,0,0,.3)', maxHeight:'90vh', overflowY:'auto' }}>
+            <div style={{ display:'flex',justifyContent:'space-between',alignItems:'center',marginBottom:18 }}>
+              <h3 style={{ fontSize:17,fontWeight:800,color:C.txt }}>{modal==='new'?'➕ Yeni Teklif':'✏️ Teklifi Düzenle'}</h3>
+              <button onClick={()=>setModal(null)} style={{ background:'none',border:'none',cursor:'pointer',color:C.txt2,display:'flex' }}><IcoX size={20}/></button>
+            </div>
+
+            {/* Firma */}
+            <div style={{ marginBottom:12 }}>
+              <label style={{ fontSize:10,fontWeight:700,color:C.txt2,display:'block',marginBottom:5,textTransform:'uppercase',letterSpacing:'.08em' }}>Firma Adı *</label>
+              <input list="firma-list" value={form.firma_adi} onChange={e=>setForm(f=>({...f,firma_adi:e.target.value}))}
+                placeholder="Firma seç veya yaz…"
+                style={{ width:'100%',padding:'9px 12px',border:`1px solid ${C.border2}`,borderRadius:9,fontSize:13,fontFamily:'Inter,sans-serif',outline:'none',color:C.txt }} />
+              <datalist id="firma-list">
+                {firmalar.map(f=><option key={f} value={f}/>)}
+              </datalist>
+            </div>
+
+            {/* Ürün */}
+            <div style={{ marginBottom:12 }}>
+              <label style={{ fontSize:10,fontWeight:700,color:C.txt2,display:'block',marginBottom:5,textTransform:'uppercase',letterSpacing:'.08em' }}>Ürün / Kalite *</label>
+              <input value={form.urun} onChange={e=>setForm(f=>({...f,urun:e.target.value}))}
+                style={{ width:'100%',padding:'9px 12px',border:`1px solid ${C.border2}`,borderRadius:9,fontSize:13,fontFamily:'Inter,sans-serif',outline:'none',color:C.txt }} />
+            </div>
+
+            {/* Fiyat + Durum */}
+            <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:10, marginBottom:12 }}>
+              <div>
+                <label style={{ fontSize:10,fontWeight:700,color:C.txt2,display:'block',marginBottom:5,textTransform:'uppercase',letterSpacing:'.08em' }}>Fiyat ($)</label>
+                <input type="number" step="0.01" value={form.fiyat} onChange={e=>setForm(f=>({...f,fiyat:e.target.value}))}
+                  style={{ width:'100%',padding:'9px 12px',border:`1px solid ${C.border2}`,borderRadius:9,fontSize:13,fontFamily:'monospace',outline:'none',color:C.txt }} />
+              </div>
+              <div>
+                <label style={{ fontSize:10,fontWeight:700,color:C.txt2,display:'block',marginBottom:5,textTransform:'uppercase',letterSpacing:'.08em' }}>Durum</label>
+                <select value={form.durum} onChange={e=>setForm(f=>({...f,durum:e.target.value}))}
+                  style={{ width:'100%',padding:'9px 12px',border:`1px solid ${C.border2}`,borderRadius:9,fontSize:13,fontFamily:'Inter,sans-serif',outline:'none',color:C.txt,background:'#fff',cursor:'pointer' }}>
+                  {DURUMLAR.map(d=><option key={d}>{d}</option>)}
+                </select>
+              </div>
+            </div>
+
+            {/* Tarihler */}
+            <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:10, marginBottom:12 }}>
+              {[['Teklif Tarihi','teklif_tarihi'],['Geçerlilik','gecerlilik_tarihi']].map(([lbl,key])=>(
+                <div key={key}>
+                  <label style={{ fontSize:10,fontWeight:700,color:C.txt2,display:'block',marginBottom:5,textTransform:'uppercase',letterSpacing:'.08em' }}>{lbl}</label>
+                  <input type="date" value={form[key]} onChange={e=>setForm(f=>({...f,[key]:e.target.value}))}
+                    style={{ width:'100%',padding:'9px 12px',border:`1px solid ${C.border2}`,borderRadius:9,fontSize:13,fontFamily:'Inter,sans-serif',outline:'none',color:C.txt }} />
+                </div>
+              ))}
+            </div>
+
+            {/* Notlar */}
+            <div style={{ marginBottom:18 }}>
+              <label style={{ fontSize:10,fontWeight:700,color:C.txt2,display:'block',marginBottom:5,textTransform:'uppercase',letterSpacing:'.08em' }}>Notlar</label>
+              <textarea value={form.notlar} onChange={e=>setForm(f=>({...f,notlar:e.target.value}))} rows={2}
+                style={{ width:'100%',padding:'9px 12px',border:`1px solid ${C.border2}`,borderRadius:9,fontSize:13,fontFamily:'Inter,sans-serif',outline:'none',color:C.txt,resize:'vertical' }} />
+            </div>
+
+            <div style={{ display:'flex',gap:10 }}>
+              <button onClick={()=>setModal(null)} style={{ flex:1,padding:10,border:`1px solid ${C.border2}`,borderRadius:10,cursor:'pointer',background:'none',fontSize:13,fontWeight:600,color:C.txt2 }}>İptal</button>
+              <button onClick={save} disabled={saving||!form.firma_adi.trim()||!form.urun.trim()}
+                style={{ flex:2,padding:10,border:'none',borderRadius:10,cursor:'pointer',
+                  background:'linear-gradient(135deg,#0672A0,#0891B2)',color:'#fff',fontSize:13,fontWeight:700,
+                  opacity:saving||!form.firma_adi.trim()||!form.urun.trim()?0.5:1 }}>
+                {saving?'Kaydediliyor…':'💾 Kaydet'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Başlık + Yeni buton */}
+      <div style={{ display:'flex',justifyContent:'space-between',alignItems:'center',flexWrap:'wrap',gap:10 }}>
+        <div>
+          <h2 style={{ fontSize:22,fontWeight:900,color:C.txt,letterSpacing:'-.02em' }}>Fiyat Teklifleri</h2>
+          <p style={{ fontSize:12,color:C.txt2,marginTop:2 }}>{filtered.length} / {data.length} teklif · {sortedFirms.length} firma</p>
+        </div>
+        <button onClick={()=>openAdd()} style={{ background:'linear-gradient(135deg,#0672A0,#0891B2)',
+          color:'#fff',border:'none',borderRadius:10,padding:'8px 16px',fontSize:13,
+          fontWeight:700,cursor:'pointer',display:'flex',alignItems:'center',gap:5,
+          boxShadow:'0 4px 12px rgba(8,145,178,.3)' }}><IcoPlus size={16}/> Yeni Teklif</button>
+      </div>
+
+      {/* KPI satırı */}
+      <div style={{ display:'grid',gridTemplateColumns:'repeat(auto-fill,minmax(160px,1fr))',gap:10 }}>
+        {[
+          ['📋 Toplam', total, C.teal, C.tealS],
+          ['⏳ Teklif Verildi', teklif, C.amber, C.amberS],
+          ['✅ Onaylanan', onay, C.green, C.greenS],
+          ['❌ Onaylanmadı', ret, C.red, C.redS],
+        ].map(([lbl,val,col,bg])=>(
+          <div key={lbl} style={{ background:bg,borderRadius:12,padding:'12px 16px',border:`1px solid ${col}30` }}>
+            <p style={{ fontSize:11,fontWeight:700,color:col,marginBottom:4 }}>{lbl}</p>
+            <p style={{ fontSize:26,fontWeight:900,color:col,fontFamily:'monospace',letterSpacing:'-.02em' }}>{val}</p>
+          </div>
+        ))}
+      </div>
+      {onayTutar > 0 && (
+        <div style={{ background:C.greenS,borderRadius:10,padding:'10px 16px',border:`1px solid rgba(21,128,61,.2)`,
+          fontSize:13,fontWeight:700,color:C.green }}>
+          💰 Onaylanan toplam tutar: <span style={{ fontFamily:'monospace',fontSize:15 }}>${onayTutar.toFixed(2)}</span>
+        </div>
+      )}
+
+      {/* Arama + Filtre */}
+      <div style={{ display:'flex',gap:10,flexWrap:'wrap' }}>
+        <div style={{ position:'relative',flex:1,minWidth:200 }}>
+          <span style={{ position:'absolute',left:11,top:'50%',transform:'translateY(-50%)',color:C.txt2,display:'flex' }}><IcoSearch size={14}/></span>
+          <input placeholder="Firma, ürün veya not ara…" value={q} onChange={e=>setQ(e.target.value)}
+            style={{ width:'100%',paddingLeft:34,paddingRight:12,paddingTop:9,paddingBottom:9,
+              border:`1px solid ${C.border2}`,borderRadius:10,fontSize:13,fontFamily:'Inter,sans-serif',
+              outline:'none',color:C.txt,background:C.surface }} />
+        </div>
+      </div>
+
+      {/* Durum filtre çipleri */}
+      <div style={{ display:'flex',gap:7,flexWrap:'wrap' }}>
+        {[['all','Tümü',total],['Teklif Verildi','⏳ Bekleyen',teklif],['Onaylandı','✅ Onaylanan',onay],['Onaylanmadı','❌ Reddedilen',ret]].map(([val,lbl,cnt])=>{
+          const active = sf === val;
+          const [bg,,col] = DCLR[val]||[C.tealS,C.teal,'rgba(8,145,178,.2)'];
+          return (
+            <button key={val} onClick={()=>setSf(val)}
+              style={{ padding:'6px 13px',borderRadius:18,border:`2px solid ${active?col:C.border}`,
+                background:active?bg:'transparent',color:active?(val==='all'?C.teal:Object.values(DCLR)[['all','Teklif Verildi','Onaylandı','Onaylanmadı'].indexOf(val)-1]?.[1]||C.teal):C.txt2,
+                fontSize:12,fontWeight:700,cursor:'pointer',transition:'all .15s',whiteSpace:'nowrap' }}>
+              {lbl} <span style={{ opacity:.7 }}>{cnt}</span>
+            </button>
+          );
+        })}
+      </div>
+
+      {/* Firma grupları */}
+      {sortedFirms.length === 0
+        ? <div style={{ padding:32,textAlign:'center',color:C.txt2,background:C.surface,borderRadius:16,border:`1px solid ${C.border}` }}>
+            {q||sf!=='all'?'Filtreye uyan teklif yok.':'Henüz teklif kaydı yok.'}
+          </div>
+        : sortedFirms.map(([firmaAdi, teklifler]) => {
+          const isOpen = openFirms.has(firmaAdi) || q.length > 0;
+          const onayN   = teklifler.filter(t=>t.durum==='Onaylandı').length;
+          const teklifN = teklifler.filter(t=>t.durum==='Teklif Verildi').length;
+          const retN    = teklifler.filter(t=>t.durum==='Onaylanmadı').length;
+          return (
+            <div key={firmaAdi} style={{ background:C.surface,borderRadius:16,border:`1px solid ${C.border}`,overflow:'hidden' }}>
+
+              {/* Firma başlığı */}
+              <div onClick={()=>toggleFirm(firmaAdi)}
+                style={{ display:'flex',alignItems:'center',gap:14,padding:'14px 20px',
+                  cursor:'pointer',borderBottom:isOpen?`1px solid ${C.border}`:'none',
+                  transition:'background .15s' }}
+                onMouseEnter={e=>e.currentTarget.style.background=C.page}
+                onMouseLeave={e=>e.currentTarget.style.background='transparent'}>
+                <div style={{ width:40,height:40,borderRadius:11,background:C.tealS,
+                  display:'flex',alignItems:'center',justifyContent:'center',
+                  color:C.teal,fontWeight:900,fontSize:16,flexShrink:0 }}>
+                  {firmaAdi.charAt(0)}
+                </div>
+                <div style={{ flex:1,minWidth:0 }}>
+                  <h4 style={{ fontWeight:800,fontSize:14,color:C.txt,margin:0 }}>{firmaAdi}</h4>
+                  <div style={{ display:'flex',gap:8,marginTop:4,flexWrap:'wrap' }}>
+                    {teklifN>0&&<span style={{ fontSize:11,fontWeight:700,color:C.teal,background:C.tealS,padding:'2px 7px',borderRadius:5 }}>⏳ {teklifN}</span>}
+                    {onayN>0&&<span style={{ fontSize:11,fontWeight:700,color:C.green,background:C.greenS,padding:'2px 7px',borderRadius:5 }}>✅ {onayN}</span>}
+                    {retN>0&&<span style={{ fontSize:11,fontWeight:700,color:C.red,background:C.redS,padding:'2px 7px',borderRadius:5 }}>❌ {retN}</span>}
+                    <span style={{ fontSize:11,color:C.txt2 }}>{teklifler.length} teklif</span>
+                  </div>
+                </div>
+                <div style={{ display:'flex',alignItems:'center',gap:8 }}>
+                  <button onClick={e=>{e.stopPropagation();openAdd(firmaAdi);}}
+                    style={{ background:C.tealS,border:`1px solid rgba(8,145,178,.2)`,color:C.teal,
+                      borderRadius:8,padding:'5px 10px',cursor:'pointer',fontSize:11,fontWeight:700,
+                      display:'flex',alignItems:'center',gap:4 }}
+                    onMouseEnter={e=>e.stopPropagation()} onMouseLeave={e=>e.stopPropagation()}>
+                    <IcoPlus size={12}/> Ekle
+                  </button>
+                  <span style={{ color:C.txt2,fontSize:18,transform:isOpen?'rotate(180deg)':'none',transition:'transform .2s' }}>▾</span>
+                </div>
+              </div>
+
+              {/* Teklifler listesi */}
+              {isOpen && teklifler.map((t, ti) => {
+                const [dBg, dCol] = DCLR[t.durum]||[C.tealS,C.teal];
+                const diff = daysDiff(t.gecerlilik_tarihi);
+                const isBusy = busy === t.id;
+                return (
+                  <div key={t.id||ti} style={{ padding:'12px 20px',
+                    borderBottom: ti<teklifler.length-1?`1px solid ${C.border}`:'none',
+                    opacity:isBusy?0.5:1, display:'flex', alignItems:'center', gap:12,
+                    transition:'background .15s' }}
+                    onMouseEnter={e=>e.currentTarget.style.background=C.page}
+                    onMouseLeave={e=>e.currentTarget.style.background='transparent'}>
+
+                    <div style={{ flex:1,minWidth:0 }}>
+                      <div style={{ display:'flex',alignItems:'center',gap:8,flexWrap:'wrap' }}>
+                        <span style={{ fontWeight:700,fontSize:13,color:C.txt }}>{t.urun||'—'}</span>
+                        {t.fiyat && <span style={{ fontFamily:'monospace',fontWeight:900,color:C.green,fontSize:14 }}>${t.fiyat}</span>}
+                      </div>
+                      <div style={{ display:'flex',gap:10,marginTop:4,flexWrap:'wrap',alignItems:'center' }}>
+                        {t.teklif_tarihi && <span style={{ fontSize:11,color:C.txt2,fontFamily:'monospace' }}>📅 {fmtDate(t.teklif_tarihi)}</span>}
+                        {diff !== null && t.durum === 'Teklif Verildi' && (
+                          <span style={{ fontSize:11,fontWeight:700,
+                            color:diff<0?C.red:diff<7?C.amber:C.green }}>
+                            {diff<0?`⚠️ ${Math.abs(diff)} gün geçti`:`⏱ ${diff} gün kaldı`}
+                          </span>
+                        )}
+                        {t.notlar && <span style={{ fontSize:11,color:C.txt2,fontStyle:'italic' }}>💬 {t.notlar}</span>}
+                      </div>
+                    </div>
+
+                    <select value={t.durum} disabled={isBusy} onChange={e=>setDurum(t,e.target.value)}
+                      style={{ padding:'5px 9px',borderRadius:8,border:`1.5px solid ${dCol}`,
+                        background:dBg,color:dCol,fontSize:11,fontWeight:700,
+                        cursor:'pointer',fontFamily:'Inter,sans-serif',outline:'none',flexShrink:0 }}>
+                      {DURUMLAR.map(d=><option key={d}>{d}</option>)}
+                    </select>
+
+                    <div style={{ display:'flex',gap:4,flexShrink:0 }}>
+                      <button onClick={()=>openEdit(t)} disabled={isBusy}
+                        style={{ background:'none',border:'none',cursor:'pointer',color:C.border2,padding:5,borderRadius:6 }}
+                        onMouseEnter={e=>e.currentTarget.style.color=C.teal}
+                        onMouseLeave={e=>e.currentTarget.style.color=C.border2}><IcoEdit size={14}/></button>
+                      <button onClick={()=>delItem(t)} disabled={isBusy}
+                        style={{ background:'none',border:'none',cursor:'pointer',color:C.border2,padding:5,borderRadius:6 }}
+                        onMouseEnter={e=>e.currentTarget.style.color=C.red}
+                        onMouseLeave={e=>e.currentTarget.style.color=C.border2}><IcoTrash size={14}/></button>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          );
+        })
+      }
+    </div>
+  );
+}
+
 // ── NOTLARIM (TAM FONKSİYONEL) ───────────────────────────────────────────
 function NotesView({ data, onRefresh }) {
   const [q, setQ]       = React.useState('');
@@ -1592,6 +1939,7 @@ function App() {
   const [prices,    setPrices]    = useState([]);
   const [costs,     setCosts]     = useState([]);
   const [notes,     setNotes]     = useState([]);
+  const [offers,    setOffers]    = useState([]);
   const [samplesTbl, setSamplesTbl] = useState('numuneler');
 
   const nav = [
@@ -1630,6 +1978,9 @@ function App() {
       const genel = (genelRes.data||[]).map(n => ({ ...n, _tbl:'genel_notlar', musteri: n.musteri||null }));
       const firma = (notlarRes.data||[]).map(n => ({ ...n, _tbl:'notlar', musteri: n.firma||null }));
       setNotes([...genel, ...firma]);
+
+      const { data:of } = await db.from('fiyat_teklifleri').select('*').order('created_at', { ascending: false });
+      if (of) setOffers(of);
 
       if (errs.length) setDbErr(errs.join(' | '));
     } catch (e) {
@@ -1841,21 +2192,7 @@ function App() {
                 {tab === 'prices'     && <PricesView    data={prices}    onRefresh={loadData} />}
                 {tab === 'cost'       && <CostView      data={costs}     onRefresh={loadData} />}
                 {tab === 'notes'      && <NotesView     data={notes}     onRefresh={loadData} />}
-                {tab === 'offers'     && (
-                  <div style={{ display:'flex', flexDirection:'column', alignItems:'center',
-                    justifyContent:'center', height:'60vh', background:C.surface,
-                    borderRadius:20, border:`2px dashed ${C.border2}` }}>
-                    <div style={{ width:72, height:72, borderRadius:'50%', background:C.page,
-                      display:'flex', alignItems:'center', justifyContent:'center',
-                      color:C.border2, marginBottom:20 }}>
-                      <IcoPhone size={32} />
-                    </div>
-                    <h3 style={{ fontSize:22, fontWeight:800, color:C.txt }}>Modül Hazırlanıyor</h3>
-                    <p style={{ color:C.txt2, marginTop:8, textAlign:'center', maxWidth:360 }}>
-                      "Teklifler" modülü üzerinde çalışmalarımız devam ediyor.
-                    </p>
-                  </div>
-                )}
+                {tab === 'offers'     && <OffersView data={offers} customers={customers} onRefresh={loadData} />}
               </>
             )}
           </div>
