@@ -2221,12 +2221,12 @@ function NotesView({ data, customers, onRefresh }) {
             <div style={{ marginBottom:18 }}>
               <label style={{ fontSize:10,fontWeight:700,color:C.txt2,display:'block',marginBottom:5,textTransform:'uppercase',letterSpacing:'.08em' }}>Not İçeriği *</label>
               <div style={{ marginBottom:6, display:'flex', gap:6 }}>
-                {['- Madde', '---'].map(ins=>(
-                  <button key={ins} type="button"
-                    onClick={()=>setForm(f=>({...f,icerik:f.icerik+(f.icerik&&!f.icerik.endsWith('\n')?'\n':'')+ins+(ins==='---'?'':'')}))}
+                {[['- ','• Madde'],['---\n','── Çizgi']].map(([ins,lbl])=>(
+                  <button key={lbl} type="button"
+                    onClick={()=>setForm(f=>({...f,icerik:f.icerik+(f.icerik&&!f.icerik.endsWith('\n')?'\n':'')+ins}))}
                     style={{ padding:'3px 8px', fontSize:11, borderRadius:6, border:`1px solid ${RENKLER[form.renk]?.border||C.border2}`,
                       background:'rgba(255,255,255,.5)', color:C.txt2, cursor:'pointer', fontWeight:600 }}>
-                    {ins==='---'?'── Çizgi':'• Madde'}
+                    {lbl}
                   </button>
                 ))}
               </div>
