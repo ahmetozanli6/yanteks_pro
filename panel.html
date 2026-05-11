@@ -669,18 +669,44 @@ function SamplesView({ data, tbl, onRefresh }) {
     await onRefresh();
   };
 
-  const exportCSV = () => {
-    const rows = [['Müşteri','Cinsi','Miktar','Fiyat','Durum','Tarih','Not']];
-    filtered.forEach(s => rows.push([
-      getVal(s,['musteri','müşteri','firma'],''), getVal(s,['cinsi','cins','urun'],''),
-      getVal(s,['miktar','adet','kg'],''),        getVal(s,['fiyat','birimfiyat'],''),
-      getVal(s,['durum','status'],''),            fmtDate(s.created_at||''),
-      getVal(s,['not','aciklama'],''),
-    ]));
-    const csv = rows.map(r=>r.map(v=>`"${String(v||'').replace(/"/g,'""')}"`).join(',')).join('\n');
+  const exportXL = async () => {
+    if (!filtered.length) return;
+    const dt = new Date().toLocaleDateString('tr-TR');
+    const wb = new ExcelJS.Workbook(); wb.creator = 'Yanteks Pro';
+    const sh = wb.addWorksheet('Numuneler', { pageSetup:{ paperSize:9, orientation:'landscape' } });
+    sh.mergeCells('A1:F1');
+    const tc = sh.getCell('A1');
+    tc.value = 'YANTEKS NUMUNE TAKİBİ · ' + dt;
+    tc.font = { bold:true, size:14, color:{ argb:'FFFFFFFF' } };
+    tc.fill = { type:'pattern', pattern:'solid', fgColor:{ argb:'FFC2410C' } };
+    tc.alignment = { horizontal:'center', vertical:'middle' };
+    sh.getRow(1).height = 30;
+    const hr = sh.addRow(['FİRMA','NUMUNE','FİYAT','DURUM','NOTLAR','TARİH']);
+    hr.eachCell(c => {
+      c.fill = { type:'pattern', pattern:'solid', fgColor:{ argb:'FFEA580C' } };
+      c.font = { color:{ argb:'FFFFFFFF' }, bold:true };
+      c.alignment = { horizontal:'center', vertical:'middle' };
+    });
+    hr.height = 22;
+    sh.columns = [{width:28},{width:30},{width:12},{width:14},{width:36},{width:14}];
+    filtered.forEach(s => {
+      const firma  = getVal(s,['firma','musteri','müşteri'],'') || '';
+      const numune = getVal(s,['numune','cinsi','cins','urun'],'') || '';
+      const rawF   = String(getVal(s,['fiyat','birimfiyat'],'') || '').replace(/^\$/,'');
+      const dur    = getDur(s);
+      const label  = SHORT[dur] || dur;
+      const acik   = getVal(s,['aciklama','not','çözüm'],'') || '';
+      const tarih  = fmtDate(s.updated_at || s.created_at || '');
+      const row = sh.addRow([firma, numune, rawF ? '$'+rawF : '', label, acik, tarih]);
+      row.getCell(1).font = { bold:true };
+      if (rawF) { row.getCell(3).font = { color:{ argb:'FF15803D' }, bold:true }; row.getCell(3).alignment = { horizontal:'right' }; }
+    });
+    const buf = await wb.xlsx.writeBuffer();
+    const blob = new Blob([buf], { type:'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
     const a = document.createElement('a');
-    a.href = 'data:text/csv;charset=utf-8,\uFEFF'+encodeURIComponent(csv);
-    a.download = 'numuneler.csv'; a.click();
+    a.href = URL.createObjectURL(blob);
+    a.download = 'Yanteks_Numune_' + dt.replace(/\./g,'-') + '.xlsx';
+    a.click(); URL.revokeObjectURL(a.href);
   };
 
   return (
@@ -731,7 +757,7 @@ function SamplesView({ data, tbl, onRefresh }) {
           <p style={{ fontSize:12, color:C.txt2, marginTop:2 }}>{filtered.length} / {data.filter(i=>!isArsiv(i)).length} kayıt</p>
         </div>
         <div style={{ display:'flex', gap:8 }}>
-          <button onClick={exportCSV} style={{ background:'none', border:`1px solid ${C.border2}`, borderRadius:10,
+          <button onClick={exportXL} style={{ background:'none', border:`1px solid ${C.border2}`, borderRadius:10,
             padding:'8px 14px', fontSize:12, fontWeight:700, color:C.txt2, cursor:'pointer',
             display:'flex', alignItems:'center', gap:5 }}>📊 Excel</button>
           <button onClick={()=>setShowAdd(true)} style={{ background:'linear-gradient(135deg,#C2410C,#EA580C)',
