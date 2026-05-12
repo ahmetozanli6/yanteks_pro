@@ -5,11 +5,14 @@
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
 <meta name="theme-color" content="#0F172A">
 <title>Yanteks Pro | Full Panel</title>
+
+<!-- React, ReactDOM, Supabase, Babel, ExcelJS -->
 <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
 <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/exceljs/4.3.0/exceljs.min.js"></script>
+
 <style>
   * { box-sizing: border-box; margin: 0; padding: 0; }
   html, body, #root { height: 100%; }
@@ -36,6 +39,7 @@
 </head>
 <body>
 <div id="root"></div>
+
 <script type="text/babel" data-presets="react">
 const { useState, useEffect, useRef, useMemo, useCallback } = React;
 
@@ -47,7 +51,7 @@ const BUCKET = 'numune-photos';
 // ── TEMA & ORTAK STİLLER ─────────────────────────────────────────────
 const C = { sidebar:'#0F172A',sHead:'#0A1520',sBorder:'rgba(255,255,255,.07)',navTxt:'rgba(255,255,255,.5)',navHover:'rgba(255,255,255,.08)',navActive:'linear-gradient(135deg,#0672A0,#0891B2)',navGlow:'0 4px 14px rgba(8,145,178,.35)',page:'#F3F5F7',surface:'#ffffff',border:'rgba(30,45,61,.10)',border2:'rgba(30,45,61,.16)',txt:'#0A1520',txt2:'#4A6880',teal:'#0891B2',tealL:'#38BDF8',tealS:'rgba(8,145,178,.1)',tealG:'rgba(8,145,178,.2)',green:'#15803D',greenS:'rgba(21,128,61,.1)',amber:'#B45309',amberS:'rgba(217,119,6,.1)',red:'#991B1B',redS:'rgba(153,27,27,.1)',blue:'#1D4ED8',blueS:'rgba(29,78,216,.1)',gray:'#475569',grayS:'rgba(71,85,105,.1)' };
 const S = {
-  inp: { width:'100%',padding:'9px 12px',border:`1px solid ${C.border2}`,borderRadius:9,fontSize:13,outline:'none',color:C.txt,background:'#fff',fontFamily:'Inter,sans-serif' },
+  inp: { width:'100%',padding:'9px 12px',border:`1px solid ${C.border2}`,borderRadius:9,fontSize:13,outline:'none',color:C.txt,background:'#fff' },
   lbl: { fontSize:10,fontWeight:700,color:C.txt2,display:'block',marginBottom:5,textTransform:'uppercase',letterSpacing:'.08em' },
   mOv: { position:'fixed',inset:0,background:'rgba(0,0,0,.55)',zIndex:50,display:'flex',alignItems:'center',justifyContent:'center',padding:16 },
   mBx: { background:'#fff',borderRadius:20,padding:24,width:'100%',maxWidth:440,boxShadow:'0 20px 60px rgba(0,0,0,.3)',maxHeight:'90vh',overflowY:'auto' },
@@ -248,14 +252,23 @@ function CustomersView({ data, onRefresh }) {
     return 0;
   });
 
-  const visitToday = async (m) => {
+  const toggleVisitStatus = async (e, m) => {
+    e.preventDefault();
+    e.stopPropagation();
     setBusy(m.id);
-    await db.from('musteriler').update({ ziyaret_durumu: 'ziyaret edildi', son_ziyaret: tdy() }).eq('id', m.id);
+    const isDone = m.ziyaret_durumu === 'ziyaret edildi';
+    const newStatus = isDone ? 'ziyaret edilecek' : 'ziyaret edildi';
+    const payload = { ziyaret_durumu: newStatus };
+    if (newStatus === 'ziyaret edildi') payload.son_ziyaret = tdy();
+    
+    await db.from('musteriler').update(payload).eq('id', m.id);
     await onRefresh();
     setBusy(null);
   };
 
-  const delItem = async (m) => {
+  const delItem = async (e, m) => {
+    e.preventDefault();
+    e.stopPropagation();
     if (!window.confirm(`"${m.firma_adi}" silinsin mi?`)) return;
     setBusy(m.id);
     await db.from('musteriler').delete().eq('id', m.id);
@@ -265,7 +278,9 @@ function CustomersView({ data, onRefresh }) {
 
   const openAdd = () => { setForm(emptyForm); setEditItem(null); setShowAdd(true); };
   
-  const openEdit = (m) => {
+  const openEdit = (e, m) => {
+    e.preventDefault();
+    e.stopPropagation();
     setForm({
       firma_adi: m.firma_adi || '',
       bolge: m.bolge || '',
@@ -277,7 +292,8 @@ function CustomersView({ data, onRefresh }) {
     setShowAdd(true);
   };
 
-  const save = async () => {
+  const save = async (e) => {
+    if (e) e.preventDefault();
     if (!form.firma_adi.trim()) return;
     setSaving(true);
     const pay = {
@@ -299,6 +315,9 @@ function CustomersView({ data, onRefresh }) {
   const cntP = data.length - cntV;
   const cntL = data.filter(m => lateLevel(m) !== null).length;
   const cntN = data.filter(m => m.notlar).length;
+  
+  const totalCustomers = data.length;
+  const visitedPct = totalCustomers === 0 ? 0 : Math.round((cntV / totalCustomers) * 100);
 
   const FILTERS = [
     ['all', 'Tümü', data.length, C.teal, C.tealS],
@@ -366,7 +385,7 @@ function CustomersView({ data, onRefresh }) {
           <div style={{ ...S.mBx, maxWidth: 420 }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 18 }}>
               <h3 style={{ fontSize: 17, fontWeight: 800, color: C.txt }}>{editItem ? '✏️ Düzenle' : '➕ Yeni Müşteri'}</h3>
-              <button onClick={() => setShowAdd(false)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: C.txt2, display: 'flex' }}><IcoX size={20} /></button>
+              <button type="button" onClick={() => setShowAdd(false)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: C.txt2, display: 'flex' }}><IcoX size={20} /></button>
             </div>
             
             <div style={{ marginBottom: 12 }}>
@@ -394,8 +413,8 @@ function CustomersView({ data, onRefresh }) {
             </div>
             
             <div style={{ display: 'flex', gap: 10 }}>
-              <button onClick={() => setShowAdd(false)} style={S.bCan}>İptal</button>
-              <button onClick={save} disabled={saving || !form.firma_adi.trim()} style={{ ...S.bSav, background: C.navActive, opacity: (saving || !form.firma_adi.trim()) ? 0.5 : 1 }}>
+              <button type="button" onClick={() => setShowAdd(false)} style={S.bCan}>İptal</button>
+              <button type="button" onClick={save} disabled={saving || !form.firma_adi.trim()} style={{ ...S.bSav, background: C.navActive, opacity: (saving || !form.firma_adi.trim()) ? 0.5 : 1 }}>
                 {saving ? 'Kaydediliyor…' : '💾 Kaydet'}
               </button>
             </div>
@@ -409,10 +428,21 @@ function CustomersView({ data, onRefresh }) {
           <p style={{ fontSize: 12, color: C.txt2, marginTop: 2 }}>{filtered.length} / {data.length} firma</p>
         </div>
         <div style={{ display: 'flex', gap: 8 }}>
-          <button onClick={exportXL} style={{ ...S.bCan, padding: '8px 14px', width: 'auto', display: 'flex', alignItems: 'center', gap: 5 }}>📊 Excel</button>
-          <button onClick={openAdd} style={{ ...S.bSav, background: C.navActive, padding: '8px 16px', width: 'auto', display: 'flex', alignItems: 'center', gap: 5 }}>
+          <button type="button" onClick={exportXL} style={{ ...S.bCan, padding: '8px 14px', width: 'auto', display: 'flex', alignItems: 'center', gap: 5 }}>📊 Excel</button>
+          <button type="button" onClick={openAdd} style={{ ...S.bSav, background: C.navActive, padding: '8px 16px', width: 'auto', display: 'flex', alignItems: 'center', gap: 5 }}>
             <IcoPlus size={16} /> Yeni Müşteri
           </button>
+        </div>
+      </div>
+
+      {/* İlerleme Çubuğu (Durum Çubuğu) */}
+      <div style={{ background: C.surface, padding: '16px 20px', borderRadius: 16, border: `1px solid ${C.border}`, display: 'flex', flexDirection: 'column', gap: 8 }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 12, fontWeight: 700, color: C.txt2 }}>
+          <span>Genel Ziyaret İlerlemesi</span>
+          <span style={{ color: C.green }}>% {visitedPct} Tamamlandı ({cntV}/{totalCustomers})</span>
+        </div>
+        <div style={{ height: 8, background: C.page, borderRadius: 4, overflow: 'hidden' }}>
+          <div style={{ height: '100%', background: C.green, width: `${visitedPct}%`, transition: 'width 0.5s ease' }} />
         </div>
       </div>
 
@@ -432,7 +462,7 @@ function CustomersView({ data, onRefresh }) {
         {FILTERS.map(([val, lbl, cnt, col, bg]) => {
           const active = sf === val;
           return (
-            <button key={val} onClick={() => setSf(val)}
+            <button key={val} type="button" onClick={() => setSf(val)}
               style={{
                 padding: '6px 13px', borderRadius: 18, border: `2px solid ${active ? col : C.border}`,
                 background: active ? bg : 'transparent', color: active ? col : C.txt2,
@@ -500,11 +530,20 @@ function CustomersView({ data, onRefresh }) {
                     </div>
                     
                     <div style={{ display: 'flex', alignItems: 'center', gap: 6, flexShrink: 0 }}>
-                      {!done && (
-                        <button onClick={() => visitToday(m)} disabled={isBusy} style={{ background: C.greenS, border: `1px solid rgba(21,128,61,.2)`, color: C.green, borderRadius: 7, padding: '5px 9px', cursor: 'pointer', fontSize: 11, fontWeight: 700, whiteSpace: 'nowrap' }}>✓ Bugün</button>
-                      )}
-                      <button onClick={() => openEdit(m)} disabled={isBusy} style={{ background: 'none', border: 'none', cursor: 'pointer', color: C.border2, padding: 5, borderRadius: 7 }} onMouseEnter={e => e.currentTarget.style.color = C.teal} onMouseLeave={e => e.currentTarget.style.color = C.border2}><IcoEdit size={14} /></button>
-                      <button onClick={() => delItem(m)} disabled={isBusy} style={{ background: 'none', border: 'none', cursor: 'pointer', color: C.border2, padding: 5, borderRadius: 7 }} onMouseEnter={e => e.currentTarget.style.color = C.red} onMouseLeave={e => e.currentTarget.style.color = C.border2}><IcoTrash size={14} /></button>
+                      <button type="button" onClick={(e) => toggleVisitStatus(e, m)} disabled={isBusy} 
+                        style={{ 
+                          background: done ? C.greenS : (lv==='red'?C.redS:C.amberS), 
+                          border: `1px solid ${done ? C.green : (lv==='red'?C.red:C.amber)}40`, 
+                          color: done ? C.green : (lv==='red'?C.red:C.amber), 
+                          borderRadius: 8, padding: '5px 10px', cursor: 'pointer', fontSize: 11, 
+                          fontWeight: 700, whiteSpace: 'nowrap', display: 'flex', alignItems: 'center', gap: 4, transition: 'all 0.2s' 
+                        }}
+                      >
+                        {done ? '✅ Ziyaret Edildi' : (lv === 'red' ? '🔴 Gecikti' : '⏳ Bekliyor')}
+                      </button>
+                      
+                      <button type="button" onClick={(e) => openEdit(e, m)} disabled={isBusy} style={{ background: 'none', border: 'none', cursor: 'pointer', color: C.border2, padding: 5, borderRadius: 7 }} onMouseEnter={e => e.currentTarget.style.color = C.teal} onMouseLeave={e => e.currentTarget.style.color = C.border2}><IcoEdit size={14} /></button>
+                      <button type="button" onClick={(e) => delItem(e, m)} disabled={isBusy} style={{ background: 'none', border: 'none', cursor: 'pointer', color: C.border2, padding: 5, borderRadius: 7 }} onMouseEnter={e => e.currentTarget.style.color = C.red} onMouseLeave={e => e.currentTarget.style.color = C.border2}><IcoTrash size={14} /></button>
                     </div>
                   </div>
                 );
