@@ -4,14 +4,20 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
 <meta name="theme-color" content="#0F172A">
+<!-- PWA Desteği için Meta Etiketleri -->
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Yanteks Pro">
+<link rel="apple-touch-icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' rx='22' fill='%230891B2'/><text y='.8em' font-size='72' x='50%' text-anchor='middle' fill='white' font-family='sans-serif'>Y</text></svg>">
 <title>Yanteks Pro | Full Panel</title>
 
-<!-- React, ReactDOM, Supabase, Babel, ExcelJS -->
 <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
 <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/exceljs/4.3.0/exceljs.min.js"></script>
+<!-- Chart.js Kütüphanesi -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
 <style>
   * { box-sizing: border-box; margin: 0; padding: 0; }
@@ -26,6 +32,7 @@
   .hov-row { transition: background .15s; }
   .hov-row:hover { background: #F7FAFB !important; }
   input, select, textarea { font-family: 'Inter', sans-serif; }
+  
   @media(max-width:1023px) {
     .ypDesk { display: none !important; }
     .ypSidebarWrap { position: fixed !important; top: 0; left: 0; bottom: 0; transform: translateX(-100%); transition: transform .28s cubic-bezier(.32,.72,0,1); z-index: 30; }
@@ -34,6 +41,15 @@
   @media(min-width:1024px) {
     .ypMobile { display: none !important; }
     .ypSidebarWrap { position: relative !important; transform: none !important; flex-shrink: 0; }
+  }
+
+  /* PDF Çıktısı için Özel Yazdırma Stilleri */
+  @media print {
+    body * { visibility: hidden; }
+    #printArea, #printArea * { visibility: visible; color: #000 !important; }
+    #printArea { position: absolute; left: 0; top: 0; width: 100%; background: #fff !important; padding: 20px; }
+    .no-print { display: none !important; }
+    .ypSidebarWrap, header { display: none !important; }
   }
 </style>
 </head>
@@ -51,7 +67,7 @@ const BUCKET = 'numune-photos';
 // ── TEMA & ORTAK STİLLER ─────────────────────────────────────────────
 const C = { sidebar:'#0F172A',sHead:'#0A1520',sBorder:'rgba(255,255,255,.07)',navTxt:'rgba(255,255,255,.5)',navHover:'rgba(255,255,255,.08)',navActive:'linear-gradient(135deg,#0672A0,#0891B2)',navGlow:'0 4px 14px rgba(8,145,178,.35)',page:'#F3F5F7',surface:'#ffffff',border:'rgba(30,45,61,.10)',border2:'rgba(30,45,61,.16)',txt:'#0A1520',txt2:'#4A6880',teal:'#0891B2',tealL:'#38BDF8',tealS:'rgba(8,145,178,.1)',tealG:'rgba(8,145,178,.2)',green:'#15803D',greenS:'rgba(21,128,61,.1)',amber:'#B45309',amberS:'rgba(217,119,6,.1)',red:'#991B1B',redS:'rgba(153,27,27,.1)',blue:'#1D4ED8',blueS:'rgba(29,78,216,.1)',gray:'#475569',grayS:'rgba(71,85,105,.1)' };
 const S = {
-  inp: { width:'100%',padding:'9px 12px',border:`1px solid ${C.border2}`,borderRadius:9,fontSize:13,outline:'none',color:C.txt,background:'#fff' },
+  inp: { width:'100%',padding:'9px 12px',border:`1px solid ${C.border2}`,borderRadius:9,fontSize:13,outline:'none',color:C.txt,background:'#fff',fontFamily:'Inter,sans-serif' },
   lbl: { fontSize:10,fontWeight:700,color:C.txt2,display:'block',marginBottom:5,textTransform:'uppercase',letterSpacing:'.08em' },
   mOv: { position:'fixed',inset:0,background:'rgba(0,0,0,.55)',zIndex:50,display:'flex',alignItems:'center',justifyContent:'center',padding:16 },
   mBx: { background:'#fff',borderRadius:20,padding:24,width:'100%',maxWidth:440,boxShadow:'0 20px 60px rgba(0,0,0,.3)',maxHeight:'90vh',overflowY:'auto' },
@@ -435,7 +451,7 @@ function CustomersView({ data, onRefresh }) {
         </div>
       </div>
 
-      {/* İlerleme Çubuğu (Durum Çubuğu) */}
+      {/* İlerleme Çubuğu */}
       <div style={{ background: C.surface, padding: '16px 20px', borderRadius: 16, border: `1px solid ${C.border}`, display: 'flex', flexDirection: 'column', gap: 8 }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 12, fontWeight: 700, color: C.txt2 }}>
           <span>Genel Ziyaret İlerlemesi</span>
@@ -1069,6 +1085,8 @@ function PricesView({ data, onRefresh }) {
   const [openCats, setOpenCats] = useState(new Set());
   
   const [form, setForm] = useState({ urun_kodu: '', denye: '', pesin_fiyat: '', bolum_adi: '' });
+  
+  const [showChartModal, setShowChartModal] = useState(false);
 
   const G = useMemo(() => {
     const map = {};
@@ -1234,8 +1252,42 @@ function PricesView({ data, onRefresh }) {
     a.click();
   };
 
+  // --- Grafik Componenti ---
+  const PriceChartModal = ({ data, onClose }) => {
+    const canvasRef = useRef(null);
+    useEffect(() => {
+      if (!canvasRef.current) return;
+      const priced = data.filter(d => d.pesin_fiyat > 0).sort((a,b) => b.pesin_fiyat - a.pesin_fiyat).slice(0, 15);
+      const chart = new window.Chart(canvasRef.current, {
+        type: 'bar',
+        data: {
+          labels: priced.map(d => (d.urun_kodu || '').substring(0, 15)),
+          datasets: [{ label: 'Peşin Fiyat ($)', data: priced.map(d => d.pesin_fiyat), backgroundColor: '#0891B2', borderRadius: 6 }]
+        },
+        options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } } }
+      });
+      return () => chart.destroy();
+    }, [data]);
+
+    return (
+      <div style={S.mOv} onClick={onClose}>
+        <div style={{ ...S.mBx, maxWidth: 800, height: 500, display: 'flex', flexDirection: 'column' }} onClick={e => e.stopPropagation()}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 16 }}>
+            <h3 style={{ fontSize: 17, fontWeight: 800 }}>📊 Fiyat Analizi (En Yüksek 15 Ürün)</h3>
+            <button onClick={onClose} style={{ background: 'none', border: 'none', cursor: 'pointer' }}><IcoX size={20}/></button>
+          </div>
+          <div style={{ flex: 1, position: 'relative' }}>
+            <canvas ref={canvasRef}></canvas>
+          </div>
+        </div>
+      </div>
+    );
+  };
+
   return(
     <div style={{ display:'flex', flexDirection:'column', gap:14 }}>
+      
+      {showChartModal && <PriceChartModal data={allItems} onClose={() => setShowChartModal(false)} />}
       
       {/* Toplu Güncelle Modal */}
       {bulkModal && (
@@ -1325,6 +1377,9 @@ function PricesView({ data, onRefresh }) {
           <p style={{ fontSize:12, color:C.txt2, marginTop:2 }}>{Object.keys(G).length} bölüm · {allItems.length} ürün</p>
         </div>
         <div style={{ display:'flex', gap:8 }}>
+          <button onClick={() => setShowChartModal(true)} style={{ ...S.bCan, background:C.navActive, color:'#fff', border:'none', display:'flex', alignItems:'center', gap:5 }}>
+            📊 Grafik
+          </button>
           <button onClick={() => setBulkModal(true)} style={{ ...S.bCan, background:C.navActive, color:'#fff', border:'none', display:'flex', alignItems:'center', gap:5 }}>
             📈 Toplu Güncelle
           </button>
@@ -1463,6 +1518,7 @@ function CostView({data,onRefresh}) {
   const [i,setI]=useState({iplik:'',denye:75,hiz:25,ig:256,hmd:0.964,fire:3,person:10,maas:25000,makine:4,kw:180,kwtuk:2.8,amort:0.005,bobin:0.01,paket:0.005,kar:20});
   const [r,setR]=useState(null),[sv,setSv]=useState(false),[tb,setTb]=useState('c');
   const [hA,setHa]=useState(()=>{try{return JSON.parse(localStorage.getItem('y_h')||'[]')}catch{return []}}),[hM,setHm]=useState(null),[hF,setHf]=useState({ad:'',fiyat:''});
+  const [visCount, setVisCount] = useState(20);
   
   const cal=useCallback(()=>{
     const {denye,hiz,ig,hmd,fire,person,maas,makine,kw,kwtuk,amort,bobin,paket,kar}=i;
@@ -1486,14 +1542,33 @@ function CostView({data,onRefresh}) {
           <div style={{display:'grid',gridTemplateColumns:'repeat(auto-fill,minmax(130px,1fr))',gap:10,background:C.page,padding:14,borderRadius:12}}><NI l="HMD Fiyat($)" k="hmd"/><NI l="Fire(%)" k="fire" st={0.1}/></div>
           <div style={{display:'grid',gridTemplateColumns:'repeat(auto-fill,minmax(130px,1fr))',gap:10,background:C.page,padding:14,borderRadius:12}}><NI l="Çalışan" k="person" st={1}/><NI l="Maaş(₺)" k="maas" st={100}/><NI l="Makine" k="makine" st={1}/><NI l="kW" k="kw" st={1}/><NI l="kWh(₺)" k="kwtuk" st={0.1}/><NI l="Amort($)" k="amort"/><NI l="Bobin($)" k="bobin"/><NI l="Paket($)" k="paket"/></div>
           <div style={{display:'flex',alignItems:'center',gap:10}}><label style={S.lbl}>Kâr Marjı (%)</label><input type="number" step="0.5" value={i.kar} onChange={e=>sV('kar',e.target.value)} style={{...S.inp,width:90}}/></div>
-          <div style={{background:'linear-gradient(135deg,#0F172A,#1E2D3D)',borderRadius:18,padding:24,color:'#fff'}}>
+          
+          <div id="printArea" style={{background:'linear-gradient(135deg,#0F172A,#1E2D3D)',borderRadius:18,padding:24,color:'#fff', position:'relative'}}>
             <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',textAlign:'center',marginBottom:20}}><div><p style={{fontSize:11,color:'rgba(255,255,255,.5)'}}>NET MALİYET</p><p style={{fontSize:42,fontWeight:900,color:'#38BDF8',fontFamily:'monospace'}}>${r.n.toFixed(4)}</p></div><div><p style={{fontSize:11,color:'rgba(255,255,255,.5)'}}>SATIŞ FİYATI</p><p style={{fontSize:42,fontWeight:900,color:'#4ADE80',fontFamily:'monospace'}}>${r.s.toFixed(4)}</p></div></div>
-            <div style={{display:'flex',justifyContent:'space-between',borderTop:'1px solid rgba(255,255,255,.1)',paddingTop:14}}><div style={{display:'flex',gap:16}}><div><span style={{fontSize:10,color:'rgba(255,255,255,.5)'}}>Günlük: </span><span style={{fontFamily:'monospace',fontWeight:700}}>{r.g.toFixed(2)} kg</span></div></div><button onClick={saveH} disabled={sv} style={{...S.bSav,background:C.navActive,width:'auto'}}>Geçmişe Kaydet</button></div>
+            <div style={{display:'flex',justifyContent:'space-between',borderTop:'1px solid rgba(255,255,255,.1)',paddingTop:14}}>
+              <div style={{display:'flex',gap:16}}><div><span style={{fontSize:10,color:'rgba(255,255,255,.5)'}}>Günlük: </span><span style={{fontFamily:'monospace',fontWeight:700}}>{r.g.toFixed(2)} kg</span></div></div>
+              <div style={{display:'flex', gap:10}} className="no-print">
+                <button onClick={()=>window.print()} style={{...S.bSav,background:C.amber,width:'auto'}}>📄 Yazdır / PDF</button>
+                <button onClick={saveH} disabled={sv} style={{...S.bSav,background:C.navActive,width:'auto'}}>Geçmişe Kaydet</button>
+              </div>
+            </div>
           </div>
         </div>
       )}
       {tb==='h'&&(
-        <div style={S.card}><table style={{width:'100%',borderCollapse:'collapse',fontSize:12,whiteSpace:'nowrap'}}><thead><tr><th style={S.th}>İplik</th><th style={S.th}>Denye</th><th style={S.th}>Günlük</th><th style={S.th}>Net ($)</th><th style={S.th}>Satış ($)</th><th style={S.th}>Tarih</th></tr></thead><tbody>{data.map(r=><tr key={r.id} className="hov-row"><td style={{...S.td,fontWeight:700}}>{r.iplik||'—'}</td><td style={S.td}>{r.denye}</td><td style={S.td}>{r.gunluk?.toFixed(2)}</td><td style={{...S.td,color:C.teal,fontWeight:900}}>${r.net?.toFixed(4)}</td><td style={{...S.td,color:C.green,fontWeight:900}}>${r.satis?.toFixed(4)}</td><td style={{...S.td,color:C.txt2}}>{fmtDate(r.tarih)}</td></tr>)}</tbody></table></div>
+        <div style={S.card}>
+          <table style={{width:'100%',borderCollapse:'collapse',fontSize:12,whiteSpace:'nowrap'}}>
+            <thead><tr><th style={S.th}>İplik</th><th style={S.th}>Denye</th><th style={S.th}>Günlük</th><th style={S.th}>Net ($)</th><th style={S.th}>Satış ($)</th><th style={S.th}>Tarih</th></tr></thead>
+            <tbody>
+              {data.slice(0, visCount).map(r=><tr key={r.id} className="hov-row"><td style={{...S.td,fontWeight:700}}>{r.iplik||'—'}</td><td style={S.td}>{r.denye}</td><td style={S.td}>{r.gunluk?.toFixed(2)}</td><td style={{...S.td,color:C.teal,fontWeight:900}}>${r.net?.toFixed(4)}</td><td style={{...S.td,color:C.green,fontWeight:900}}>${r.satis?.toFixed(4)}</td><td style={{...S.td,color:C.txt2}}>{fmtDate(r.tarih)}</td></tr>)}
+            </tbody>
+          </table>
+          {visCount < data.length && (
+             <div style={{padding:'10px'}}>
+               <button onClick={()=>setVisCount(v=>v+20)} style={{...S.bCan, width:'100%'}}>⬇️ Daha Fazla Göster</button>
+             </div>
+          )}
+        </div>
       )}
       {tb==='m'&&(
         <div>
@@ -2317,8 +2392,7 @@ function App() {
     { id:'converter', label:'Dönüştürücü', Icon:IcoRefresh },
   ];
 
-  const loadData = async () => {
-    setLoading(true);
+  const loadData = useCallback(async () => {
     try {
       const { data:cu } = await db.from('musteriler').select('*'); if(cu)setCustomers(cu);
       let stbl='numuneler'; let {data:sa} = await db.from('numuneler').select('*');
@@ -2330,9 +2404,12 @@ function App() {
       setNotes([...(gR.data||[]).map(n=>({...n,_tbl:'genel_notlar'})), ...(nR.data||[]).map(n=>({...n,_tbl:'notlar',musteri:n.firma}))]);
       const { data:of } = await db.from('fiyat_teklifleri').select('*'); if(of)setOffers(of);
     } catch(e) { console.error(e); } finally { setLoading(false); }
-  };
+  }, []);
 
-  useEffect(() => { loadData(); }, []);
+  useEffect(() => {
+    loadData();
+  }, [loadData]);
+  
   const goTo = (id) => { setTab(id); setSideOpen(false); };
   const current = nav.find(n => n.id === tab);
 
