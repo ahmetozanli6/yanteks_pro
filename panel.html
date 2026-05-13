@@ -102,39 +102,6 @@ const IcoClock = (p) => <Ico {...p}><circle cx="12" cy="12" r="10"/><polyline po
 // ── YARDIMCILAR & SABİTLER ──────────────────────────────────────────
 const safeFileDate = () => new Date().toISOString().slice(0, 10);
 
-// PROFESYONEL EXCEL YARDIMCILARI (ORTAK TEMA)
-const setupExcelSheet = (sh, title, headers, colWidths) => {
-  const colCount = headers.length;
-  sh.mergeCells(1, 1, 1, colCount);
-  const tc = sh.getCell(1, 1);
-  tc.value = title;
-  tc.font = { bold: true, size: 14, color: { argb: 'FFFFFFFF' } };
-  tc.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF0F172A' } }; // Lacivert (Sidebar rengi)
-  tc.alignment = { horizontal: 'center', vertical: 'middle' };
-  sh.getRow(1).height = 32;
-
-  const hr = sh.addRow(headers);
-  hr.eachCell((c) => {
-    c.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF0891B2' } }; // Teal rengi
-    c.font = { color: { argb: 'FFFFFFFF' }, bold: true, size: 11 };
-    c.alignment = { horizontal: 'center', vertical: 'middle' };
-    c.border = { top: {style:'thin', color:{argb:'FF0F172A'}}, bottom: {style:'thin', color:{argb:'FF0F172A'}}, left: {style:'thin', color:{argb:'FF0F172A'}}, right: {style:'thin', color:{argb:'FF0F172A'}} };
-  });
-  hr.height = 24;
-
-  colWidths.forEach((w, i) => { sh.getColumn(i + 1).width = w; });
-};
-
-const addExcelRow = (sh, data, isEven, aligns = []) => {
-  const r = sh.addRow(data);
-  r.eachCell((c, i) => {
-    c.alignment = aligns[i-1] || { vertical: 'middle' };
-    c.border = { top: {style:'thin', color:{argb:'FFE2E8F0'}}, bottom: {style:'thin', color:{argb:'FFE2E8F0'}}, left: {style:'thin', color:{argb:'FFE2E8F0'}}, right: {style:'thin', color:{argb:'FFE2E8F0'}} };
-    if (isEven) c.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFF8FAFC' } }; // Zebra efekti
-  });
-  return r;
-};
-
 const getVal = (i, k, f = null) => {
   if (!i) return f;
   for (let x of k) {
@@ -460,32 +427,31 @@ function CustomersView({ data, onRefresh }) {
   const exportXL = async () => {
     const dt = safeFileDate();
     const wb = new ExcelJS.Workbook();
-    const sh = wb.addWorksheet('Müşteriler', { views: [{ state: 'frozen', ySplit: 2 }] });
+    const sh = wb.addWorksheet('Müşteriler');
     
-    setupExcelSheet(sh, 'YANTEKS MÜŞTERİ LİSTESİ · ' + dt, 
-      ['FİRMA ADI', 'BÖLGE', 'SON ZİYARET', 'SÜRE (GÜN)', 'DURUM', 'NOTLAR'],
-      [35, 18, 15, 15, 20, 45]
-    );
+    sh.mergeCells('A1:F1');
+    const tc = sh.getCell('A1');
+    tc.value = 'YANTEKS MÜŞTERİ LİSTESİ · ' + dt;
+    tc.font = { bold: true, size: 13, color: { argb: 'FFFFFFFF' } };
+    tc.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF0672A0' } };
+    tc.alignment = { horizontal: 'center', vertical: 'middle' };
+    sh.getRow(1).height = 28;
     
-    filtered.forEach((m, idx) => {
+    const hr = sh.addRow(['FİRMA ADI', 'BÖLGE', 'SON ZİYARET', 'SÜRE (GÜN)', 'DURUM', 'NOTLAR']);
+    hr.eachCell(c => {
+      c.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF0891B2' } };
+      c.font = { color: { argb: 'FFFFFFFF' }, bold: true };
+      c.alignment = { horizontal: 'center' };
+    });
+    hr.height = 20;
+    sh.columns = [{ width: 32 }, { width: 16 }, { width: 14 }, { width: 14 }, { width: 18 }, { width: 40 }];
+    
+    filtered.forEach(m => {
       const ds = daysSince(m.son_ziyaret);
-      const row = addExcelRow(sh, 
-        [m.firma_adi || '', m.bolge || '', m.son_ziyaret || '', ds !== null ? ds : '', visited(m) ? 'Ziyaret Edildi' : 'Bekliyor', m.notlar || ''],
-        idx % 2 === 0,
-        [{horizontal:'left'}, {horizontal:'center'}, {horizontal:'center'}, {horizontal:'center'}, {horizontal:'center'}, {horizontal:'left', wrapText:true}]
-      );
-      
+      const row = sh.addRow([m.firma_adi || '', m.bolge || '', m.son_ziyaret || '', ds !== null ? ds : '', visited(m) ? 'Ziyaret Edildi' : 'Bekliyor', m.notlar || '']);
       row.getCell(1).font = { bold: true };
-      
-      if (lateLevel(m) === 'red') {
-          row.getCell(4).font = { color: { argb: 'FFDC2626' }, bold: true };
-          row.getCell(5).font = { color: { argb: 'FFDC2626' }, bold: true };
-      } else if (lateLevel(m) === 'amber') {
-          row.getCell(4).font = { color: { argb: 'FFD97706' }, bold: true };
-          row.getCell(5).font = { color: { argb: 'FFD97706' }, bold: true };
-      } else if (visited(m)) {
-          row.getCell(5).font = { color: { argb: 'FF16A34A' }, bold: true };
-      }
+      if (lateLevel(m) === 'red') row.getCell(4).font = { color: { argb: 'FF991B1B' }, bold: true };
+      else if (lateLevel(m) === 'amber') row.getCell(4).font = { color: { argb: 'FFB45309' }, bold: true };
     });
     
     const buf = await wb.xlsx.writeBuffer();
@@ -1020,35 +986,15 @@ function SamplesView({ data, tbl, onRefresh }) {
   const exportXL = async () => {
     if (!filtered.length) return;
     const dt = safeFileDate();
-    const wb = new ExcelJS.Workbook(); 
-    const sh = wb.addWorksheet('Numuneler', { views: [{ state: 'frozen', ySplit: 2 }] });
-    
-    setupExcelSheet(sh, 'YANTEKS NUMUNE TAKİBİ · ' + dt, 
-      ['FİRMA', 'NUMUNE KODU / ÜRÜN', 'FİYAT', 'DURUM', 'TARİH', 'NOTLAR'],
-      [35, 35, 15, 18, 15, 45]
-    );
-
-    let rIdx = 0;
+    const wb = new ExcelJS.Workbook(); const sh = wb.addWorksheet('Numuneler');
+    sh.addRow(['FİRMA','NUMUNE','FİYAT','DURUM','NOTLAR','TARİH']);
     groupedFirms.forEach(g => {
       g.items.forEach(s => {
-        const row = addExcelRow(sh, 
-          [g.firma, dN(s.numune), s.fiyat ? s.fiyat : '', getDur(s), fmtDate(s.created_at || s.tarih), parseAc(s).note || ''],
-          rIdx % 2 === 0,
-          [{horizontal:'left'}, {horizontal:'left'}, {horizontal:'right'}, {horizontal:'center'}, {horizontal:'center'}, {horizontal:'left', wrapText:true}]
-        );
-        row.getCell(1).font = { bold: true };
-        row.getCell(3).font = { color: { argb: 'FF16A34A' }, bold: true };
-        const stat = getDur(s);
-        if (stat === 'Onaylandı') row.getCell(4).font = { color: { argb: 'FF16A34A' }, bold: true };
-        if (stat === 'Reddedildi') row.getCell(4).font = { color: { argb: 'FFDC2626' }, bold: true };
-        if (stat === 'Beklemede' || stat === 'Takip Et') row.getCell(4).font = { color: { argb: 'FFD97706' }, bold: true };
-        rIdx++;
+        sh.addRow([g.firma, (s.numune||''), s.fiyat||'', getDur(s), (s.aciklama||''), fmtDate(s.created_at||s.tarih)]);
       });
     });
-    
-    const buf = await wb.xlsx.writeBuffer(); 
-    const a = document.createElement('a');
-    a.href = URL.createObjectURL(new Blob([buf])); a.download = 'Yanteks_Numuneler_' + dt + '.xlsx'; a.click();
+    const buf = await wb.xlsx.writeBuffer(); const a = document.createElement('a');
+    a.href = URL.createObjectURL(new Blob([buf])); a.download = 'Numuneler_' + dt + '.xlsx'; a.click();
   };
 
   const counts = { all: data.filter(i=>!isArsiv(i)).length };
@@ -1317,53 +1263,52 @@ function PricesView({ data, onRefresh }) {
     
     const dt = safeFileDate();
     const wb = new ExcelJS.Workbook();
-    const sh = wb.addWorksheet(wP ? 'Fiyat Listesi' : 'Eksik Fiyatlar', { views: [{ state: 'frozen', ySplit: 2 }] });
+    const sh = wb.addWorksheet(wP ? 'Fiyat Listesi' : 'Eksik Fiyatlar', { pageSetup: { paperSize: 9, orientation: 'landscape' } });
     
-    const title = (wP ? 'YANTEKS FİYAT LİSTESİ' : 'YANTEKS EKSİK FİYATLAR') + ' · ' + dt;
-    const hdrs = wP ? ['ÜRÜN ADI', 'DENYE', 'PEŞİN', '90 GÜN', '180 GÜN'] : ['ÜRÜN ADI', 'DENYE', 'BÖLÜM'];
-    const wds = wP ? [35, 15, 16, 16, 16] : [35, 15, 25];
+    const colCount = wP ? 5 : 3;
+    sh.mergeCells(1, 1, 1, colCount);
+    const tc = sh.getCell('A1');
+    tc.value = (wP ? 'YANTEKS FİYAT LİSTESİ' : 'EKSİK FİYATLAR') + ' (' + dt + ')';
+    tc.font = { bold: true, size: 14, color: { argb: 'FFFFFFFF' } };
+    tc.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: wP ? 'FF14532D' : 'FFB45309' } };
+    tc.alignment = { horizontal: 'center', vertical: 'middle' };
+    sh.getRow(1).height = 30;
     
-    setupExcelSheet(sh, title, hdrs, wds);
+    const hdrs = wP ? ['ÜRÜN ADI', 'DENYE', 'PEŞİN ($)', '90 GÜN ($)', '180 GÜN ($)'] : ['ÜRÜN ADI', 'DENYE', 'BÖLÜM'];
+    const hr = sh.addRow(hdrs);
+    hr.eachCell(c => { 
+      c.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF166534' } }; 
+      c.font = { color: { argb: 'FFFFFFFF' }, bold: true }; 
+      c.alignment = { horizontal: 'center', vertical: 'middle' }; 
+    });
+    hr.height = 24;
+    sh.columns = wP ? [{ width: 35 }, { width: 15 }, { width: 15 }, { width: 15 }, { width: 15 }] : [{ width: 35 }, { width: 15 }, { width: 25 }];
     
     let curBolum = '';
-    let rIdx = 0;
     items.forEach(p => {
       if (p.bolum_adi && p.bolum_adi !== curBolum) {
         curBolum = p.bolum_adi;
-        rIdx = 0; // Kategori değiştiğinde zebra efektini sıfırla
         const r = sh.addRow(['📂 ' + curBolum]);
-        sh.mergeCells(r.number, 1, r.number, hdrs.length);
-        r.getCell(1).fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFF1F5F9' } };
-        r.getCell(1).font = { bold: true, color: { argb: 'FF0F172A' }, size: 12 };
-        r.getCell(1).alignment = { vertical: 'middle', horizontal: 'left', indent: 1 };
-        r.getCell(1).border = { top: {style:'medium', color:{argb:'FFCBD5E1'}}, bottom: {style:'medium', color:{argb:'FFCBD5E1'}} };
-        r.height = 26;
+        sh.mergeCells(r.number, 1, r.number, colCount);
+        r.getCell(1).fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFF0F7F2' } };
+        r.getCell(1).font = { bold: true, color: { argb: 'FF14532D' }, size: 11 };
+        r.height = 22;
       }
-      
       const c = p.pesin_fiyat || 0;
-      const dataRow = wP
-        ? [p.urun_kodu || '', p.denye || '-', c ? '$' + c.toFixed(2) : '-', c ? '$' + (c + 0.10).toFixed(2) : '-', c ? '$' + (c + 0.20).toFixed(2) : '-']
-        : [p.urun_kodu || '', p.denye || '-', p.bolum_adi || '-'];
-        
-      const aligns = wP 
-        ? [{horizontal:'left'}, {horizontal:'center'}, {horizontal:'right'}, {horizontal:'right'}, {horizontal:'right'}]
-        : [{horizontal:'left'}, {horizontal:'center'}, {horizontal:'left'}];
-
-      const row = addExcelRow(sh, dataRow, rIdx % 2 === 0, aligns);
-      row.getCell(1).font = { bold: true, color: { argb: 'FF1E293B' } };
+      const row = sh.addRow(wP
+        ? [p.urun_kodu || '', p.denye || '-', c ? c.toFixed(2) + ' $' : '-', c ? (c + 0.10).toFixed(2) + ' $' : '-', c ? (c + 0.20).toFixed(2) + ' $' : '-']
+        : [p.urun_kodu || '', p.denye || '-', p.bolum_adi || '-']);
+      row.getCell(1).font = { bold: true };
       if (wP && c > 0) { 
-        row.getCell(3).font = { color: { argb: 'FF16A34A' }, bold: true }; 
-        row.getCell(4).font = { color: { argb: 'FF475569' } }; 
-        row.getCell(5).font = { color: { argb: 'FF475569' } }; 
+        row.getCell(3).font = { color: { argb: 'FF15803D' }, bold: true }; 
+        row.getCell(3).alignment = { horizontal: 'right' }; 
       }
-      rIdx++;
     });
     
     const buf = await wb.xlsx.writeBuffer();
-    const blob = new Blob([buf], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
     const a = document.createElement('a');
-    a.href = URL.createObjectURL(blob);
-    a.download = 'Yanteks_' + (wP ? 'Fiyat_Listesi' : 'Eksik_Fiyatlar') + '_' + dt + '.xlsx';
+    a.href = URL.createObjectURL(new Blob([buf], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' }));
+    a.download = 'Yanteks_' + (wP ? 'Fiyat' : 'Eksik') + '_' + dt + '.xlsx';
     a.click();
   };
 
@@ -1918,33 +1863,30 @@ function OffersView({ data, customers, onRefresh }) {
   const exportFirmaXL = async (firmaAdi, teklifler) => {
     const dt = safeFileDate();
     const wb = new ExcelJS.Workbook(); 
-    const sh = wb.addWorksheet('Teklif', { views: [{ state: 'frozen', ySplit: 2 }] });
+    const sh = wb.addWorksheet('Teklif');
+    sh.mergeCells(1,1,1,5);
+    const tc = sh.getCell('A1');
+    tc.value = (firmaAdi || 'TÜM FİRMALAR') + ' — FİYAT TEKLİFLERİ (' + dt + ')';
+    tc.font = { bold:true, size:13, color:{ argb:'FFFFFFFF' } };
+    tc.fill = { type:'pattern', pattern:'solid', fgColor:{ argb:'FF0672A0' } };
+    tc.alignment = { horizontal:'center', vertical:'middle' };
+    sh.getRow(1).height = 28;
     
-    const title = (firmaAdi ? firmaAdi.toUpperCase() : 'TÜM FİRMALAR') + ' — FİYAT TEKLİFLERİ (' + dt + ')';
-    setupExcelSheet(sh, title, 
-      ['FİRMA', 'ÜRÜN / KALİTE', 'FİYAT', 'DURUM', 'TEKLİF TARİHİ', 'NOTLAR'],
-      [35, 35, 15, 18, 16, 45]
-    );
+    const hr = sh.addRow(['Firma','Ürün / Kalite','Fiyat ($)','Durum','Teklif Tarihi']);
+    hr.eachCell(c => { c.fill = { type:'pattern', pattern:'solid', fgColor:{ argb:'FF0891B2' } }; c.font = { color:{ argb:'FFFFFFFF' }, bold:true }; c.alignment = { horizontal:'center' }; });
+    sh.columns = [{width:30},{width:35},{width:14},{width:18},{width:16}];
     
     const rows = teklifler || filtered;
-    rows.forEach((t, idx) => {
-      const row = addExcelRow(sh, 
-        [t.firma_adi || '', t.urun || '', t.fiyat ? '$'+t.fiyat : '', t.durum || '', fmtDate(t.teklif_tarihi), t.notlar || ''],
-        idx % 2 === 0,
-        [{horizontal:'left'}, {horizontal:'left'}, {horizontal:'right'}, {horizontal:'center'}, {horizontal:'center'}, {horizontal:'left', wrapText:true}]
-      );
-      row.getCell(1).font = { bold: true };
-      row.getCell(3).font = { color: { argb: 'FF16A34A' }, bold: true };
-      
-      if (t.durum === 'Onaylandı') row.getCell(4).font = { color:{ argb:'FF16A34A' }, bold:true };
-      else if (t.durum === 'Onaylanmadı') row.getCell(4).font = { color:{ argb:'FFDC2626' }, bold:true };
-      else row.getCell(4).font = { color:{ argb:'FFD97706' }, bold:true };
+    rows.forEach(t => {
+      const r = sh.addRow([t.firma_adi || '', t.urun || '', t.fiyat || '', t.durum || '', t.teklif_tarihi || '']);
+      if (t.durum === 'Onaylandı') r.getCell(4).font = { color:{ argb:'FF15803D' }, bold:true };
+      if (t.durum === 'Onaylanmadı') r.getCell(4).font = { color:{ argb:'FF991B1B' }, bold:true };
     });
     
     const buf = await wb.xlsx.writeBuffer();
     const a = document.createElement('a');
     a.href = URL.createObjectURL(new Blob([buf], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' }));
-    a.download = 'Yanteks_Teklif_' + (firmaAdi || 'Tumu').replace(/\s+/g,'_') + '_' + dt + '.xlsx';
+    a.download = 'Teklif_' + (firmaAdi || 'Tum').replace(/\s+/g,'_') + '_' + dt + '.xlsx';
     a.click();
   };
 
