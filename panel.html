@@ -102,6 +102,39 @@ const IcoClock = (p) => <Ico {...p}><circle cx="12" cy="12" r="10"/><polyline po
 // ── YARDIMCILAR & SABİTLER ──────────────────────────────────────────
 const safeFileDate = () => new Date().toISOString().slice(0, 10);
 
+// PROFESYONEL EXCEL YARDIMCILARI (ORTAK TEMA)
+const setupExcelSheet = (sh, title, headers, colWidths) => {
+  const colCount = headers.length;
+  sh.mergeCells(1, 1, 1, colCount);
+  const tc = sh.getCell(1, 1);
+  tc.value = title;
+  tc.font = { bold: true, size: 14, color: { argb: 'FFFFFFFF' } };
+  tc.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF0F172A' } }; // Lacivert (Sidebar rengi)
+  tc.alignment = { horizontal: 'center', vertical: 'middle' };
+  sh.getRow(1).height = 32;
+
+  const hr = sh.addRow(headers);
+  hr.eachCell((c) => {
+    c.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF0891B2' } }; // Teal rengi
+    c.font = { color: { argb: 'FFFFFFFF' }, bold: true, size: 11 };
+    c.alignment = { horizontal: 'center', vertical: 'middle' };
+    c.border = { top: {style:'thin', color:{argb:'FF0F172A'}}, bottom: {style:'thin', color:{argb:'FF0F172A'}}, left: {style:'thin', color:{argb:'FF0F172A'}}, right: {style:'thin', color:{argb:'FF0F172A'}} };
+  });
+  hr.height = 24;
+
+  colWidths.forEach((w, i) => { sh.getColumn(i + 1).width = w; });
+};
+
+const addExcelRow = (sh, data, isEven, aligns = []) => {
+  const r = sh.addRow(data);
+  r.eachCell((c, i) => {
+    c.alignment = aligns[i-1] || { vertical: 'middle' };
+    c.border = { top: {style:'thin', color:{argb:'FFE2E8F0'}}, bottom: {style:'thin', color:{argb:'FFE2E8F0'}}, left: {style:'thin', color:{argb:'FFE2E8F0'}}, right: {style:'thin', color:{argb:'FFE2E8F0'}} };
+    if (isEven) c.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFF8FAFC' } }; // Zebra efekti
+  });
+  return r;
+};
+
 const getVal = (i, k, f = null) => {
   if (!i) return f;
   for (let x of k) {
@@ -121,7 +154,29 @@ const fmtDate = d => {
   } catch { return d; }
 };
 
-const trl = s => (s || '').toString().replace(/İ/g, 'i').replace(/I/g, 'ı').toLowerCase();
+const fmtDateTime = d => {
+  if (!d) return '-';
+  try {
+    const dt = new Date(d);
+    if (isNaN(dt.getTime())) return d;
+    return dt.toLocaleDateString('tr-TR', { day: '2-digit', month: 'short', year: 'numeric' }) + ' ' + 
+           dt.toLocaleTimeString('tr-TR', { hour: '2-digit', minute: '2-digit' });
+  } catch { return d; }
+};
+
+// Geliştirilmiş Türkçe Karakter Duyarlılığı (Arama ve Filtreler için)
+const trl = s => {
+  if (s == null) return '';
+  const map = {
+    'I': 'i', 'İ': 'i', 'ı': 'i', 'i': 'i',
+    'Ş': 's', 'ş': 's', 'S': 's', 's': 's',
+    'Ğ': 'g', 'ğ': 'g', 'G': 'g', 'g': 'g',
+    'Ü': 'u', 'ü': 'u', 'U': 'u', 'u': 'u',
+    'Ö': 'o', 'ö': 'o', 'O': 'o', 'o': 'o',
+    'Ç': 'c', 'ç': 'c', 'C': 'c', 'c': 'c'
+  };
+  return s.toString().replace(/[IİıŞşĞğÜüÖöÇç]/g, match => map[match]).toLowerCase();
+};
 
 // Notlar için Sabitler ve Yardımcılar
 const NOTE_COLORS = {
@@ -221,58 +276,101 @@ function CostInput({ label, val, onChange, step = 0.001 }) {
 function DashboardView({ customers, samples, prices, notes, offers, onNav }) {
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 24 }}>
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill,minmax(200px,1fr))', gap: 16 }}>
+      {/* Hoşgeldiniz & Tarih Alanı (Yeni Profesyonel Dokunuş) */}
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', flexWrap: 'wrap', gap: 10 }}>
+        <div>
+          <h2 style={{ fontSize: 24, fontWeight: 900, color: C.txt }}>Özet Durum</h2>
+          <p style={{ fontSize: 13, color: C.txt2, marginTop: 4 }}>İşletmenizin güncel performans metrikleri</p>
+        </div>
+        <div style={{ fontSize: 12, fontWeight: 600, color: C.txt2, background: C.surface, padding: '8px 16px', borderRadius: 20, border: `1px solid ${C.border}` }}>
+          {new Date().toLocaleDateString('tr-TR', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}
+        </div>
+      </div>
+
+      {/* Metric Cards */}
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: 16 }}>
         {[
-          { t: 'Toplam Müşteri', v: customers.length || 0, I: IcoUsers, g: C.navActive },
-          { t: 'Numune Kaydı', v: samples.length || 0, I: IcoPkg, g: 'linear-gradient(135deg,#C2410C,#EA580C)' },
-          { t: 'Fiyat Kalemi', v: prices.filter(p => p.denye || p.bolum_adi).length || 0, I: IcoDollar, g: 'linear-gradient(135deg,#15803D,#16A34A)' },
-          { t: 'Aktif Teklif', v: (offers || []).filter(t => t.durum === 'Teklif Verildi').length || 0, I: IcoSend, g: 'linear-gradient(135deg,#7C3AED,#8B5CF6)' }
+          { t: 'Toplam Müşteri', v: customers.length || 0, I: IcoUsers, g: C.navActive, id: 'customers', desc: 'Sistemde kayıtlı' },
+          { t: 'Numune Kaydı', v: samples.length || 0, I: IcoPkg, g: 'linear-gradient(135deg,#C2410C,#EA580C)', id: 'samples', desc: 'Tüm numuneler' },
+          { t: 'Fiyat Kalemi', v: prices.filter(p => p.denye || p.bolum_adi).length || 0, I: IcoDollar, g: 'linear-gradient(135deg,#15803D,#16A34A)', id: 'prices', desc: 'Güncel ürünler' },
+          { t: 'Aktif Teklif', v: (offers || []).filter(t => t.durum === 'Teklif Verildi').length || 0, I: IcoSend, g: 'linear-gradient(135deg,#7C3AED,#8B5CF6)', id: 'offers', desc: 'Bekleyen teklifler' }
         ].map((k, i) => (
-          <div key={i} style={{ background: C.surface, borderRadius: 18, padding: '22px 24px', border: `1px solid ${C.border}`, position: 'relative', overflow: 'hidden' }}>
+          <div key={i} onClick={() => onNav(k.id)} className="hov-row" style={{ background: C.surface, borderRadius: 20, padding: '24px', border: `1px solid ${C.border}`, position: 'relative', overflow: 'hidden', cursor: 'pointer', display: 'flex', flexDirection: 'column', gap: 16, transition: 'all 0.2s', boxShadow: '0 4px 6px rgba(0,0,0,0.02)' }}
+               onMouseEnter={e => { e.currentTarget.style.transform = 'translateY(-4px)'; e.currentTarget.style.boxShadow = '0 12px 24px rgba(0,0,0,0.06)'; e.currentTarget.style.borderColor = C.teal; }}
+               onMouseLeave={e => { e.currentTarget.style.transform = 'none'; e.currentTarget.style.boxShadow = '0 4px 6px rgba(0,0,0,0.02)'; e.currentTarget.style.borderColor = C.border; }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-              <div><p style={{ fontSize: 10, fontWeight: 700, color: C.txt2, textTransform: 'uppercase', marginBottom: 8 }}>{k.t}</p><h3 style={{ fontSize: 30, fontWeight: 900, color: C.txt }}>{k.v}</h3></div>
-              <div style={{ width: 50, height: 50, borderRadius: 14, background: k.g, display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff' }}><k.I size={22} /></div>
+              <div style={{ width: 48, height: 48, borderRadius: 14, background: k.g, display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff', boxShadow: '0 4px 10px rgba(0,0,0,0.1)' }}>
+                <k.I size={24} />
+              </div>
+              <span style={{ fontSize: 11, fontWeight: 700, color: C.teal, background: C.tealS, padding: '4px 8px', borderRadius: 8 }}>Git ➔</span>
+            </div>
+            <div>
+              <h3 style={{ fontSize: 32, fontWeight: 900, color: C.txt, lineHeight: 1 }}>{k.v}</h3>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 2, marginTop: 8 }}>
+                <p style={{ fontSize: 13, fontWeight: 800, color: C.txt }}>{k.t}</p>
+                <p style={{ fontSize: 11, color: C.txt2 }}>{k.desc}</p>
+              </div>
             </div>
           </div>
         ))}
       </div>
-      <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr', gap: 20, flexWrap: 'wrap' }}>
-        <div style={S.card}>
-          <div style={{ padding: '18px 24px', borderBottom: `1px solid ${C.border}`, display: 'flex', justifyContent: 'space-between' }}>
-            <h3 style={{ fontSize: 15, fontWeight: 800 }}>Son Numuneler</h3>
-            <button onClick={() => onNav('samples')} style={{ fontSize: 12, fontWeight: 700, color: C.teal, background: C.tealS, border: 'none', borderRadius: 8, padding: '4px 12px', cursor: 'pointer' }}>Tümü</button>
+
+      {/* Bottom Grids */}
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: 20 }}>
+        {/* Son Numuneler */}
+        <div style={{ ...S.card, display: 'flex', flexDirection: 'column', marginBottom: 0 }}>
+          <div style={{ padding: '20px 24px', borderBottom: `1px solid ${C.border}`, display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: '#FAFAFA' }}>
+            <h3 style={{ fontSize: 15, fontWeight: 800, display: 'flex', alignItems: 'center', gap: 8 }}><IcoPkg size={18} color={C.teal}/> Son Numuneler</h3>
+            <button onClick={() => onNav('samples')} style={{ fontSize: 11, fontWeight: 700, color: C.teal, background: C.tealS, border: 'none', borderRadius: 8, padding: '6px 12px', cursor: 'pointer', transition: 'background 0.2s' }} onMouseEnter={e=>e.currentTarget.style.background=C.tealG} onMouseLeave={e=>e.currentTarget.style.background=C.tealS}>Tümünü Gör</button>
           </div>
-          {[...samples].sort((a, b) => new Date(b.created_at || 0) - new Date(a.created_at || 0)).slice(0, 5).map((s, i) => (
-            <div key={i} className="hov-row" style={{ padding: '13px 24px', borderBottom: `1px solid ${C.border}`, display: 'flex', justifyContent: 'space-between' }}>
-              <div style={{ display: 'flex', gap: 14 }}>
-                <div style={{ width: 42, height: 42, borderRadius: 13, background: C.tealS, display: 'flex', alignItems: 'center', justifyContent: 'center', color: C.teal }}><IcoPkg /></div>
-                <div><div style={{ fontWeight: 700, fontSize: 13 }}>{s.firma || getVal(s, ['musteri', 'customer'])}</div><div style={{ fontSize: 11, color: C.txt2 }}>{s.numune || getVal(s, ['cinsi', 'urun', 'type'], '—')}</div></div>
+          <div style={{ display: 'flex', flexDirection: 'column' }}>
+            {[...samples].sort((a, b) => new Date(b.created_at || 0) - new Date(a.created_at || 0)).slice(0, 5).map((s, i) => (
+              <div key={i} onClick={() => onNav('samples')} className="hov-row" style={{ padding: '16px 24px', borderBottom: i < 4 ? `1px solid ${C.border}` : 'none', display: 'flex', justifyContent: 'space-between', alignItems: 'center', cursor: 'pointer' }}>
+                <div style={{ display: 'flex', gap: 14, alignItems: 'center' }}>
+                  <div style={{ width: 40, height: 40, borderRadius: 12, background: C.tealS, display: 'flex', alignItems: 'center', justifyContent: 'center', color: C.teal, fontWeight: 800, fontSize: 14, flexShrink: 0 }}>
+                     {(s.firma || getVal(s, ['musteri', 'customer']) || '?').charAt(0)}
+                  </div>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
+                    <div style={{ fontWeight: 800, fontSize: 13, color: C.txt }}>{s.firma || getVal(s, ['musteri', 'customer'])}</div>
+                    <div style={{ fontSize: 11, color: C.txt2, display: 'flex', alignItems: 'center', gap: 6 }}>
+                      <span>{s.numune || getVal(s, ['cinsi', 'urun', 'type'], '—')}</span>
+                      <span style={{ fontSize: 8, opacity: 0.5 }}>•</span>
+                      <span>{fmtDate(s.created_at || s.tarih)}</span>
+                    </div>
+                  </div>
+                </div>
+                <StatusBadge status={s.durum || 'Beklemede'} />
               </div>
-              <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                <span style={{ fontSize: 10, color: C.txt2 }}>{fmtDate(s.created_at || s.tarih)}</span><StatusBadge status={s.durum || 'Beklemede'} />
-              </div>
-            </div>
-          ))}
+            ))}
+            {samples.length === 0 && <div style={{ padding: 30, textAlign: 'center', color: C.txt2, fontSize: 13 }}>Numune bulunamadı.</div>}
+          </div>
         </div>
-        <div style={S.card}>
-          <div style={{ padding: '18px 24px', borderBottom: `1px solid ${C.border}`, display: 'flex', justifyContent: 'space-between' }}>
-            <h3 style={{ fontSize: 15, fontWeight: 800 }}>Son Notlar</h3>
-            <button onClick={() => onNav('notes')} style={{ width: 30, height: 30, borderRadius: '50%', background: C.page, border: `1px solid ${C.border}`, cursor: 'pointer' }}>+</button>
+
+        {/* Son Notlar */}
+        <div style={{ ...S.card, display: 'flex', flexDirection: 'column', marginBottom: 0 }}>
+          <div style={{ padding: '20px 24px', borderBottom: `1px solid ${C.border}`, display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: '#FAFAFA' }}>
+            <h3 style={{ fontSize: 15, fontWeight: 800, display: 'flex', alignItems: 'center', gap: 8 }}><IcoFile size={18} color={C.amber}/> Son Notlar</h3>
+            <button onClick={() => onNav('notes')} style={{ fontSize: 11, fontWeight: 700, color: C.amber, background: C.amberS, border: 'none', borderRadius: 8, padding: '6px 12px', cursor: 'pointer', transition: 'background 0.2s' }} onMouseEnter={e=>e.currentTarget.style.background='rgba(217,119,6,.2)'} onMouseLeave={e=>e.currentTarget.style.background=C.amberS}>Tümünü Gör</button>
           </div>
-          <div style={{ padding: '20px 24px', display: 'flex', flexDirection: 'column', gap: 20 }}>
-            {notes.slice(0, 4).map((n, i) => {
+          <div style={{ display: 'flex', flexDirection: 'column' }}>
+            {[...notes].sort((a,b)=>new Date(b.updated_at||b.created_at||0)-new Date(a.updated_at||a.created_at||0)).slice(0, 5).map((n, i) => {
               const { body } = parseNoteTags(n.icerik);
               const lines = body.split('\n');
               const title = lines.find(l => l.trim() !== '') || 'İsimsiz Not';
               return (
-                <div key={i} style={{ position: 'relative', paddingLeft: 16 }}>
-                  <div style={{ position: 'absolute', left: -3, top: 4, width: 12, height: 12, borderRadius: '50%', border: `3px solid ${C.teal}` }} />
-                  {n.musteri && <div style={{ fontSize: 10, fontWeight: 700, color: C.teal }}>🏢 {n.musteri}</div>}
-                  <div style={{ fontSize: 13, fontWeight: 700, color: C.txt }}>{title}</div>
-                  <div style={{ fontSize: 10, color: C.txt2, marginTop: 4 }}>{fmtDate(n.updated_at || n.created_at)}</div>
+                <div key={i} onClick={() => onNav('notes')} className="hov-row" style={{ padding: '16px 24px', borderBottom: i < 4 ? `1px solid ${C.border}` : 'none', display: 'flex', gap: 14, cursor: 'pointer', alignItems: 'flex-start' }}>
+                  <div style={{ width: 8, height: 8, borderRadius: '50%', background: C.amber, marginTop: 6, flexShrink: 0 }} />
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: 4, flex: 1, minWidth: 0 }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', gap: 10 }}>
+                      <div style={{ fontSize: 13, fontWeight: 800, color: C.txt, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{title}</div>
+                      <div style={{ fontSize: 10, color: C.txt2, whiteSpace: 'nowrap', flexShrink: 0 }}>{fmtDate(n.updated_at || n.created_at)}</div>
+                    </div>
+                    {n.musteri && <div style={{ fontSize: 11, fontWeight: 600, color: C.amber }}>🏢 {n.musteri}</div>}
+                  </div>
                 </div>
               );
             })}
+            {notes.length === 0 && <div style={{ padding: 30, textAlign: 'center', color: C.txt2, fontSize: 13 }}>Not bulunamadı.</div>}
           </div>
         </div>
       </div>
@@ -317,18 +415,13 @@ function CustomersView({ data, onRefresh }) {
     if (sf === 'late' && lateLevel(m) !== 'red' && lateLevel(m) !== 'amber') return false;
     if (sf === 'notlu' && !m.notlar) return false;
     if (q) {
-      const Q = q.toLowerCase();
-      const f1 = (m.firma_adi || '').toLowerCase();
-      const f2 = (m.bolge || '').toLowerCase();
-      const f3 = (m.notlar || '').toLowerCase();
+      const Q = trl(q);
+      const f1 = trl(m.firma_adi || '');
+      const f2 = trl(m.bolge || '');
+      const f3 = trl(m.notlar || '');
       if (!f1.includes(Q) && !f2.includes(Q) && !f3.includes(Q)) return false;
     }
     return true;
-  }).sort((a, b) => {
-    if (sort === 'az') return (a.firma_adi || '').localeCompare(b.firma_adi || '', 'tr');
-    if (sort === 'late') return (daysSince(b.son_ziyaret) || 0) - (daysSince(a.son_ziyaret) || 0);
-    if (sort === 'bolge') return (a.bolge || '').localeCompare(b.bolge || '', 'tr');
-    return 0;
   });
 
   const toggleVisitStatus = async (e, m) => {
@@ -411,47 +504,137 @@ function CustomersView({ data, onRefresh }) {
     const n = new Set(prev); n.has(b) ? n.delete(b) : n.add(b); return n;
   });
 
-  const bolgeMap = {};
-  filtered.forEach(m => {
-    const b = m.bolge || '—';
-    if (!bolgeMap[b]) bolgeMap[b] = [];
-    bolgeMap[b].push(m);
-  });
-  
-  // Bölge yoğunluğuna (sayısına) göre çoktan aza sırala
-  const bolgeList = Object.keys(bolgeMap).sort((a, b) => {
-    const diff = bolgeMap[b].length - bolgeMap[a].length;
-    return diff !== 0 ? diff : a.localeCompare(b, 'tr');
-  });
+  const renderedList = useMemo(() => {
+    if (filtered.length === 0) {
+      return (
+        <div style={{ padding: 32, textAlign: 'center', color: C.txt2, background: C.surface, borderRadius: 16, border: `1px solid ${C.border}` }}>
+          {q || sf !== 'all' ? 'Filtreye uyan kayıt yok.' : 'Henüz müşteri kaydı yok.'}
+        </div>
+      );
+    }
+
+    const bMap = {};
+    filtered.forEach(m => {
+      const b = m.bolge || '—';
+      if (!bMap[b]) bMap[b] = [];
+      bMap[b].push(m);
+    });
+
+    const bList = Object.keys(bMap).sort((a, b) => {
+      const diff = bMap[b].length - bMap[a].length;
+      return diff !== 0 ? diff : a.localeCompare(b, 'tr');
+    });
+
+    return bList.map(bolge => {
+      const items = bMap[bolge];
+      // Uygulanan sıralamaya göre bölge içini sırala
+      items.sort((a, b) => {
+        if (sort === 'az') return (a.firma_adi || '').localeCompare(b.firma_adi || '', 'tr');
+        if (sort === 'late') return (daysSince(b.son_ziyaret) || 0) - (daysSince(a.son_ziyaret) || 0);
+        return 0;
+      });
+
+      const isOpen = openBolge.has(bolge) || q.length > 0 || sf !== 'all';
+      const lateC = items.filter(m => lateLevel(m) !== null).length;
+      
+      return (
+        <div key={bolge} style={S.card}>
+          <div onClick={() => toggleBolge(bolge)}
+            style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '12px 18px', cursor: 'pointer', background: isOpen ? C.page : C.surface, borderBottom: isOpen ? `1px solid ${C.border2}` : 'none' }}>
+            <span style={{ fontSize: 14, color: C.txt2, transition: 'transform .2s', transform: isOpen ? 'rotate(0deg)' : 'rotate(-90deg)' }}>▼</span>
+            <span style={{ fontSize: 13, fontWeight: 800, color: C.txt, flex: 1 }}>📍 {bolge}</span>
+            <span style={{ background: C.tealS, color: C.teal, fontSize: 11, fontWeight: 700, padding: '2px 8px', borderRadius: 8 }}>{items.length} firma</span>
+            {lateC > 0 && <span style={{ background: C.redS, color: C.red, fontSize: 10, fontWeight: 700, padding: '2px 7px', borderRadius: 7 }}>⏰ {lateC} geciken</span>}
+          </div>
+          
+          {isOpen && items.map((m, i) => {
+            const done = visited(m);
+            const lv = lateLevel(m);
+            const ds = daysSince(m.son_ziyaret);
+            const isBusy = busy === m.id;
+            
+            return (
+              <div key={m.id || i}
+                style={{
+                  display: 'flex', alignItems: 'center', gap: 12, padding: '12px 18px',
+                  borderBottom: i < items.length - 1 ? `1px solid ${C.border}` : 'none',
+                  transition: 'background .15s', opacity: isBusy ? 0.5 : 1,
+                  background: lv === 'red' ? 'rgba(153,27,27,.04)' : lv === 'amber' ? 'rgba(180,83,9,.04)' : 'transparent'
+                }}
+                onMouseEnter={e => e.currentTarget.style.background = C.tealS}
+                onMouseLeave={e => e.currentTarget.style.background = lv === 'red' ? 'rgba(153,27,27,.04)' : lv === 'amber' ? 'rgba(180,83,9,.04)' : 'transparent'}>
+                
+                <div style={{ width: 34, height: 34, borderRadius: 9, background: done ? C.greenS : C.tealS, display: 'flex', alignItems: 'center', justifyContent: 'center', color: done ? C.green : C.teal, fontSize: 13, fontWeight: 800, flexShrink: 0 }}>
+                  {(m.firma_adi || '?')[0]}
+                </div>
+                
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  <div style={{ fontWeight: 700, fontSize: 13, color: C.txt, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                    {m.firma_adi}
+                  </div>
+                  <div style={{ display: 'flex', gap: 10, marginTop: 3, flexWrap: 'wrap', alignItems: 'center' }}>
+                    {ds !== null && (
+                      <span style={{ fontSize: 11, fontWeight: 700, color: lv === 'red' ? C.red : lv === 'amber' ? C.amber : C.green, fontFamily: 'monospace' }}>
+                        {lv === 'red' ? '🔴' : lv === 'amber' ? '🟡' : '✅'} {ds} gün önce
+                      </span>
+                    )}
+                    {m.notlar && <span style={{ fontSize: 11, color: C.txt2, fontStyle: 'italic', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: 160 }}>📝 {m.notlar}</span>}
+                  </div>
+                </div>
+                
+                <div style={{ display: 'flex', alignItems: 'center', gap: 6, flexShrink: 0 }}>
+                  <button type="button" onClick={(e) => toggleVisitStatus(e, m)} disabled={isBusy} 
+                    style={{ 
+                      background: done ? C.greenS : (lv==='red'?C.redS:C.amberS), 
+                      border: `1px solid ${done ? C.green : (lv==='red'?C.red:C.amber)}40`, 
+                      color: done ? C.green : (lv==='red'?C.red:C.amber), 
+                      borderRadius: 8, padding: '5px 10px', cursor: 'pointer', fontSize: 11, 
+                      fontWeight: 700, whiteSpace: 'nowrap', display: 'flex', alignItems: 'center', gap: 4, transition: 'all 0.2s' 
+                    }}
+                  >
+                    {done ? '✅ Ziyaret Edildi' : (lv === 'red' ? '🔴 Gecikti' : '⏳ Bekliyor')}
+                  </button>
+                  
+                  <button type="button" onClick={(e) => openEdit(e, m)} disabled={isBusy} style={{ background: 'none', border: 'none', cursor: 'pointer', color: C.border2, padding: 5, borderRadius: 7 }} onMouseEnter={e => e.currentTarget.style.color = C.teal} onMouseLeave={e => e.currentTarget.style.color = C.border2}><IcoEdit size={14} /></button>
+                  <button type="button" onClick={(e) => delItem(e, m)} disabled={isBusy} style={{ background: 'none', border: 'none', cursor: 'pointer', color: C.border2, padding: 5, borderRadius: 7 }} onMouseEnter={e => e.currentTarget.style.color = C.red} onMouseLeave={e => e.currentTarget.style.color = C.border2}><IcoTrash size={14} /></button>
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      );
+    });
+  }, [filtered, openBolge, q, sf, sort, busy]); // Form state here triggers NO re-renders of the list!
 
   const exportXL = async () => {
     const dt = safeFileDate();
     const wb = new ExcelJS.Workbook();
-    const sh = wb.addWorksheet('Müşteriler');
+    const sh = wb.addWorksheet('Müşteriler', { views: [{ state: 'frozen', ySplit: 2 }] });
     
-    sh.mergeCells('A1:F1');
-    const tc = sh.getCell('A1');
-    tc.value = 'YANTEKS MÜŞTERİ LİSTESİ · ' + dt;
-    tc.font = { bold: true, size: 13, color: { argb: 'FFFFFFFF' } };
-    tc.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF0672A0' } };
-    tc.alignment = { horizontal: 'center', vertical: 'middle' };
-    sh.getRow(1).height = 28;
+    setupExcelSheet(sh, 'YANTEKS MÜŞTERİ LİSTESİ · ' + dt, 
+      ['FİRMA ADI', 'BÖLGE', 'SON ZİYARET', 'SÜRE (GÜN)', 'DURUM', 'NOTLAR'],
+      [35, 18, 15, 15, 20, 45]
+    );
     
-    const hr = sh.addRow(['FİRMA ADI', 'BÖLGE', 'SON ZİYARET', 'SÜRE (GÜN)', 'DURUM', 'NOTLAR']);
-    hr.eachCell(c => {
-      c.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF0891B2' } };
-      c.font = { color: { argb: 'FFFFFFFF' }, bold: true };
-      c.alignment = { horizontal: 'center' };
-    });
-    hr.height = 20;
-    sh.columns = [{ width: 32 }, { width: 16 }, { width: 14 }, { width: 14 }, { width: 18 }, { width: 40 }];
-    
-    filtered.forEach(m => {
+    filtered.forEach((m, idx) => {
       const ds = daysSince(m.son_ziyaret);
-      const row = sh.addRow([m.firma_adi || '', m.bolge || '', m.son_ziyaret || '', ds !== null ? ds : '', visited(m) ? 'Ziyaret Edildi' : 'Bekliyor', m.notlar || '']);
+      const row = addExcelRow(sh, 
+        [m.firma_adi || '', m.bolge || '', m.son_ziyaret || '', ds !== null ? ds : '', visited(m) ? 'Ziyaret Edildi' : 'Bekliyor', m.notlar || ''],
+        idx % 2 === 0,
+        [{horizontal:'left'}, {horizontal:'center'}, {horizontal:'center'}, {horizontal:'center'}, {horizontal:'center'}, {horizontal:'left', wrapText:true}]
+      );
+      
       row.getCell(1).font = { bold: true };
-      if (lateLevel(m) === 'red') row.getCell(4).font = { color: { argb: 'FF991B1B' }, bold: true };
-      else if (lateLevel(m) === 'amber') row.getCell(4).font = { color: { argb: 'FFB45309' }, bold: true };
+      
+      if (lateLevel(m) === 'red') {
+          row.getCell(4).font = { color: { argb: 'FFDC2626' }, bold: true };
+          row.getCell(5).font = { color: { argb: 'FFDC2626' }, bold: true };
+      } else if (lateLevel(m) === 'amber') {
+          row.getCell(4).font = { color: { argb: 'FFD97706' }, bold: true };
+          row.getCell(5).font = { color: { argb: 'FFD97706' }, bold: true };
+      } else if (visited(m)) {
+          row.getCell(5).font = { color: { argb: 'FF16A34A' }, bold: true };
+      }
     });
     
     const buf = await wb.xlsx.writeBuffer();
@@ -558,84 +741,10 @@ function CustomersView({ data, onRefresh }) {
         })}
       </div>
 
-      {filtered.length === 0 ? (
-        <div style={{ padding: 32, textAlign: 'center', color: C.txt2, background: C.surface, borderRadius: 16, border: `1px solid ${C.border}` }}>
-          {q || sf !== 'all' ? 'Filtreye uyan kayıt yok.' : 'Henüz müşteri kaydı yok.'}
-        </div>
-      ) : (
-        bolgeList.map(bolge => {
-          const items = bolgeMap[bolge];
-          const isOpen = openBolge.has(bolge) || q.length > 0 || sf !== 'all';
-          const lateC = items.filter(m => lateLevel(m) !== null).length;
-          
-          return (
-            <div key={bolge} style={S.card}>
-              <div onClick={() => toggleBolge(bolge)}
-                style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '12px 18px', cursor: 'pointer', background: isOpen ? C.page : C.surface, borderBottom: isOpen ? `1px solid ${C.border2}` : 'none' }}>
-                <span style={{ fontSize: 14, color: C.txt2, transition: 'transform .2s', transform: isOpen ? 'rotate(0deg)' : 'rotate(-90deg)' }}>▼</span>
-                <span style={{ fontSize: 13, fontWeight: 800, color: C.txt, flex: 1 }}>📍 {bolge}</span>
-                <span style={{ background: C.tealS, color: C.teal, fontSize: 11, fontWeight: 700, padding: '2px 8px', borderRadius: 8 }}>{items.length} firma</span>
-                {lateC > 0 && <span style={{ background: C.redS, color: C.red, fontSize: 10, fontWeight: 700, padding: '2px 7px', borderRadius: 7 }}>⏰ {lateC} geciken</span>}
-              </div>
-              
-              {isOpen && items.map((m, i) => {
-                const done = visited(m);
-                const lv = lateLevel(m);
-                const ds = daysSince(m.son_ziyaret);
-                const isBusy = busy === m.id;
-                
-                return (
-                  <div key={m.id || i}
-                    style={{
-                      display: 'flex', alignItems: 'center', gap: 12, padding: '12px 18px',
-                      borderBottom: i < items.length - 1 ? `1px solid ${C.border}` : 'none',
-                      transition: 'background .15s', opacity: isBusy ? 0.5 : 1,
-                      background: lv === 'red' ? 'rgba(153,27,27,.04)' : lv === 'amber' ? 'rgba(180,83,9,.04)' : 'transparent'
-                    }}
-                    onMouseEnter={e => e.currentTarget.style.background = C.tealS}
-                    onMouseLeave={e => e.currentTarget.style.background = lv === 'red' ? 'rgba(153,27,27,.04)' : lv === 'amber' ? 'rgba(180,83,9,.04)' : 'transparent'}>
-                    
-                    <div style={{ width: 34, height: 34, borderRadius: 9, background: done ? C.greenS : C.tealS, display: 'flex', alignItems: 'center', justifyContent: 'center', color: done ? C.green : C.teal, fontSize: 13, fontWeight: 800, flexShrink: 0 }}>
-                      {(m.firma_adi || '?')[0]}
-                    </div>
-                    
-                    <div style={{ flex: 1, minWidth: 0 }}>
-                      <div style={{ fontWeight: 700, fontSize: 13, color: C.txt, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                        {m.firma_adi}
-                      </div>
-                      <div style={{ display: 'flex', gap: 10, marginTop: 3, flexWrap: 'wrap', alignItems: 'center' }}>
-                        {ds !== null && (
-                          <span style={{ fontSize: 11, fontWeight: 700, color: lv === 'red' ? C.red : lv === 'amber' ? C.amber : C.green, fontFamily: 'monospace' }}>
-                            {lv === 'red' ? '🔴' : lv === 'amber' ? '🟡' : '✅'} {ds} gün önce
-                          </span>
-                        )}
-                        {m.notlar && <span style={{ fontSize: 11, color: C.txt2, fontStyle: 'italic', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: 160 }}>📝 {m.notlar}</span>}
-                      </div>
-                    </div>
-                    
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 6, flexShrink: 0 }}>
-                      <button type="button" onClick={(e) => toggleVisitStatus(e, m)} disabled={isBusy} 
-                        style={{ 
-                          background: done ? C.greenS : (lv==='red'?C.redS:C.amberS), 
-                          border: `1px solid ${done ? C.green : (lv==='red'?C.red:C.amber)}40`, 
-                          color: done ? C.green : (lv==='red'?C.red:C.amber), 
-                          borderRadius: 8, padding: '5px 10px', cursor: 'pointer', fontSize: 11, 
-                          fontWeight: 700, whiteSpace: 'nowrap', display: 'flex', alignItems: 'center', gap: 4, transition: 'all 0.2s' 
-                        }}
-                      >
-                        {done ? '✅ Ziyaret Edildi' : (lv === 'red' ? '🔴 Gecikti' : '⏳ Bekliyor')}
-                      </button>
-                      
-                      <button type="button" onClick={(e) => openEdit(e, m)} disabled={isBusy} style={{ background: 'none', border: 'none', cursor: 'pointer', color: C.border2, padding: 5, borderRadius: 7 }} onMouseEnter={e => e.currentTarget.style.color = C.teal} onMouseLeave={e => e.currentTarget.style.color = C.border2}><IcoEdit size={14} /></button>
-                      <button type="button" onClick={(e) => delItem(e, m)} disabled={isBusy} style={{ background: 'none', border: 'none', cursor: 'pointer', color: C.border2, padding: 5, borderRadius: 7 }} onMouseEnter={e => e.currentTarget.style.color = C.red} onMouseLeave={e => e.currentTarget.style.color = C.border2}><IcoTrash size={14} /></button>
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-          );
-        })
-      )}
+      {/* Performanslı Liste (useMemo ile klavye kasmaları önlenmiştir) */}
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+        {renderedList}
+      </div>
     </div>
   );
 }
@@ -699,7 +808,7 @@ function SampleItem({ s, isVar, isSel, toggleSel, tbl, onRefresh, busy, setBusy,
 
   const rawFiyat = getVal(s, ['fiyat', 'birimfiyat', 'price'], '');
   const fiyatStr = rawFiyat ? String(rawFiyat).replace(/^\$/, '') : '';
-  const dateStr = fmtDate(s.updated_at || s.created_at || getVal(s, ['tarih', 'date'], ''));
+  const dateStr = fmtDateTime(s.updated_at || s.created_at || getVal(s, ['tarih', 'date'], ''));
   
   const photos = photoCache[s.id] || [];
   const hasPhoto = photos.length > 0;
@@ -795,7 +904,7 @@ function SamplesView({ data, tbl, onRefresh }) {
   const isArsiv = (s) => s.arsiv === true;
   const getDur  = (s) => isArsiv(s) ? 'Arşiv' : (s.durum || 'Beklemede');
 
-  const toggleSel = (id) => setSelIds(p => { const n = new Set(p); n.has(id) ? n.delete(id) : n.add(id); return n; });
+  const toggleSel = useCallback((id) => setSelIds(p => { const n = new Set(p); n.has(id) ? n.delete(id) : n.add(id); return n; }), []);
   const clearSel = () => setSelIds(new Set());
 
   const filtered = useMemo(() => {
@@ -828,12 +937,20 @@ function SamplesView({ data, tbl, onRefresh }) {
     const result = [];
     sortedKeys.forEach(firmaName => {
       let items = G.get(firmaName);
-      if (sort === 'alpha') {
-        items.sort((a,b) => (a.numune||'').localeCompare((b.numune||''), 'tr'));
-      } else if (sort === 'status') {
-        const ord = ['Beklemede','Takip Et','Gönderildi','Onaylandı','Reddedildi'];
-        items.sort((a,b) => ord.indexOf(a.durum||'Beklemede') - ord.indexOf(b.durum||'Beklemede'));
-      }
+      
+      // Beklemede olanları her koşulda en üste alıyoruz
+      items.sort((a,b) => {
+        const aB = (a.durum === 'Beklemede' || !a.durum) ? -1 : 1;
+        const bB = (b.durum === 'Beklemede' || !b.durum) ? -1 : 1;
+        if(aB !== bB) return aB - bB;
+        
+        if (sort === 'alpha') return (a.numune||'').localeCompare((b.numune||''), 'tr');
+        if (sort === 'status') {
+          const ord = ['Beklemede','Takip Et','Gönderildi','Onaylandı','Reddedildi'];
+          return ord.indexOf(a.durum||'Beklemede') - ord.indexOf(b.durum||'Beklemede');
+        }
+        return new Date(b.created_at||0) - new Date(a.created_at||0);
+      });
       
       const anaItems = items.filter(i => !isV(i.numune));
       const varItems = items.filter(i => isV(i.numune));
@@ -939,11 +1056,19 @@ function SamplesView({ data, tbl, onRefresh }) {
     setEditItem(null); setShowAdd(true);
   };
 
-  const openEdit = (s) => {
+  const openEdit = useCallback((s) => {
     setForm({ firma: s.firma || '' });
     setMultiRows([{ numune: dN(s.numune), fiyat: (s.fiyat||'').replace(/^\$/,''), varyantlar: '', aciklama: parseAc(s).note }]);
     setEditItem(s); setShowAdd(true);
-  };
+  }, []);
+
+  const openPhotoInput = useCallback((id) => {
+    setActiveUploadId(id); fileInputRef.current?.click();
+  }, []);
+
+  const openPVHandler = useCallback((id, idx) => {
+    setPv({open:true, photos:photoCache[id], idx, numuneId:id});
+  }, [photoCache]);
 
   const saveForm = async () => {
     if (!form.firma.trim()) return;
@@ -986,19 +1111,62 @@ function SamplesView({ data, tbl, onRefresh }) {
   const exportXL = async () => {
     if (!filtered.length) return;
     const dt = safeFileDate();
-    const wb = new ExcelJS.Workbook(); const sh = wb.addWorksheet('Numuneler');
-    sh.addRow(['FİRMA','NUMUNE','FİYAT','DURUM','NOTLAR','TARİH']);
+    const wb = new ExcelJS.Workbook(); const sh = wb.addWorksheet('Numuneler', { views: [{ state: 'frozen', ySplit: 2 }] });
+    
+    setupExcelSheet(sh, 'YANTEKS NUMUNE TAKİBİ · ' + dt, 
+      ['FİRMA', 'NUMUNE KODU / ÜRÜN', 'FİYAT', 'DURUM', 'TARİH', 'NOTLAR'],
+      [35, 35, 15, 18, 20, 45]
+    );
+
+    let rIdx = 0;
     groupedFirms.forEach(g => {
       g.items.forEach(s => {
-        sh.addRow([g.firma, (s.numune||''), s.fiyat||'', getDur(s), (s.aciklama||''), fmtDate(s.created_at||s.tarih)]);
+        const row = addExcelRow(sh, 
+          [g.firma, dN(s.numune), s.fiyat ? s.fiyat : '', getDur(s), fmtDateTime(s.created_at || s.tarih), parseAc(s).note || ''],
+          rIdx % 2 === 0,
+          [{horizontal:'left'}, {horizontal:'left'}, {horizontal:'right'}, {horizontal:'center'}, {horizontal:'center'}, {horizontal:'left', wrapText:true}]
+        );
+        row.getCell(1).font = { bold: true };
+        row.getCell(3).font = { color: { argb: 'FF16A34A' }, bold: true };
+        const stat = getDur(s);
+        if (stat === 'Onaylandı') row.getCell(4).font = { color: { argb: 'FF16A34A' }, bold: true };
+        if (stat === 'Reddedildi') row.getCell(4).font = { color: { argb: 'FFDC2626' }, bold: true };
+        if (stat === 'Beklemede' || stat === 'Takip Et') row.getCell(4).font = { color: { argb: 'FFD97706' }, bold: true };
+        rIdx++;
       });
     });
-    const buf = await wb.xlsx.writeBuffer(); const a = document.createElement('a');
-    a.href = URL.createObjectURL(new Blob([buf])); a.download = 'Numuneler_' + dt + '.xlsx'; a.click();
+    
+    const buf = await wb.xlsx.writeBuffer(); 
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(new Blob([buf])); a.download = 'Yanteks_Numuneler_' + dt + '.xlsx'; a.click();
   };
 
   const counts = { all: data.filter(i=>!isArsiv(i)).length };
   STATUSES.forEach(st => { counts[st] = st === 'Arşiv' ? data.filter(i => isArsiv(i)).length : data.filter(i => !isArsiv(i) && getDur(i) === st).length; });
+
+  const renderedList = useMemo(() => {
+    if (groupedFirms.length === 0) {
+      return <div style={{ padding:40, textAlign:'center', color:C.txt2, background:C.surface, borderRadius:16, border:`1px solid ${C.border}` }}>Filtreye uyan kayıt yok.</div>;
+    }
+    return groupedFirms.map((g, gi) => (
+      <div key={gi} style={{ background:C.surface, borderRadius:16, border:`1px solid ${C.border}`, overflow:'hidden' }}>
+        <div style={{ padding:'14px 20px', borderBottom:`1px solid ${C.border}`, display:'flex', justifyContent:'space-between', alignItems:'center', background:C.page }}>
+          <div style={{ display:'flex', alignItems:'center', gap:12 }}>
+            <span style={{ fontSize:15, fontWeight:800, color:C.txt }}>🏢 {g.firma}</span>
+          </div>
+          <div style={{ display:'flex', alignItems:'center', gap:8 }}>
+            <span style={{ fontSize:11, fontWeight:700, color:C.teal, background:C.tealS, padding:'3px 8px', borderRadius:8 }}>{g.items.length} Kayıt</span>
+            <button onClick={()=>{setMfOld(g.firma); setMfNew(g.firma); setFirmaChangeModal(g.firma)}} style={{ background:'none', border:'none', color:C.txt2, cursor:'pointer', padding:4 }} title="Firma Değiştir"><IcoEdit size={16}/></button>
+          </div>
+        </div>
+        <div style={{ padding:'12px 16px', display:'flex', flexDirection:'column', gap:8 }}>
+          {g.items.map((s, si) => (
+            <SampleItem key={s.id||si} s={s} isVar={isV(s.numune)} isSel={selIds.has(s.id)} toggleSel={toggleSel} tbl={tbl} onRefresh={onRefresh} busy={busy} setBusy={setBusy} openEditModal={openEdit} openPhotoInput={openPhotoInput} openPV={openPVHandler} photoCache={photoCache} />
+          ))}
+        </div>
+      </div>
+    ));
+  }, [groupedFirms, selIds, busy, photoCache, openEdit, openPhotoInput, openPVHandler, toggleSel, tbl, onRefresh]);
 
   return (
     <div style={{ display:'flex', flexDirection:'column', gap:14, position:'relative' }}>
@@ -1047,7 +1215,7 @@ function SamplesView({ data, tbl, onRefresh }) {
         <div onClick={e=>e.target===e.currentTarget&&setShowAdd(false)} style={S.mOv}>
           <div style={{...S.mBx, maxWidth:500}}>
             <div style={{ display:'flex', justifyContent:'space-between', marginBottom:18 }}><h3 style={{ fontSize:17, fontWeight:800 }}>{editItem ? (isV(editItem.numune)?'✏️ Varyant Düzenle':'✏️ Numune Düzenle') : '📦 Yeni Numune'}</h3><button onClick={()=>setShowAdd(false)} style={{ background:'none', border:'none', cursor:'pointer' }}><IcoX/></button></div>
-            {!editItem && <div style={{ marginBottom:16 }}><label style={S.lbl}>FİRMA ADI *</label><FirmaInput value={form.firma} onChange={v=>setForm({firma:v})} firmalar={firmalarList} /></div>}
+            {!editItem && <div style={{ marginBottom:16 }}><label style={S.lbl}>FİRMA ADI *</label><FirmaInput value={form.firma} onChange={v=>setForm(f=>({...f,firma:v}))} firmalar={firmalarList} /></div>}
             
             {multiRows.map((r, i) => (
               <div key={i} style={{ background:C.page, padding:14, borderRadius:12, marginBottom:12, position:'relative' }}>
@@ -1097,30 +1265,9 @@ function SamplesView({ data, tbl, onRefresh }) {
         </div>
       )}
 
-      {/* Listeleme */}
+      {/* Performanslı Liste (useMemo ile klavye kasmaları önlenmiştir) */}
       <div style={{ display:'flex', flexDirection:'column', gap:16 }}>
-        {groupedFirms.length === 0 ? (
-          <div style={{ padding:40, textAlign:'center', color:C.txt2, background:C.surface, borderRadius:16, border:`1px solid ${C.border}` }}>Filtreye uyan kayıt yok.</div>
-        ) : (
-          groupedFirms.map((g, gi) => (
-            <div key={gi} style={{ background:C.surface, borderRadius:16, border:`1px solid ${C.border}`, overflow:'hidden' }}>
-              <div style={{ padding:'14px 20px', borderBottom:`1px solid ${C.border}`, display:'flex', justifyContent:'space-between', alignItems:'center', background:C.page }}>
-                <div style={{ display:'flex', alignItems:'center', gap:12 }}>
-                  <span style={{ fontSize:15, fontWeight:800, color:C.txt }}>🏢 {g.firma}</span>
-                </div>
-                <div style={{ display:'flex', alignItems:'center', gap:8 }}>
-                  <span style={{ fontSize:11, fontWeight:700, color:C.teal, background:C.tealS, padding:'3px 8px', borderRadius:8 }}>{g.items.length} Kayıt</span>
-                  <button onClick={()=>{setMfOld(g.firma); setMfNew(g.firma); setFirmaChangeModal(g.firma)}} style={{ background:'none', border:'none', color:C.txt2, cursor:'pointer', padding:4 }} title="Firma Değiştir"><IcoEdit size={16}/></button>
-                </div>
-              </div>
-              <div style={{ padding:'12px 16px', display:'flex', flexDirection:'column', gap:8 }}>
-                {g.items.map((s, si) => (
-                  <SampleItem key={s.id||si} s={s} isVar={isV(s.numune)} isSel={selIds.has(s.id)} toggleSel={toggleSel} tbl={tbl} onRefresh={onRefresh} busy={busy} setBusy={setBusy} openEditModal={openEdit} openPhotoInput={(id)=>{setActiveUploadId(id); fileInputRef.current?.click();}} openPV={(id, idx)=>setPv({open:true, photos:photoCache[id], idx, numuneId:id})} photoCache={photoCache} firmalarList={firmalarList} />
-                ))}
-              </div>
-            </div>
-          ))
-        )}
+        {renderedList}
       </div>
     </div>
   );
@@ -1263,52 +1410,53 @@ function PricesView({ data, onRefresh }) {
     
     const dt = safeFileDate();
     const wb = new ExcelJS.Workbook();
-    const sh = wb.addWorksheet(wP ? 'Fiyat Listesi' : 'Eksik Fiyatlar', { pageSetup: { paperSize: 9, orientation: 'landscape' } });
+    const sh = wb.addWorksheet(wP ? 'Fiyat Listesi' : 'Eksik Fiyatlar', { views: [{ state: 'frozen', ySplit: 2 }] });
     
-    const colCount = wP ? 5 : 3;
-    sh.mergeCells(1, 1, 1, colCount);
-    const tc = sh.getCell('A1');
-    tc.value = (wP ? 'YANTEKS FİYAT LİSTESİ' : 'EKSİK FİYATLAR') + ' (' + dt + ')';
-    tc.font = { bold: true, size: 14, color: { argb: 'FFFFFFFF' } };
-    tc.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: wP ? 'FF14532D' : 'FFB45309' } };
-    tc.alignment = { horizontal: 'center', vertical: 'middle' };
-    sh.getRow(1).height = 30;
+    const title = (wP ? 'YANTEKS FİYAT LİSTESİ' : 'YANTEKS EKSİK FİYATLAR') + ' · ' + dt;
+    const hdrs = wP ? ['ÜRÜN ADI', 'DENYE', 'PEŞİN', '90 GÜN', '180 GÜN'] : ['ÜRÜN ADI', 'DENYE', 'BÖLÜM'];
+    const wds = wP ? [35, 15, 16, 16, 16] : [35, 15, 25];
     
-    const hdrs = wP ? ['ÜRÜN ADI', 'DENYE', 'PEŞİN ($)', '90 GÜN ($)', '180 GÜN ($)'] : ['ÜRÜN ADI', 'DENYE', 'BÖLÜM'];
-    const hr = sh.addRow(hdrs);
-    hr.eachCell(c => { 
-      c.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF166534' } }; 
-      c.font = { color: { argb: 'FFFFFFFF' }, bold: true }; 
-      c.alignment = { horizontal: 'center', vertical: 'middle' }; 
-    });
-    hr.height = 24;
-    sh.columns = wP ? [{ width: 35 }, { width: 15 }, { width: 15 }, { width: 15 }, { width: 15 }] : [{ width: 35 }, { width: 15 }, { width: 25 }];
+    setupExcelSheet(sh, title, hdrs, wds);
     
     let curBolum = '';
+    let rIdx = 0;
     items.forEach(p => {
       if (p.bolum_adi && p.bolum_adi !== curBolum) {
         curBolum = p.bolum_adi;
+        rIdx = 0; // Kategori değiştiğinde zebra efektini sıfırla
         const r = sh.addRow(['📂 ' + curBolum]);
-        sh.mergeCells(r.number, 1, r.number, colCount);
-        r.getCell(1).fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFF0F7F2' } };
-        r.getCell(1).font = { bold: true, color: { argb: 'FF14532D' }, size: 11 };
-        r.height = 22;
+        sh.mergeCells(r.number, 1, r.number, hdrs.length);
+        r.getCell(1).fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFF1F5F9' } };
+        r.getCell(1).font = { bold: true, color: { argb: 'FF0F172A' }, size: 12 };
+        r.getCell(1).alignment = { vertical: 'middle', horizontal: 'left', indent: 1 };
+        r.getCell(1).border = { top: {style:'medium', color:{argb:'FFCBD5E1'}}, bottom: {style:'medium', color:{argb:'FFCBD5E1'}} };
+        r.height = 26;
       }
+      
       const c = p.pesin_fiyat || 0;
-      const row = sh.addRow(wP
-        ? [p.urun_kodu || '', p.denye || '-', c ? c.toFixed(2) + ' $' : '-', c ? (c + 0.10).toFixed(2) + ' $' : '-', c ? (c + 0.20).toFixed(2) + ' $' : '-']
-        : [p.urun_kodu || '', p.denye || '-', p.bolum_adi || '-']);
-      row.getCell(1).font = { bold: true };
+      const dataRow = wP
+        ? [p.urun_kodu || '', p.denye || '-', c ? '$' + c.toFixed(2) : '-', c ? '$' + (c + 0.10).toFixed(2) : '-', c ? '$' + (c + 0.20).toFixed(2) : '-']
+        : [p.urun_kodu || '', p.denye || '-', p.bolum_adi || '-'];
+        
+      const aligns = wP 
+        ? [{horizontal:'left'}, {horizontal:'center'}, {horizontal:'right'}, {horizontal:'right'}, {horizontal:'right'}]
+        : [{horizontal:'left'}, {horizontal:'center'}, {horizontal:'left'}];
+
+      const row = addExcelRow(sh, dataRow, rIdx % 2 === 0, aligns);
+      row.getCell(1).font = { bold: true, color: { argb: 'FF1E293B' } };
       if (wP && c > 0) { 
-        row.getCell(3).font = { color: { argb: 'FF15803D' }, bold: true }; 
-        row.getCell(3).alignment = { horizontal: 'right' }; 
+        row.getCell(3).font = { color: { argb: 'FF16A34A' }, bold: true }; 
+        row.getCell(4).font = { color: { argb: 'FF475569' } }; 
+        row.getCell(5).font = { color: { argb: 'FF475569' } }; 
       }
+      rIdx++;
     });
     
     const buf = await wb.xlsx.writeBuffer();
+    const blob = new Blob([buf], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
     const a = document.createElement('a');
-    a.href = URL.createObjectURL(new Blob([buf], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' }));
-    a.download = 'Yanteks_' + (wP ? 'Fiyat' : 'Eksik') + '_' + dt + '.xlsx';
+    a.href = URL.createObjectURL(blob);
+    a.download = 'Yanteks_' + (wP ? 'Fiyat_Listesi' : 'Eksik_Fiyatlar') + '_' + dt + '.xlsx';
     a.click();
   };
 
@@ -1344,9 +1492,99 @@ function PricesView({ data, onRefresh }) {
     );
   };
 
+  const renderedList = useMemo(() => {
+    return Object.keys(G).sort().map(c => {
+      const hdr = G[c].hdr;
+      const fi = G[c].items.filter(p => {
+        if (priceFilter === 'priced' && !p.pesin_fiyat) return false;
+        if (priceFilter === 'unpriced' && p.pesin_fiyat) return false;
+        if (q && !(trl(p.urun_kodu || '')).includes(trl(q)) && !(trl(p.denye || '')).includes(trl(q))) return false;
+        return true;
+      });
+      
+      // Hiyerarşik Sıralama (A-Z)
+      fi.sort((a, b) => trl(a.urun_kodu || '').localeCompare(trl(b.urun_kodu || ''), 'tr'));
+      
+      if (!fi.length && !(q && trl(c).includes(trl(q)))) return null;
+      
+      const isO = openCats.has(c) || q || priceFilter !== 'all';
+      const missingPrice = fi.filter(p => !p.pesin_fiyat).length;
+
+      return (
+        <div key={c} style={S.card}>
+          <div onClick={() => setOpenCats(p => { const n = new Set(p); n.has(c) ? n.delete(c) : n.add(c); return n; })} 
+            style={{ padding:'12px 18px', background:isO ? C.page : C.surface, borderBottom:isO ? `1px solid ${C.border2}` : 'none', cursor:'pointer', display:'flex', alignItems:'center', gap:10, transition:'background .15s' }}>
+            
+            <input type="checkbox" checked={fi.length > 0 && fi.every(x => selIds.has(x.id))} onChange={e => { e.stopPropagation(); setSelIds(p => { const n = new Set(p); const allS = fi.every(x => p.has(x.id)); fi.forEach(x => allS ? n.delete(x.id) : n.add(x.id)); return n; }) }} style={{ width:16, height:16, cursor:'pointer', accentColor:C.green }} onClick={e => e.stopPropagation()}/>
+            
+            <span style={{ fontSize:14, color:C.txt2, transition:'transform .2s', transform:isO ? 'rotate(0deg)' : 'rotate(-90deg)' }}>▼</span> 
+            <span style={{ fontSize:13, fontWeight:800, color:C.txt, flex:1 }}>📂 {c}</span>
+            <span style={{ background:C.tealS, color:C.teal, fontSize:11, fontWeight:700, padding:'3px 9px', borderRadius:10 }}>{fi.length}</span>
+            {missingPrice > 0 && <span style={{ background:C.amberS, color:C.amber, fontSize:10, fontWeight:700, padding:'3px 8px', borderRadius:8 }}>⚠️ {missingPrice} fiyatsız</span>}
+            
+            <button onClick={e => { e.stopPropagation(); setForm({ urun_kodu:'', denye:'', pesin_fiyat:'', bolum_adi:c }); setModal('new') }} style={{ background:C.greenS, color:C.green, border:`1px solid rgba(21,128,61,.2)`, padding:'4px 8px', borderRadius:6, cursor:'pointer', display:'flex', alignItems:'center', gap:3, fontSize:11, fontWeight:700 }}>+ Ekle</button>
+            {hdr && (
+              <button onClick={e => { e.stopPropagation(); setForm({ urun_kodu: hdr.urun_kodu || '', denye: hdr.denye || '', pesin_fiyat: hdr.pesin_fiyat || '', bolum_adi: hdr.bolum_adi || '' }); setModal(hdr); }} style={{ background:'none', border:'none', cursor:'pointer', color:C.border2, padding:4, borderRadius:6 }}>
+                <IcoEdit size={14}/>
+              </button>
+            )}
+          </div>
+          
+          {isO && (
+            <div style={{ overflowX:'auto' }}>
+              <table style={{ width:'100%', borderCollapse:'collapse', fontSize:13 }}>
+                <thead>
+                  <tr>
+                    <th style={{ ...S.th, width:36, textAlign:'center' }}></th>
+                    <th style={S.th}>Ürün Kodu</th>
+                    <th style={S.th}>Denye</th>
+                    <th style={{ ...S.th, textAlign:'right' }}>Peşin ($)</th>
+                    <th style={{ ...S.th, textAlign:'right' }}>90 Gün ($)</th>
+                    <th style={{ ...S.th, textAlign:'center' }}>Tarih</th>
+                    <th style={{ ...S.th, textAlign:'center' }}>İşlem</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {fi.map(p => {
+                    const bI = busy === p.id;
+                    const iE = editPrice && editPrice.id === p.id;
+                    const pf = p.pesin_fiyat;
+                    const tm = p.updated_at ? new Date(p.updated_at).toLocaleDateString('tr-TR', { day:'2-digit', month:'2-digit', year:'2-digit' }) : '';
+                    
+                    return (
+                      <tr key={p.id} className="hov-row" style={{ opacity:bI ? 0.5 : 1, background:selIds.has(p.id) ? 'rgba(22,163,74,.06)' : 'none', borderBottom:`1px solid ${C.border}` }}>
+                        <td style={{ ...S.td, textAlign:'center' }}><input type="checkbox" checked={selIds.has(p.id)} onChange={() => setSelIds(x => { const n = new Set(x); n.has(p.id) ? n.delete(p.id) : n.add(p.id); return n; })} style={{ cursor:'pointer', accentColor:C.green }}/></td>
+                        <td style={{ ...S.td, fontWeight:700, fontFamily:'monospace', color:C.txt }}>{p.urun_kodu}</td>
+                        <td style={S.td}>{p.denye ? <span style={{ background:C.tealS, color:C.teal, padding:'3px 8px', borderRadius:6, fontSize:11, fontWeight:700, fontFamily:'monospace' }}>{p.denye}</span> : <span style={{ color:C.border2 }}>—</span>}</td>
+                        <td style={{ ...S.td, textAlign:'right' }}>
+                          {iE ? (
+                            <input autoFocus type="number" step="0.01" value={editPrice.v} onChange={e => setEditPrice({ id:p.id, v:e.target.value })} onBlur={() => commitEdit(p)} onKeyDown={e => { if(e.key === 'Enter') commitEdit(p); if(e.key === 'Escape') setEditPrice(null); }} style={{ width:72, padding:'3px 7px', border:`2px solid ${C.green}`, borderRadius:6, fontSize:13, fontFamily:'monospace', fontWeight:700, color:C.green, outline:'none', textAlign:'right' }}/>
+                          ) : (
+                            <span onClick={() => setEditPrice({ id:p.id, v:String(pf || '') })} title="Tıkla düzenle" style={{ cursor:'text', fontFamily:'monospace', fontWeight:900, fontSize:14, color:pf ? C.green : '#CBD5E1', borderBottom:`1px dashed ${pf ? C.green : '#CBD5E1'}` }}>{pf ? pf.toFixed(2) + ' $' : '—'}</span>
+                          )}
+                        </td>
+                        <td style={{ ...S.td, textAlign:'right', fontFamily:'monospace', fontSize:13, color:pf ? C.txt2 : '#CBD5E1', fontWeight:pf ? 600 : 400 }}>{pf ? (pf + 0.10).toFixed(2) + ' $' : '—'}</td>
+                        <td style={{ ...S.td, textAlign:'center', fontSize:11, color:C.txt2, fontFamily:'monospace' }}>{tm || '—'}</td>
+                        <td style={{ ...S.td, textAlign:'center' }}>
+                          <div style={{ display:'flex', justifyContent:'center', gap:4 }}>
+                            <button onClick={() => { setForm({ urun_kodu:p.urun_kodu || '', denye:p.denye || '', pesin_fiyat:p.pesin_fiyat || '', bolum_adi:p.bolum_adi || '' }); setModal(p); }} style={{ background:'none', border:'none', cursor:'pointer', color:C.border2, padding:4, borderRadius:6 }} onMouseEnter={e => e.currentTarget.style.color = C.teal} onMouseLeave={e => e.currentTarget.style.color = C.border2}><IcoEdit size={13}/></button>
+                            <button onClick={() => delItem(p)} style={{ background:'none', border:'none', cursor:'pointer', color:C.border2, padding:4, borderRadius:6 }} onMouseEnter={e => e.currentTarget.style.color = C.red} onMouseLeave={e => e.currentTarget.style.color = C.border2}><IcoTrash size={13}/></button>
+                          </div>
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </div>
+      );
+    });
+  }, [G, selIds, busy, editPrice, openCats, q, priceFilter]);
+
   return(
     <div style={{ display:'flex', flexDirection:'column', gap:14 }}>
-      
       {showChartModal && <PriceChartModal data={allItems} onClose={() => setShowChartModal(false)} />}
       
       {/* Toplu Güncelle Modal */}
@@ -1483,92 +1721,10 @@ function PricesView({ data, onRefresh }) {
         </div>
       )}
 
-      {/* Akordeon Listeler */}
-      {Object.keys(G).sort().map(c => {
-        const hdr = G[c].hdr;
-        const fi = G[c].items.filter(p => {
-          if (priceFilter === 'priced' && !p.pesin_fiyat) return false;
-          if (priceFilter === 'unpriced' && p.pesin_fiyat) return false;
-          if (q && !(p.urun_kodu || '').toLowerCase().includes(q.toLowerCase()) && !(p.denye || '').toLowerCase().includes(q.toLowerCase())) return false;
-          return true;
-        });
-        
-        if (!fi.length && !(q && c.toLowerCase().includes(q.toLowerCase()))) return null;
-        
-        const isO = openCats.has(c) || q || priceFilter !== 'all';
-        const missingPrice = fi.filter(p => !p.pesin_fiyat).length;
-
-        return (
-          <div key={c} style={S.card}>
-            <div onClick={() => setOpenCats(p => { const n = new Set(p); n.has(c) ? n.delete(c) : n.add(c); return n; })} 
-              style={{ padding:'12px 18px', background:isO ? C.page : C.surface, borderBottom:isO ? `1px solid ${C.border2}` : 'none', cursor:'pointer', display:'flex', alignItems:'center', gap:10, transition:'background .15s' }}>
-              
-              <input type="checkbox" checked={fi.length > 0 && fi.every(x => selIds.has(x.id))} onChange={e => { e.stopPropagation(); setSelIds(p => { const n = new Set(p); const allS = fi.every(x => p.has(x.id)); fi.forEach(x => allS ? n.delete(x.id) : n.add(x.id)); return n; }) }} style={{ width:16, height:16, cursor:'pointer', accentColor:C.green }} onClick={e => e.stopPropagation()}/>
-              
-              <span style={{ fontSize:14, color:C.txt2, transition:'transform .2s', transform:isO ? 'rotate(0deg)' : 'rotate(-90deg)' }}>▼</span> 
-              <span style={{ fontSize:13, fontWeight:800, color:C.txt, flex:1 }}>📂 {c}</span>
-              <span style={{ background:C.tealS, color:C.teal, fontSize:11, fontWeight:700, padding:'3px 9px', borderRadius:10 }}>{fi.length}</span>
-              {missingPrice > 0 && <span style={{ background:C.amberS, color:C.amber, fontSize:10, fontWeight:700, padding:'3px 8px', borderRadius:8 }}>⚠️ {missingPrice} fiyatsız</span>}
-              
-              <button onClick={e => { e.stopPropagation(); setForm({ urun_kodu:'', denye:'', pesin_fiyat:'', bolum_adi:c }); setModal('new') }} style={{ background:C.greenS, color:C.green, border:`1px solid rgba(21,128,61,.2)`, padding:'4px 8px', borderRadius:6, cursor:'pointer', display:'flex', alignItems:'center', gap:3, fontSize:11, fontWeight:700 }}>+ Ekle</button>
-              {hdr && (
-                <button onClick={e => { e.stopPropagation(); setForm({ urun_kodu: hdr.urun_kodu || '', denye: hdr.denye || '', pesin_fiyat: hdr.pesin_fiyat || '', bolum_adi: hdr.bolum_adi || '' }); setModal(hdr); }} style={{ background:'none', border:'none', cursor:'pointer', color:C.border2, padding:4, borderRadius:6 }}>
-                  <IcoEdit size={14}/>
-                </button>
-              )}
-            </div>
-            
-            {isO && (
-              <div style={{ overflowX:'auto' }}>
-                <table style={{ width:'100%', borderCollapse:'collapse', fontSize:13 }}>
-                  <thead>
-                    <tr>
-                      <th style={{ ...S.th, width:36, textAlign:'center' }}></th>
-                      <th style={S.th}>Ürün Kodu</th>
-                      <th style={S.th}>Denye</th>
-                      <th style={{ ...S.th, textAlign:'right' }}>Peşin ($)</th>
-                      <th style={{ ...S.th, textAlign:'right' }}>90 Gün ($)</th>
-                      <th style={{ ...S.th, textAlign:'center' }}>Tarih</th>
-                      <th style={{ ...S.th, textAlign:'center' }}>İşlem</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {fi.map(p => {
-                      const bI = busy === p.id;
-                      const iE = editPrice && editPrice.id === p.id;
-                      const pf = p.pesin_fiyat;
-                      const tm = p.updated_at ? new Date(p.updated_at).toLocaleDateString('tr-TR', { day:'2-digit', month:'2-digit', year:'2-digit' }) : '';
-                      
-                      return (
-                        <tr key={p.id} className="hov-row" style={{ opacity:bI ? 0.5 : 1, background:selIds.has(p.id) ? 'rgba(22,163,74,.06)' : 'none', borderBottom:`1px solid ${C.border}` }}>
-                          <td style={{ ...S.td, textAlign:'center' }}><input type="checkbox" checked={selIds.has(p.id)} onChange={() => setSelIds(x => { const n = new Set(x); n.has(p.id) ? n.delete(p.id) : n.add(p.id); return n; })} style={{ cursor:'pointer', accentColor:C.green }}/></td>
-                          <td style={{ ...S.td, fontWeight:700, fontFamily:'monospace', color:C.txt }}>{p.urun_kodu}</td>
-                          <td style={S.td}>{p.denye ? <span style={{ background:C.tealS, color:C.teal, padding:'3px 8px', borderRadius:6, fontSize:11, fontWeight:700, fontFamily:'monospace' }}>{p.denye}</span> : <span style={{ color:C.border2 }}>—</span>}</td>
-                          <td style={{ ...S.td, textAlign:'right' }}>
-                            {iE ? (
-                              <input autoFocus type="number" step="0.01" value={editPrice.v} onChange={e => setEditPrice({ id:p.id, v:e.target.value })} onBlur={() => commitEdit(p)} onKeyDown={e => { if(e.key === 'Enter') commitEdit(p); if(e.key === 'Escape') setEditPrice(null); }} style={{ width:72, padding:'3px 7px', border:`2px solid ${C.green}`, borderRadius:6, fontSize:13, fontFamily:'monospace', fontWeight:700, color:C.green, outline:'none', textAlign:'right' }}/>
-                            ) : (
-                              <span onClick={() => setEditPrice({ id:p.id, v:String(pf || '') })} title="Tıkla düzenle" style={{ cursor:'text', fontFamily:'monospace', fontWeight:900, fontSize:14, color:pf ? C.green : '#CBD5E1', borderBottom:`1px dashed ${pf ? C.green : '#CBD5E1'}` }}>{pf ? pf.toFixed(2) + ' $' : '—'}</span>
-                            )}
-                          </td>
-                          <td style={{ ...S.td, textAlign:'right', fontFamily:'monospace', fontSize:13, color:pf ? C.txt2 : '#CBD5E1', fontWeight:pf ? 600 : 400 }}>{pf ? (pf + 0.10).toFixed(2) + ' $' : '—'}</td>
-                          <td style={{ ...S.td, textAlign:'center', fontSize:11, color:C.txt2, fontFamily:'monospace' }}>{tm || '—'}</td>
-                          <td style={{ ...S.td, textAlign:'center' }}>
-                            <div style={{ display:'flex', justifyContent:'center', gap:4 }}>
-                              <button onClick={() => { setForm({ urun_kodu:p.urun_kodu || '', denye:p.denye || '', pesin_fiyat:p.pesin_fiyat || '', bolum_adi:p.bolum_adi || '' }); setModal(p); }} style={{ background:'none', border:'none', cursor:'pointer', color:C.border2, padding:4, borderRadius:6 }} onMouseEnter={e => e.currentTarget.style.color = C.teal} onMouseLeave={e => e.currentTarget.style.color = C.border2}><IcoEdit size={13}/></button>
-                              <button onClick={() => delItem(p)} style={{ background:'none', border:'none', cursor:'pointer', color:C.border2, padding:4, borderRadius:6 }} onMouseEnter={e => e.currentTarget.style.color = C.red} onMouseLeave={e => e.currentTarget.style.color = C.border2}><IcoTrash size={13}/></button>
-                            </div>
-                          </td>
-                        </tr>
-                      );
-                    })}
-                  </tbody>
-                </table>
-              </div>
-            )}
-          </div>
-        );
-      })}
+      {/* Performanslı Akordeon Listeler */}
+      <div style={{ display:'flex', flexDirection:'column', gap:16 }}>
+        {renderedList}
+      </div>
     </div>
   );
 }
@@ -1863,24 +2019,27 @@ function OffersView({ data, customers, onRefresh }) {
   const exportFirmaXL = async (firmaAdi, teklifler) => {
     const dt = safeFileDate();
     const wb = new ExcelJS.Workbook(); 
-    const sh = wb.addWorksheet('Teklif');
-    sh.mergeCells(1,1,1,5);
-    const tc = sh.getCell('A1');
-    tc.value = (firmaAdi || 'TÜM FİRMALAR') + ' — FİYAT TEKLİFLERİ (' + dt + ')';
-    tc.font = { bold:true, size:13, color:{ argb:'FFFFFFFF' } };
-    tc.fill = { type:'pattern', pattern:'solid', fgColor:{ argb:'FF0672A0' } };
-    tc.alignment = { horizontal:'center', vertical:'middle' };
-    sh.getRow(1).height = 28;
+    const sh = wb.addWorksheet('Teklif', { views: [{ state: 'frozen', ySplit: 2 }] });
     
-    const hr = sh.addRow(['Firma','Ürün / Kalite','Fiyat ($)','Durum','Teklif Tarihi']);
-    hr.eachCell(c => { c.fill = { type:'pattern', pattern:'solid', fgColor:{ argb:'FF0891B2' } }; c.font = { color:{ argb:'FFFFFFFF' }, bold:true }; c.alignment = { horizontal:'center' }; });
-    sh.columns = [{width:30},{width:35},{width:14},{width:18},{width:16}];
+    const title = (firmaAdi ? firmaAdi.toUpperCase() : 'TÜM FİRMALAR') + ' — FİYAT TEKLİFLERİ (' + dt + ')';
+    setupExcelSheet(sh, title, 
+      ['FİRMA', 'ÜRÜN / KALİTE', 'FİYAT', 'DURUM', 'TEKLİF TARİHİ', 'NOTLAR'],
+      [35, 35, 15, 18, 16, 45]
+    );
     
     const rows = teklifler || filtered;
-    rows.forEach(t => {
-      const r = sh.addRow([t.firma_adi || '', t.urun || '', t.fiyat || '', t.durum || '', t.teklif_tarihi || '']);
-      if (t.durum === 'Onaylandı') r.getCell(4).font = { color:{ argb:'FF15803D' }, bold:true };
-      if (t.durum === 'Onaylanmadı') r.getCell(4).font = { color:{ argb:'FF991B1B' }, bold:true };
+    rows.forEach((t, idx) => {
+      const row = addExcelRow(sh, 
+        [t.firma_adi || '', t.urun || '', t.fiyat ? '$'+t.fiyat : '', t.durum || '', fmtDate(t.teklif_tarihi), t.notlar || ''],
+        idx % 2 === 0,
+        [{horizontal:'left'}, {horizontal:'left'}, {horizontal:'right'}, {horizontal:'center'}, {horizontal:'center'}, {horizontal:'left', wrapText:true}]
+      );
+      row.getCell(1).font = { bold: true };
+      row.getCell(3).font = { color: { argb: 'FF16A34A' }, bold: true };
+      
+      if (t.durum === 'Onaylandı') row.getCell(4).font = { color:{ argb:'FF16A34A' }, bold:true };
+      else if (t.durum === 'Onaylanmadı') row.getCell(4).font = { color:{ argb:'FFDC2626' }, bold:true };
+      else row.getCell(4).font = { color:{ argb:'FFD97706' }, bold:true };
     });
     
     const buf = await wb.xlsx.writeBuffer();
@@ -1895,6 +2054,89 @@ function OffersView({ data, customers, onRefresh }) {
   const teklif = data.filter(t => t.durum === 'Teklif Verildi').length;
   const ret = data.filter(t => t.durum === 'Onaylanmadı').length;
   const onayTutar = data.filter(t => t.durum === 'Onaylandı' && t.fiyat).reduce((s,t) => s + parseFloat(t.fiyat || 0), 0);
+
+  const renderedList = useMemo(() => {
+    if (groupedFirms.length === 0) {
+      return <div style={{ padding:32, textAlign:'center', color:C.txt2, background:C.surface, borderRadius:16, border:`1px solid ${C.border}` }}>
+        {q || statusFilter !== 'all' ? 'Filtreye uyan teklif yok.' : 'Henüz teklif kaydı yok.'}
+      </div>;
+    }
+    
+    return groupedFirms.map(([firmaAdi, teklifler]) => {
+      const isOpen = openFirms.has(firmaAdi) || q.length > 0;
+      const onayN = teklifler.filter(t => t.durum === 'Onaylandı').length;
+      const teklifN = teklifler.filter(t => t.durum === 'Teklif Verildi').length;
+      const retN = teklifler.filter(t => t.durum === 'Onaylanmadı').length;
+      
+      return (
+        <div key={firmaAdi} style={S.card}>
+          <div onClick={() => toggleFirm(firmaAdi)}
+            style={{ display:'flex', alignItems:'center', gap:14, padding:'14px 20px', cursor:'pointer', borderBottom:isOpen ? `1px solid ${C.border}` : 'none', transition:'background .15s' }}
+            onMouseEnter={e => e.currentTarget.style.background = C.page} onMouseLeave={e => e.currentTarget.style.background = 'transparent'}>
+            
+            <input type="checkbox" checked={teklifler.length > 0 && teklifler.every(x => selIds.has(x.id))} onChange={e => { e.stopPropagation(); setSelIds(p => { const n = new Set(p); const allS = teklifler.every(x => p.has(x.id)); teklifler.forEach(x => allS ? n.delete(x.id) : n.add(x.id)); return n; }) }} style={{ width:16, height:16, cursor:'pointer', accentColor:C.green, marginRight: 8 }} onClick={e => e.stopPropagation()}/>
+            
+            <div style={{ width:40, height:40, borderRadius:11, background:C.tealS, display:'flex', alignItems:'center', justifyContent:'center', color:C.teal, fontWeight:900, fontSize:16, flexShrink:0 }}>
+              {firmaAdi.charAt(0)}
+            </div>
+            
+            <div style={{ flex:1, minWidth:0 }}>
+              <h4 style={{ fontWeight:800, fontSize:14, color:C.txt, margin:0 }}>{firmaAdi}</h4>
+              <div style={{ display:'flex', gap:8, marginTop:4, flexWrap:'wrap' }}>
+                {teklifN > 0 && <span style={{ fontSize:11, fontWeight:700, color:C.teal, background:C.tealS, padding:'2px 7px', borderRadius:5 }}>⏳ {teklifN}</span>}
+                {onayN > 0 && <span style={{ fontSize:11, fontWeight:700, color:C.green, background:C.greenS, padding:'2px 7px', borderRadius:5 }}>✅ {onayN}</span>}
+                {retN > 0 && <span style={{ fontSize:11, fontWeight:700, color:C.red, background:C.redS, padding:'2px 7px', borderRadius:5 }}>❌ {retN}</span>}
+                <span style={{ fontSize:11, color:C.txt2 }}>{teklifler.length} teklif</span>
+              </div>
+            </div>
+            
+            <div style={{ display:'flex', alignItems:'center', gap:8 }}>
+              <button onClick={e => { e.stopPropagation(); exportFirmaXL(firmaAdi, teklifler); }} style={{ background:'none', border:`1px solid ${C.green}`, color:C.green, borderRadius:8, padding:'5px 10px', cursor:'pointer', fontSize:11, fontWeight:700 }}>📊</button>
+              <button onClick={e => { e.stopPropagation(); openAdd(firmaAdi); }} style={{ background:C.tealS, border:`1px solid rgba(8,145,178,.2)`, color:C.teal, borderRadius:8, padding:'5px 10px', cursor:'pointer', fontSize:11, fontWeight:700, display:'flex', alignItems:'center', gap:4 }}><IcoPlus size={12}/> Ekle</button>
+              <span style={{ color:C.txt2, fontSize:18, transform:isOpen ? 'rotate(180deg)' : 'none', transition:'transform .2s' }}>▾</span>
+            </div>
+          </div>
+
+          {isOpen && teklifler.map((t, ti) => {
+            const [dBg, dCol] = DCLR[t.durum] || [C.tealS, C.teal];
+            const diff = daysDiff(t.gecerlilik_tarihi);
+            const isBusy = busy === t.id;
+            
+            return (
+              <div key={t.id || ti} className="hov-row" style={{ padding:'12px 20px', borderBottom:ti < teklifler.length - 1 ? `1px solid ${C.border}` : 'none', opacity:isBusy ? 0.5 : 1, display:'flex', alignItems:'center', gap:12 }}>
+                <input type="checkbox" checked={selIds.has(t.id)} onChange={() => toggleSel(t.id)} style={{ width:16, height:16, cursor:'pointer', accentColor:C.green, flexShrink:0 }} />
+                <div style={{ flex:1, minWidth:0 }}>
+                  <div style={{ display:'flex', alignItems:'center', gap:8, flexWrap:'wrap' }}>
+                    <span style={{ fontWeight:700, fontSize:13, color:C.txt }}>{t.urun || '—'}</span>
+                    {t.fiyat && <span style={{ fontFamily:'monospace', fontWeight:900, color:C.green, fontSize:14 }}>${t.fiyat}</span>}
+                  </div>
+                  <div style={{ display:'flex', gap:10, marginTop:4, flexWrap:'wrap', alignItems:'center' }}>
+                    {t.teklif_tarihi && <span style={{ fontSize:11, color:C.txt2, fontFamily:'monospace' }}>📅 {fmtDate(t.teklif_tarihi)}</span>}
+                    {diff !== null && t.durum === 'Teklif Verildi' && (
+                      <span style={{ fontSize:11, fontWeight:700, color:diff < 0 ? C.red : diff < 7 ? C.amber : C.green }}>
+                        {diff < 0 ? `⚠️ ${Math.abs(diff)} gün geçti` : `⏱ ${diff} gün kaldı`}
+                      </span>
+                    )}
+                    {t.notlar && <span style={{ fontSize:11, color:C.txt2, fontStyle:'italic' }}>💬 {t.notlar}</span>}
+                  </div>
+                </div>
+                
+                <select value={t.durum} disabled={isBusy} onChange={e => setDurum(t, e.target.value)}
+                  style={{ padding:'5px 9px', borderRadius:8, border:`1.5px solid ${dCol}`, background:dBg, color:dCol, fontSize:11, fontWeight:700, cursor:'pointer', outline:'none', flexShrink:0 }}>
+                  {DURUMLAR.map(d => <option key={d}>{d}</option>)}
+                </select>
+                
+                <div style={{ display:'flex', gap:4, flexShrink:0 }}>
+                  <button onClick={() => openEdit(t)} disabled={isBusy} style={{ background:'none', border:'none', cursor:'pointer', color:C.border2, padding:5, borderRadius:6 }} onMouseEnter={e => e.currentTarget.style.color = C.teal} onMouseLeave={e => e.currentTarget.style.color = C.border2}><IcoEdit size={14}/></button>
+                  <button onClick={() => delItem(t)} disabled={isBusy} style={{ background:'none', border:'none', cursor:'pointer', color:C.border2, padding:5, borderRadius:6 }} onMouseEnter={e => e.currentTarget.style.color = C.red} onMouseLeave={e => e.currentTarget.style.color = C.border2}><IcoTrash size={14}/></button>
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      );
+    });
+  }, [groupedFirms, openFirms, q, selIds, busy]);
 
   return (
     <div style={{ display:'flex', flexDirection:'column', gap:14 }}>
@@ -2104,86 +2346,7 @@ function OffersView({ data, customers, onRefresh }) {
 
       {/* Akordeon Listeler */}
       <div style={{ display:'flex', flexDirection:'column', gap:16 }}>
-        {groupedFirms.length === 0 ? (
-          <div style={{ padding:32, textAlign:'center', color:C.txt2, background:C.surface, borderRadius:16, border:`1px solid ${C.border}` }}>
-            {q || statusFilter !== 'all' ? 'Filtreye uyan teklif yok.' : 'Henüz teklif kaydı yok.'}
-          </div>
-        ) : (
-          groupedFirms.map(([firmaAdi, teklifler]) => {
-            const isOpen = openFirms.has(firmaAdi) || q.length > 0;
-            const onayN = teklifler.filter(t => t.durum === 'Onaylandı').length;
-            const teklifN = teklifler.filter(t => t.durum === 'Teklif Verildi').length;
-            const retN = teklifler.filter(t => t.durum === 'Onaylanmadı').length;
-            
-            return (
-              <div key={firmaAdi} style={S.card}>
-                <div onClick={() => toggleFirm(firmaAdi)}
-                  style={{ display:'flex', alignItems:'center', gap:14, padding:'14px 20px', cursor:'pointer', borderBottom:isOpen ? `1px solid ${C.border}` : 'none', transition:'background .15s' }}
-                  onMouseEnter={e => e.currentTarget.style.background = C.page} onMouseLeave={e => e.currentTarget.style.background = 'transparent'}>
-                  
-                  <input type="checkbox" checked={teklifler.length > 0 && teklifler.every(x => selIds.has(x.id))} onChange={e => { e.stopPropagation(); setSelIds(p => { const n = new Set(p); const allS = teklifler.every(x => p.has(x.id)); teklifler.forEach(x => allS ? n.delete(x.id) : n.add(x.id)); return n; }) }} style={{ width:16, height:16, cursor:'pointer', accentColor:C.green, marginRight: 8 }} onClick={e => e.stopPropagation()}/>
-                  
-                  <div style={{ width:40, height:40, borderRadius:11, background:C.tealS, display:'flex', alignItems:'center', justifyContent:'center', color:C.teal, fontWeight:900, fontSize:16, flexShrink:0 }}>
-                    {firmaAdi.charAt(0)}
-                  </div>
-                  
-                  <div style={{ flex:1, minWidth:0 }}>
-                    <h4 style={{ fontWeight:800, fontSize:14, color:C.txt, margin:0 }}>{firmaAdi}</h4>
-                    <div style={{ display:'flex', gap:8, marginTop:4, flexWrap:'wrap' }}>
-                      {teklifN > 0 && <span style={{ fontSize:11, fontWeight:700, color:C.teal, background:C.tealS, padding:'2px 7px', borderRadius:5 }}>⏳ {teklifN}</span>}
-                      {onayN > 0 && <span style={{ fontSize:11, fontWeight:700, color:C.green, background:C.greenS, padding:'2px 7px', borderRadius:5 }}>✅ {onayN}</span>}
-                      {retN > 0 && <span style={{ fontSize:11, fontWeight:700, color:C.red, background:C.redS, padding:'2px 7px', borderRadius:5 }}>❌ {retN}</span>}
-                      <span style={{ fontSize:11, color:C.txt2 }}>{teklifler.length} teklif</span>
-                    </div>
-                  </div>
-                  
-                  <div style={{ display:'flex', alignItems:'center', gap:8 }}>
-                    <button onClick={e => { e.stopPropagation(); exportFirmaXL(firmaAdi, teklifler); }} style={{ background:'none', border:`1px solid ${C.green}`, color:C.green, borderRadius:8, padding:'5px 10px', cursor:'pointer', fontSize:11, fontWeight:700 }}>📊</button>
-                    <button onClick={e => { e.stopPropagation(); openAdd(firmaAdi); }} style={{ background:C.tealS, border:`1px solid rgba(8,145,178,.2)`, color:C.teal, borderRadius:8, padding:'5px 10px', cursor:'pointer', fontSize:11, fontWeight:700, display:'flex', alignItems:'center', gap:4 }}><IcoPlus size={12}/> Ekle</button>
-                    <span style={{ color:C.txt2, fontSize:18, transform:isOpen ? 'rotate(180deg)' : 'none', transition:'transform .2s' }}>▾</span>
-                  </div>
-                </div>
-
-                {isOpen && teklifler.map((t, ti) => {
-                  const [dBg, dCol] = DCLR[t.durum] || [C.tealS, C.teal];
-                  const diff = daysDiff(t.gecerlilik_tarihi);
-                  const isBusy = busy === t.id;
-                  
-                  return (
-                    <div key={t.id || ti} className="hov-row" style={{ padding:'12px 20px', borderBottom:ti < teklifler.length - 1 ? `1px solid ${C.border}` : 'none', opacity:isBusy ? 0.5 : 1, display:'flex', alignItems:'center', gap:12 }}>
-                      <input type="checkbox" checked={selIds.has(t.id)} onChange={() => toggleSel(t.id)} style={{ width:16, height:16, cursor:'pointer', accentColor:C.green, flexShrink:0 }} />
-                      <div style={{ flex:1, minWidth:0 }}>
-                        <div style={{ display:'flex', alignItems:'center', gap:8, flexWrap:'wrap' }}>
-                          <span style={{ fontWeight:700, fontSize:13, color:C.txt }}>{t.urun || '—'}</span>
-                          {t.fiyat && <span style={{ fontFamily:'monospace', fontWeight:900, color:C.green, fontSize:14 }}>${t.fiyat}</span>}
-                        </div>
-                        <div style={{ display:'flex', gap:10, marginTop:4, flexWrap:'wrap', alignItems:'center' }}>
-                          {t.teklif_tarihi && <span style={{ fontSize:11, color:C.txt2, fontFamily:'monospace' }}>📅 {fmtDate(t.teklif_tarihi)}</span>}
-                          {diff !== null && t.durum === 'Teklif Verildi' && (
-                            <span style={{ fontSize:11, fontWeight:700, color:diff < 0 ? C.red : diff < 7 ? C.amber : C.green }}>
-                              {diff < 0 ? `⚠️ ${Math.abs(diff)} gün geçti` : `⏱ ${diff} gün kaldı`}
-                            </span>
-                          )}
-                          {t.notlar && <span style={{ fontSize:11, color:C.txt2, fontStyle:'italic' }}>💬 {t.notlar}</span>}
-                        </div>
-                      </div>
-                      
-                      <select value={t.durum} disabled={isBusy} onChange={e => setDurum(t, e.target.value)}
-                        style={{ padding:'5px 9px', borderRadius:8, border:`1.5px solid ${dCol}`, background:dBg, color:dCol, fontSize:11, fontWeight:700, cursor:'pointer', outline:'none', flexShrink:0 }}>
-                        {DURUMLAR.map(d => <option key={d}>{d}</option>)}
-                      </select>
-                      
-                      <div style={{ display:'flex', gap:4, flexShrink:0 }}>
-                        <button onClick={() => openEdit(t)} disabled={isBusy} style={{ background:'none', border:'none', cursor:'pointer', color:C.border2, padding:5, borderRadius:6 }} onMouseEnter={e => e.currentTarget.style.color = C.teal} onMouseLeave={e => e.currentTarget.style.color = C.border2}><IcoEdit size={14}/></button>
-                        <button onClick={() => delItem(t)} disabled={isBusy} style={{ background:'none', border:'none', cursor:'pointer', color:C.border2, padding:5, borderRadius:6 }} onMouseEnter={e => e.currentTarget.style.color = C.red} onMouseLeave={e => e.currentTarget.style.color = C.border2}><IcoTrash size={14}/></button>
-                      </div>
-                    </div>
-                  );
-                })}
-              </div>
-            );
-          })
-        )}
+        {renderedList}
       </div>
     </div>
   );
@@ -2295,6 +2458,56 @@ function NotesView({ data, customers, onRefresh }) {
   Object.keys(NOTE_COLORS).forEach(r => { cntByRenk[r] = data.filter(n => (n.renk || 'default') === r).length; });
   const cntByTag = {};
   NOTE_TAGS.forEach(tag => { cntByTag[tag] = data.filter(n => parseNoteTags(n.icerik || '').tags.includes(tag)).length; });
+
+  const renderedList = useMemo(() => {
+    if (filtered.length === 0) {
+      return (
+        <div style={{ gridColumn: '1/-1', padding: 32, textAlign: 'center', color: C.txt2, background: C.surface, borderRadius: 16, border: `1px solid ${C.border}` }}>
+          {q || colorFilter !== 'all' || tagFilter !== 'all' ? 'Filtreye uyan not yok.' : 'Henüz not eklenmemiş.'}
+        </div>
+      );
+    }
+    return filtered.map((n) => {
+      const r = NOTE_COLORS[n.renk || 'default'] || NOTE_COLORS.default;
+      const { tags, body } = parseNoteTags(n.icerik);
+      const lines = body.split('\n');
+      const title = lines.find(l => l.trim() !== '') || 'İsimsiz Not';
+      const contentBody = lines.filter(l => l.trim() !== title).join('\n').trim();
+
+      return (
+        <div key={n.id} onClick={() => openEdit(n)} className="hov-row"
+          style={{ background: r.bg, border: `1.5px solid ${r.border}`, borderRadius: 16, padding: 18, position: 'relative', cursor: 'pointer', display: 'flex', flexDirection: 'column' }}>
+          <div style={{ display: 'flex', gap: 4, marginBottom: 8, flexWrap: 'wrap' }}>
+            {tags.map(x => <span key={x} style={{ fontSize: 10, fontWeight: 700, padding: '2px 7px', borderRadius: 10, background: (TAG_COLORS[x] || C.txt2) + '20', color: TAG_COLORS[x] || C.txt2 }}>#{x}</span>)}
+            {n.musteri && <span style={{ fontSize: 10, fontWeight: 700, opacity: .6, color: r.txt, alignSelf: 'center' }}>🏢 {n.musteri}</span>}
+          </div>
+          
+          <h4 style={{ fontWeight: 800, fontSize: 14, color: r.txt, marginBottom: 8, paddingRight: 28, lineHeight: 1.3, wordBreak: 'break-word' }}>
+            {title}
+          </h4>
+          
+          {contentBody && (
+            <div style={{ marginBottom: 28, overflow: 'hidden', maxHeight: 120 }}>
+              {renderBody(contentBody, r)}
+            </div>
+          )}
+          
+          <div style={{ marginTop: 'auto', paddingTop: 12 }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 4, fontSize: 10, color: r.txt, opacity: .55, fontWeight: 600, letterSpacing: '.05em', fontFamily: 'monospace' }}>
+              <IcoClock size={10} /> {fmtDate(n.updated_at || n.created_at)}
+            </div>
+          </div>
+
+          <button onClick={e => { e.stopPropagation(); delNote(n); }}
+            style={{ position: 'absolute', top: 12, right: 12, background: 'none', border: 'none', color: r.txt, opacity: .4, cursor: 'pointer', padding: 4, borderRadius: 6, display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+            onMouseEnter={e => { e.currentTarget.style.opacity = '1'; e.currentTarget.style.color = '#DC2626'; }}
+            onMouseLeave={e => { e.currentTarget.style.opacity = '.4'; e.currentTarget.style.color = r.txt; }}>
+            <IcoTrash size={14} />
+          </button>
+        </div>
+      );
+    });
+  }, [filtered, q, colorFilter, tagFilter]);
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
@@ -2408,52 +2621,7 @@ function NotesView({ data, customers, onRefresh }) {
 
       {/* Not Grid */}
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill,minmax(280px,1fr))', gap: 16 }}>
-        {filtered.length === 0 ? (
-          <div style={{ gridColumn: '1/-1', padding: 32, textAlign: 'center', color: C.txt2, background: C.surface, borderRadius: 16, border: `1px solid ${C.border}` }}>
-            {q || colorFilter !== 'all' || tagFilter !== 'all' ? 'Filtreye uyan not yok.' : 'Henüz not eklenmemiş.'}
-          </div>
-        ) : (
-          filtered.map((n) => {
-            const r = NOTE_COLORS[n.renk || 'default'] || NOTE_COLORS.default;
-            const { tags, body } = parseNoteTags(n.icerik);
-            const lines = body.split('\n');
-            const title = lines.find(l => l.trim() !== '') || 'İsimsiz Not';
-            const contentBody = lines.filter(l => l.trim() !== title).join('\n').trim();
-
-            return (
-              <div key={n.id} onClick={() => openEdit(n)} className="hov-row"
-                style={{ background: r.bg, border: `1.5px solid ${r.border}`, borderRadius: 16, padding: 18, position: 'relative', cursor: 'pointer', display: 'flex', flexDirection: 'column' }}>
-                <div style={{ display: 'flex', gap: 4, marginBottom: 8, flexWrap: 'wrap' }}>
-                  {tags.map(x => <span key={x} style={{ fontSize: 10, fontWeight: 700, padding: '2px 7px', borderRadius: 10, background: (TAG_COLORS[x] || C.txt2) + '20', color: TAG_COLORS[x] || C.txt2 }}>#{x}</span>)}
-                  {n.musteri && <span style={{ fontSize: 10, fontWeight: 700, opacity: .6, color: r.txt, alignSelf: 'center' }}>🏢 {n.musteri}</span>}
-                </div>
-                
-                <h4 style={{ fontWeight: 800, fontSize: 14, color: r.txt, marginBottom: 8, paddingRight: 28, lineHeight: 1.3, wordBreak: 'break-word' }}>
-                  {title}
-                </h4>
-                
-                {contentBody && (
-                  <div style={{ marginBottom: 28, overflow: 'hidden', maxHeight: 120 }}>
-                    {renderBody(contentBody, r)}
-                  </div>
-                )}
-                
-                <div style={{ marginTop: 'auto', paddingTop: 12 }}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 4, fontSize: 10, color: r.txt, opacity: .55, fontWeight: 600, letterSpacing: '.05em', fontFamily: 'monospace' }}>
-                    <IcoClock size={10} /> {fmtDate(n.updated_at || n.created_at)}
-                  </div>
-                </div>
-
-                <button onClick={e => { e.stopPropagation(); delNote(n); }}
-                  style={{ position: 'absolute', top: 12, right: 12, background: 'none', border: 'none', color: r.txt, opacity: .4, cursor: 'pointer', padding: 4, borderRadius: 6, display: 'flex', alignItems: 'center', justifyContent: 'center' }}
-                  onMouseEnter={e => { e.currentTarget.style.opacity = '1'; e.currentTarget.style.color = '#DC2626'; }}
-                  onMouseLeave={e => { e.currentTarget.style.opacity = '.4'; e.currentTarget.style.color = r.txt; }}>
-                  <IcoTrash size={14} />
-                </button>
-              </div>
-            );
-          })
-        )}
+        {renderedList}
       </div>
     </div>
   );
