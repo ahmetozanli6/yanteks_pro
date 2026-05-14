@@ -46,7 +46,7 @@
 
   /* Küçük Ekranlar (Telefonlar) için Mobil Düzeltmeler */
   @media(max-width: 767px) {
-    .p-mob { padding: 12px !important; }
+    .p-mob { padding: 12px !important; padding-bottom: calc(12px + env(safe-area-inset-bottom)) !important; }
     .grid-mob { grid-template-columns: 1fr !important; }
     .dash-cards { grid-template-columns: repeat(2, 1fr) !important; }
     .dash-card-item { padding: 16px !important; }
@@ -89,7 +89,7 @@ const C = { sidebar:'#0F172A',sHead:'#0A1520',sBorder:'rgba(255,255,255,.07)',na
 const S = {
   inp: { width:'100%',padding:'9px 12px',border:`1px solid ${C.border2}`,borderRadius:9,fontSize:13,outline:'none',color:C.txt,background:'#fff',fontFamily:'Inter,sans-serif' },
   lbl: { fontSize:10,fontWeight:700,color:C.txt2,display:'block',marginBottom:5,textTransform:'uppercase',letterSpacing:'.08em' },
-  mOv: { position:'fixed',inset:0,background:'rgba(0,0,0,.55)',zIndex:100,display:'flex',alignItems:'center',justifyContent:'center',padding:16 },
+  mOv: { position:'fixed',inset:0,background:'rgba(0,0,0,.55)',zIndex:100,display:'flex',alignItems:'center',justifyContent:'center',padding:16, paddingTop: 'calc(16px + env(safe-area-inset-top))', paddingBottom: 'calc(16px + env(safe-area-inset-bottom))' },
   mBx: { background:'#fff',borderRadius:20,padding:24,width:'100%',maxWidth:440,boxShadow:'0 20px 60px rgba(0,0,0,.3)',maxHeight:'90vh',overflowY:'auto' },
   bCan:{ flex:1,padding:10,border:`1px solid ${C.border2}`,borderRadius:10,cursor:'pointer',background:'none',fontSize:13,fontWeight:600,color:C.txt2 },
   bSav:{ flex:2,padding:10,border:'none',borderRadius:10,cursor:'pointer',color:'#fff',fontSize:13,fontWeight:700 },
