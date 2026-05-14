@@ -121,7 +121,12 @@ const IcoClock = (p) => <Ico {...p}><circle cx="12" cy="12" r="10"/><polyline po
 
 // ── YARDIMCILAR & SABİTLER ──────────────────────────────────────────
 const safeFileDate = () => new Date().toISOString().slice(0, 10);
-const getCurrencySymbol = (c) => c === 'EUR' ? '€' : '$';
+// Eğer veritabanında para_birimi yoksa, notlarda (EUR) gibi arayıp simgeyi çıkarıyoruz.
+const getCurrencySymbol = (c, noteStr) => {
+  const ns = noteStr || '';
+  if (c === 'EUR' || ns.includes('(EUR)') || ns.includes('[EUR]')) return '€';
+  return '$';
+};
 
 // PROFESYONEL EXCEL YARDIMCILARI (ORTAK TEMA)
 const setupExcelSheet = (sh, title, headers, colWidths) => {
@@ -252,7 +257,7 @@ function StatusBadge({ status }) {
   return <span style={{ padding: '4px 11px', borderRadius: 8, fontSize: 11, fontWeight: 700, background: bg, color: col, whiteSpace: 'nowrap' }}>{status}</span>;
 }
 
-// Akıllı Müşteri Arama Inputu (Hoşver ve Güneş sorunu burada çözüldü)
+// Akıllı Müşteri Arama Inputu
 function FirmaInput({ value, onChange, firmalar, placeholder }) {
   const [op, setOp] = useState(false);
   const [tch, setTch] = useState(false);
@@ -274,37 +279,6 @@ function FirmaInput({ value, onChange, firmalar, placeholder }) {
           {m.map(f => (
             <div key={f} onMouseDown={e => { e.preventDefault(); onChange(f); setOp(false) }} style={{ padding: '10px 14px', fontSize: 13, fontWeight: 600, color: C.txt, cursor: 'pointer', borderBottom: `1px solid ${C.border}` }} onMouseEnter={e => e.currentTarget.style.background = C.greenS} onMouseLeave={e => e.currentTarget.style.background = 'transparent'}>
               🏢 {f}
-            </div>
-          ))}
-        </div>
-      )}
-    </div>
-  );
-}
-
-// Akıllı Ürün Arama Inputu (Teklifler modülü için eklendi)
-function UrunInput({ value, onChange, urunler, onSelectPrice, placeholder }) {
-  const [op, setOp] = useState(false);
-  const [tch, setTch] = useState(false);
-  const r = useRef(null);
-  
-  const m = useMemo(() => (!tch || !value) ? urunler.slice(0, 8) : urunler.filter(u => trl(u.kodu).includes(trl(value))).slice(0, 10), [value, urunler, tch]);
-  
-  useEffect(() => {
-    const h = e => { if (r.current && !r.current.contains(e.target)) setOp(false); };
-    document.addEventListener('mousedown', h);
-    return () => document.removeEventListener('mousedown', h);
-  }, []);
-  
-  return (
-    <div ref={r} style={{ position: 'relative', flex: 1 }}>
-      <input value={value} onChange={e => { onChange(e.target.value); setOp(true); setTch(true) }} onFocus={() => { setOp(true); setTch(true) }} placeholder={placeholder || "Ürün Seç..."} style={S.inp} />
-      {op && m.length > 0 && (
-        <div style={{ position: 'absolute', top: '100%', left: 0, right: 0, zIndex: 200, background: '#fff', border: `1px solid ${C.border2}`, borderRadius: 10, boxShadow: '0 8px 24px rgba(0,0,0,.15)', maxHeight: 220, overflowY: 'auto', marginTop: 4 }}>
-          {m.map(u => (
-            <div key={u.id} onMouseDown={e => { e.preventDefault(); onChange(u.kodu); if(onSelectPrice) onSelectPrice(u.fiyat, u.para_birimi); setOp(false); }} style={{ padding: '10px 14px', fontSize: 13, fontWeight: 600, color: C.txt, cursor: 'pointer', borderBottom: `1px solid ${C.border}`, display: 'flex', justifyContent: 'space-between' }} onMouseEnter={e => e.currentTarget.style.background = C.greenS} onMouseLeave={e => e.currentTarget.style.background = 'transparent'}>
-              <span>📦 {u.kodu}</span>
-              {u.fiyat && <span style={{color: C.green}}>{getCurrencySymbol(u.para_birimi)}{u.fiyat}</span>}
             </div>
           ))}
         </div>
@@ -1394,8 +1368,16 @@ function PricesView({ data, onRefresh }) {
       updated_at: new Date().toISOString()
     };
     
-    if (modal === 'new') await db.from('fiyatlar').insert([pay]);
-    else await db.from('fiyatlar').update(pay).eq('id', modal.id);
+    let res;
+    if (modal === 'new') res = await db.from('fiyatlar').insert([pay]);
+    else res = await db.from('fiyatlar').update(pay).eq('id', modal.id);
+    
+    if (res.error && res.error.message.includes('para_birimi')) {
+        const {para_birimi, ...safePay} = pay;
+        safePay.bolum_adi = (safePay.bolum_adi ? safePay.bolum_adi + ' ' : '') + `[${para_birimi}]`;
+        if (modal === 'new') await db.from('fiyatlar').insert([safePay]);
+        else await db.from('fiyatlar').update(safePay).eq('id', modal.id);
+    }
     
     setSaving(false); setModal(null); await onRefresh();
   };
@@ -1413,12 +1395,23 @@ function PricesView({ data, onRefresh }) {
     const nv = parseFloat(editPrice.v);
     if (isNaN(nv)) { setEditPrice(null); return; }
     setBusy(p.id);
-    await db.from('fiyatlar').update({ 
+    
+    let res = await db.from('fiyatlar').update({ 
       pesin_fiyat: nv, 
       vadeli_fiyat: parseFloat((nv + 0.10).toFixed(4)),
       para_birimi: editPrice.cur,
       updated_at: new Date().toISOString()
     }).eq('id', p.id);
+    
+    if (res.error && res.error.message.includes('para_birimi')) {
+        res = await db.from('fiyatlar').update({ 
+          pesin_fiyat: nv, 
+          vadeli_fiyat: parseFloat((nv + 0.10).toFixed(4)),
+          bolum_adi: (p.bolum_adi||'').replace(/\[.*?\]/g,'').trim() + ` [${editPrice.cur}]`,
+          updated_at: new Date().toISOString()
+        }).eq('id', p.id);
+    }
+    
     setEditPrice(null); await onRefresh(); setBusy(null);
   };
 
@@ -1455,7 +1448,7 @@ function PricesView({ data, onRefresh }) {
     if (bulkType === 'pct_dn')   nv = sample.pesin_fiyat * (1 - v / 100);
     if (bulkType === 'fixed_up') nv = sample.pesin_fiyat + v;
     if (bulkType === 'fixed_dn') nv = Math.max(0, sample.pesin_fiyat - v);
-    return { urun: sample.urun_kodu, eski: sample.pesin_fiyat.toFixed(2), yeni: nv.toFixed(2), sembol: getCurrencySymbol(sample.para_birimi) };
+    return { urun: sample.urun_kodu, eski: sample.pesin_fiyat.toFixed(2), yeni: nv.toFixed(2), sembol: getCurrencySymbol(sample.para_birimi, sample.bolum_adi) };
   };
 
   const exportXL = async (wP) => {
@@ -1488,7 +1481,7 @@ function PricesView({ data, onRefresh }) {
       }
       
       const c = p.pesin_fiyat || 0;
-      const sym = getCurrencySymbol(p.para_birimi);
+      const sym = getCurrencySymbol(p.para_birimi, p.bolum_adi);
       const dataRow = wP
         ? [p.urun_kodu || '', p.denye || '-', c ? sym + c.toFixed(2) : '-', c ? sym + (c + 0.10).toFixed(2) : '-', c ? sym + (c + 0.20).toFixed(2) : '-']
         : [p.urun_kodu || '', p.denye || '-', p.bolum_adi || '-'];
@@ -1605,7 +1598,7 @@ function PricesView({ data, onRefresh }) {
                     const iE = editPrice && editPrice.id === p.id;
                     const pf = p.pesin_fiyat;
                     const tm = p.updated_at ? new Date(p.updated_at).toLocaleDateString('tr-TR', { day:'2-digit', month:'2-digit', year:'2-digit' }) : '';
-                    const sym = getCurrencySymbol(p.para_birimi);
+                    const sym = getCurrencySymbol(p.para_birimi, p.bolum_adi);
                     
                     return (
                       <tr key={p.id} className="hov-row" style={{ opacity:bI ? 0.5 : 1, background:selIds.has(p.id) ? 'rgba(22,163,74,.06)' : 'none', borderBottom:`1px solid ${C.border}` }}>
@@ -1974,16 +1967,22 @@ function OffersView({ data, customers, prices, onRefresh }) {
     
     G.forEach(items => {
       items.sort((a,b) => {
-        const dA = new Date(a.teklif_tarihi || a.created_at || 0).getTime();
-        const dB = new Date(b.teklif_tarihi || b.created_at || 0).getTime();
-        return dB - dA;
+        const dateA = new Date(a.teklif_tarihi || 0).getTime();
+        const dateB = new Date(b.teklif_tarihi || 0).getTime();
+        if (dateA !== dateB) return dateB - dateA;
+        
+        // Teklif tarihleri aynıysa (aynı gün eklenmişse), sisteme en son eklenen en üste gelsin
+        const createA = new Date(a.created_at || 0).getTime();
+        const createB = new Date(b.created_at || 0).getTime();
+        return createB - createA;
       });
     });
 
     return [...G.entries()].sort((a,b) => {
-      const da = a[1][0]?.teklif_tarihi || a[1][0]?.created_at || '';
-      const db2 = b[1][0]?.teklif_tarihi || b[1][0]?.created_at || '';
-      return db2.localeCompare(da);
+      // Firmaları da ilk (en yeni) tekliflerine göre yeniden eskiye sıralayalım
+      const createA = new Date(a[1][0]?.created_at || a[1][0]?.teklif_tarihi || 0).getTime();
+      const createB = new Date(b[1][0]?.created_at || b[1][0]?.teklif_tarihi || 0).getTime();
+      return createB - createA;
     });
   }, [filtered]);
 
@@ -2054,15 +2053,29 @@ function OffersView({ data, customers, prices, onRefresh }) {
       notlar: form.notlar.trim() || null, updated_at: now 
     };
     
+    let res;
     if (modal === 'new') {
       const validRows = multiRows.filter(r => r.urun.trim());
       if (!validRows.length) { setSaving(false); return; }
       const payload = validRows.map(r => ({ ...base, urun: r.urun.trim(), fiyat: parseFloat(r.fiyat) || null, para_birimi: r.para_birimi || 'USD', created_at: now }));
-      await db.from('fiyat_teklifleri').insert(payload);
+      
+      res = await db.from('fiyat_teklifleri').insert(payload);
+      if (res.error && res.error.message.includes('para_birimi')) {
+          const safePayload = payload.map(({para_birimi, ...rest}) => ({...rest, notlar: (rest.notlar ? rest.notlar+' ' : '') + `[${para_birimi}]`}));
+          res = await db.from('fiyat_teklifleri').insert(safePayload);
+      }
     } else {
       if (!form.urun.trim()) { setSaving(false); return; }
-      await db.from('fiyat_teklifleri').update({ ...base, urun: form.urun.trim(), fiyat: parseFloat(form.fiyat) || null, para_birimi: form.para_birimi || 'USD' }).eq('id', modal.id);
+      const pay = { ...base, urun: form.urun.trim(), fiyat: parseFloat(form.fiyat) || null, para_birimi: form.para_birimi || 'USD' };
+      
+      res = await db.from('fiyat_teklifleri').update(pay).eq('id', modal.id);
+      if (res.error && res.error.message.includes('para_birimi')) {
+          const {para_birimi, ...safePay} = pay;
+          safePay.notlar = (safePay.notlar ? safePay.notlar+' ' : '') + `[${para_birimi}]`;
+          res = await db.from('fiyat_teklifleri').update(safePay).eq('id', modal.id);
+      }
     }
+    
     setSaving(false); setModal(null); await onRefresh();
   };
 
@@ -2112,7 +2125,7 @@ function OffersView({ data, customers, prices, onRefresh }) {
     
     const rows = teklifler || filtered;
     rows.forEach((t, idx) => {
-      const sym = getCurrencySymbol(t.para_birimi);
+      const sym = getCurrencySymbol(t.para_birimi, t.notlar);
       const row = addExcelRow(sh, 
         [t.firma_adi || '', t.urun || '', t.fiyat ? sym + t.fiyat : '', t.durum || '', fmtDate(t.teklif_tarihi), t.notlar || ''],
         idx % 2 === 0,
@@ -2138,8 +2151,8 @@ function OffersView({ data, customers, prices, onRefresh }) {
   const teklif = data.filter(t => t.durum === 'Teklif Verildi').length;
   const ret = data.filter(t => t.durum === 'Onaylanmadı').length;
   
-  const onayTutarUSD = data.filter(t => t.durum === 'Onaylandı' && (!t.para_birimi || t.para_birimi === 'USD')).reduce((s,t) => s + parseFloat(t.fiyat || 0), 0);
-  const onayTutarEUR = data.filter(t => t.durum === 'Onaylandı' && t.para_birimi === 'EUR').reduce((s,t) => s + parseFloat(t.fiyat || 0), 0);
+  const onayTutarUSD = data.filter(t => t.durum === 'Onaylandı' && getCurrencySymbol(t.para_birimi, t.notlar) === '$').reduce((s,t) => s + parseFloat(t.fiyat || 0), 0);
+  const onayTutarEUR = data.filter(t => t.durum === 'Onaylandı' && getCurrencySymbol(t.para_birimi, t.notlar) === '€').reduce((s,t) => s + parseFloat(t.fiyat || 0), 0);
 
   const renderedList = useMemo(() => {
     if (groupedFirms.length === 0) {
@@ -2191,7 +2204,7 @@ function OffersView({ data, customers, prices, onRefresh }) {
                     const [dBg, dCol] = DCLR[t.durum] || [C.tealS, C.teal];
                     const diff = daysDiff(t.gecerlilik_tarihi);
                     const isBusy = busy === t.id;
-                    const sym = getCurrencySymbol(t.para_birimi);
+                    const sym = getCurrencySymbol(t.para_birimi, t.notlar);
                     
                     return (
                       <tr key={t.id || ti} className="hov-row" style={{ opacity:isBusy ? 0.5 : 1, borderBottom:ti < teklifler.length - 1 ? `1px solid ${C.border}` : 'none' }}>
@@ -2235,8 +2248,23 @@ function OffersView({ data, customers, prices, onRefresh }) {
     });
   }, [groupedFirms, openFirms, q, selIds, busy, statusFilter]);
 
+  // Urun seçimi için datalist onChange handler
+  const handleUrunChange = (val, i) => {
+    setMultiRows(p => p.map((x, j) => {
+      if (j === i) {
+         const match = urunlerList.find(u => u.kodu === val);
+         return match ? { ...x, urun: val, fiyat: match.fiyat, para_birimi: match.para_birimi || 'USD' } : { ...x, urun: val };
+      }
+      return x;
+    }));
+  };
+
   return (
     <div style={{ display:'flex', flexDirection:'column', gap:14 }}>
+      <datalist id="urunler-datalist">
+         {urunlerList.map(u => <option key={u.id} value={u.kodu}>{getCurrencySymbol(u.para_birimi)}{u.fiyat}</option>)}
+      </datalist>
+
       {/* İçe Aktar Modal */}
       {impModal && (
         <div onClick={e => e.target === e.currentTarget && setImpModal(false)} style={S.mOv}>
@@ -2320,12 +2348,7 @@ function OffersView({ data, customers, prices, onRefresh }) {
                 {multiRows.map((r, i) => (
                   <div key={i} style={{ display:'flex', flexWrap:'wrap', gap:6, marginBottom:6, background:'rgba(0,0,0,0.02)', padding:8, borderRadius:8 }}>
                     <div style={{flex: '1 1 100%', display: 'flex'}}>
-                      <UrunInput 
-                          value={r.urun} 
-                          onChange={v => setMultiRows(p => p.map((x,j) => j===i ? {...x, urun: v} : x))} 
-                          urunler={urunlerList}
-                          onSelectPrice={(f, pb) => setMultiRows(p => p.map((x,j) => j===i ? {...x, fiyat: f, para_birimi: pb} : x))}
-                      />
+                      <input list="urunler-datalist" value={r.urun} onChange={e => handleUrunChange(e.target.value, i)} placeholder="Ürün (Yazın veya Seçin)" style={S.inp} />
                     </div>
                     <div style={{display:'flex', flex: '1 1 100%', gap:6}}>
                       <input type="number" step="0.01" value={r.fiyat} onChange={e => setMultiRows(p => p.map((x,j) => j===i ? {...x, fiyat: e.target.value} : x))} placeholder="Fiyat" style={{ ...S.inp, flex: 1, textAlign:'right', fontFamily:'monospace' }} />
@@ -2343,7 +2366,11 @@ function OffersView({ data, customers, prices, onRefresh }) {
             ) : (
               <div style={{ marginBottom:12 }}>
                 <label style={S.lbl}>Ürün / Kalite *</label>
-                <UrunInput value={form.urun} onChange={v => setForm(f => ({ ...f, urun: v }))} urunler={urunlerList} onSelectPrice={(f, pb) => setForm(prev => ({...prev, fiyat: f, para_birimi: pb}))} />
+                <input list="urunler-datalist" value={form.urun} onChange={e => {
+                   const val = e.target.value;
+                   const match = urunlerList.find(u => u.kodu === val);
+                   setForm(f => match ? { ...f, urun: val, fiyat: match.fiyat, para_birimi: match.para_birimi || 'USD' } : { ...f, urun: val });
+                }} style={S.inp} placeholder="Ürün (Yazın veya Seçin)" />
                 <label style={{ ...S.lbl, marginTop:10 }}>Fiyat & Para Birimi</label>
                 <div style={{ display: 'flex', gap: 8 }}>
                     <input type="number" step="0.01" value={form.fiyat} onChange={e => setForm(f => ({ ...f, fiyat: e.target.value }))} style={{ ...S.inp, fontFamily:'monospace', flex: 1 }} placeholder="Fiyat" />
@@ -2380,7 +2407,7 @@ function OffersView({ data, customers, prices, onRefresh }) {
             
             <div style={{ display:'flex', gap:10 }}>
               <button onClick={() => setModal(null)} style={S.bCan}>İptal</button>
-              <button onClick={save} disabled={saving || !form.firma_adi.trim()} style={{ ...S.bSav, background:C.navActive, opacity: (saving || !form.firma_adi.trim()) ? 0.5 : 1 }}>
+              <button onClick={save} disabled={saving || !form.firma_adi.trim() || (!modal==='new' && !form.urun.trim())} style={{ ...S.bSav, background:C.navActive, opacity: (saving || !form.firma_adi.trim()) ? 0.5 : 1 }}>
                 {saving ? 'Kaydediliyor…' : '💾 Kaydet'}
               </button>
             </div>
