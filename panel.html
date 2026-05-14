@@ -21,7 +21,7 @@
 
 <style>
   * { box-sizing: border-box; margin: 0; padding: 0; }
-  html, body, #root { height: 100%; }
+  html, body, #root { height: 100%; overflow: hidden; }
   body { font-family: 'Inter', sans-serif; background: #F3F5F7; }
   ::-webkit-scrollbar { width: 6px; height: 6px; }
   ::-webkit-scrollbar-track { background: transparent; }
@@ -33,15 +33,33 @@
   .hov-row:hover { background: #F7FAFB !important; }
   input, select, textarea { font-family: 'Inter', sans-serif; }
   
+  /* Masasüstü ve Mobil Ayrımı */
   @media(max-width:1023px) {
     .ypDesk { display: none !important; }
-    .ypSidebarWrap { position: fixed !important; top: 0; left: 0; bottom: 0; transform: translateX(-100%); transition: transform .28s cubic-bezier(.32,.72,0,1); z-index: 30; }
-    .ypSidebarWrap.open { transform: translateX(0) !important; }
+    .ypSidebarWrap { position: fixed !important; top: 0; left: 0; bottom: 0; transform: translateX(-100%); transition: transform .3s cubic-bezier(.32,.72,0,1); z-index: 50; }
+    .ypSidebarWrap.open { transform: translateX(0) !important; box-shadow: 10px 0 30px rgba(0,0,0,0.3) !important; }
   }
   @media(min-width:1024px) {
     .ypMobile { display: none !important; }
     .ypSidebarWrap { position: relative !important; transform: none !important; flex-shrink: 0; }
   }
+
+  /* Küçük Ekranlar (Telefonlar) için Mobil Düzeltmeler */
+  @media(max-width: 767px) {
+    .p-mob { padding: 16px !important; }
+    .grid-mob { grid-template-columns: 1fr !important; }
+    .dash-cards { grid-template-columns: repeat(2, 1fr) !important; }
+    .dash-card-item { padding: 16px !important; }
+    .dash-card-item h3 { font-size: 24px !important; }
+    .search-wrap { flex: 1 1 100% !important; min-width: 100% !important; }
+    .action-row { flex-direction: column; align-items: stretch !important; gap: 8px !important; }
+    .action-row > div, .action-row > button { width: 100%; justify-content: center; }
+    .header-btns { width: 100%; display: grid !important; grid-template-columns: 1fr 1fr; gap: 8px; }
+    .mBx-mob { width: 95% !important; max-height: 95vh !important; padding: 20px !important; }
+  }
+
+  /* Tablo Taşkınlık Düzeltici */
+  .table-responsive { width: 100%; overflow-x: auto; -webkit-overflow-scrolling: touch; }
 
   /* PDF Çıktısı için Özel Yazdırma Stilleri */
   @media print {
@@ -69,13 +87,13 @@ const C = { sidebar:'#0F172A',sHead:'#0A1520',sBorder:'rgba(255,255,255,.07)',na
 const S = {
   inp: { width:'100%',padding:'9px 12px',border:`1px solid ${C.border2}`,borderRadius:9,fontSize:13,outline:'none',color:C.txt,background:'#fff',fontFamily:'Inter,sans-serif' },
   lbl: { fontSize:10,fontWeight:700,color:C.txt2,display:'block',marginBottom:5,textTransform:'uppercase',letterSpacing:'.08em' },
-  mOv: { position:'fixed',inset:0,background:'rgba(0,0,0,.55)',zIndex:50,display:'flex',alignItems:'center',justifyContent:'center',padding:16 },
+  mOv: { position:'fixed',inset:0,background:'rgba(0,0,0,.55)',zIndex:100,display:'flex',alignItems:'center',justifyContent:'center',padding:16 },
   mBx: { background:'#fff',borderRadius:20,padding:24,width:'100%',maxWidth:440,boxShadow:'0 20px 60px rgba(0,0,0,.3)',maxHeight:'90vh',overflowY:'auto' },
   bCan:{ flex:1,padding:10,border:`1px solid ${C.border2}`,borderRadius:10,cursor:'pointer',background:'none',fontSize:13,fontWeight:600,color:C.txt2 },
   bSav:{ flex:2,padding:10,border:'none',borderRadius:10,cursor:'pointer',color:'#fff',fontSize:13,fontWeight:700 },
   card:{ background:C.surface,borderRadius:16,border:`1px solid ${C.border}`,overflow:'hidden',marginBottom:16 },
-  th:  { padding:'8px 14px',textAlign:'left',borderBottom:`1px solid ${C.border}`,background:'#F8FAFB',fontSize:10,fontWeight:700,color:C.txt2,textTransform:'uppercase' },
-  td:  { padding:'11px 14px',borderBottom:`1px solid ${C.border}` }
+  th:  { padding:'8px 14px',textAlign:'left',borderBottom:`1px solid ${C.border}`,background:'#F8FAFB',fontSize:10,fontWeight:700,color:C.txt2,textTransform:'uppercase', whiteSpace:'nowrap' },
+  td:  { padding:'11px 14px',borderBottom:`1px solid ${C.border}`, whiteSpace:'nowrap' }
 };
 
 // ── İKONLAR ──────────────────────────────────────────────────────────
@@ -288,14 +306,14 @@ function DashboardView({ customers, samples, prices, notes, offers, onNav }) {
       </div>
 
       {/* Metric Cards */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: 16 }}>
+      <div className="dash-cards" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: 16 }}>
         {[
           { t: 'Toplam Müşteri', v: customers.length || 0, I: IcoUsers, g: C.navActive, id: 'customers', desc: 'Sistemde kayıtlı' },
           { t: 'Numune Kaydı', v: samples.length || 0, I: IcoPkg, g: 'linear-gradient(135deg,#C2410C,#EA580C)', id: 'samples', desc: 'Tüm numuneler' },
           { t: 'Fiyat Kalemi', v: prices.filter(p => p.denye || p.bolum_adi).length || 0, I: IcoDollar, g: 'linear-gradient(135deg,#15803D,#16A34A)', id: 'prices', desc: 'Güncel ürünler' },
           { t: 'Aktif Teklif', v: (offers || []).filter(t => t.durum === 'Teklif Verildi').length || 0, I: IcoSend, g: 'linear-gradient(135deg,#7C3AED,#8B5CF6)', id: 'offers', desc: 'Bekleyen teklifler' }
         ].map((k, i) => (
-          <div key={i} onClick={() => onNav(k.id)} className="hov-row" style={{ background: C.surface, borderRadius: 20, padding: '24px', border: `1px solid ${C.border}`, position: 'relative', overflow: 'hidden', cursor: 'pointer', display: 'flex', flexDirection: 'column', gap: 16, transition: 'all 0.2s', boxShadow: '0 4px 6px rgba(0,0,0,0.02)' }}
+          <div key={i} onClick={() => onNav(k.id)} className="hov-row dash-card-item" style={{ background: C.surface, borderRadius: 20, padding: '24px', border: `1px solid ${C.border}`, position: 'relative', overflow: 'hidden', cursor: 'pointer', display: 'flex', flexDirection: 'column', gap: 16, transition: 'all 0.2s', boxShadow: '0 4px 6px rgba(0,0,0,0.02)' }}
                onMouseEnter={e => { e.currentTarget.style.transform = 'translateY(-4px)'; e.currentTarget.style.boxShadow = '0 12px 24px rgba(0,0,0,0.06)'; e.currentTarget.style.borderColor = C.teal; }}
                onMouseLeave={e => { e.currentTarget.style.transform = 'none'; e.currentTarget.style.boxShadow = '0 4px 6px rgba(0,0,0,0.02)'; e.currentTarget.style.borderColor = C.border; }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
@@ -316,7 +334,7 @@ function DashboardView({ customers, samples, prices, notes, offers, onNav }) {
       </div>
 
       {/* Bottom Grids */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: 20 }}>
+      <div className="grid-mob" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: 20 }}>
         {/* Son Numuneler */}
         <div style={{ ...S.card, display: 'flex', flexDirection: 'column', marginBottom: 0 }}>
           <div style={{ padding: '20px 24px', borderBottom: `1px solid ${C.border}`, display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: '#FAFAFA' }}>
@@ -582,7 +600,7 @@ function CustomersView({ data, onRefresh }) {
                   </div>
                 </div>
                 
-                <div style={{ display: 'flex', alignItems: 'center', gap: 6, flexShrink: 0 }}>
+                <div className="action-row" style={{ display: 'flex', alignItems: 'center', gap: 6, flexShrink: 0 }}>
                   <button type="button" onClick={(e) => toggleVisitStatus(e, m)} disabled={isBusy} 
                     style={{ 
                       background: done ? C.greenS : (lv==='red'?C.redS:C.amberS), 
@@ -595,8 +613,10 @@ function CustomersView({ data, onRefresh }) {
                     {done ? '✅ Ziyaret Edildi' : (lv === 'red' ? '🔴 Gecikti' : '⏳ Bekliyor')}
                   </button>
                   
-                  <button type="button" onClick={(e) => openEdit(e, m)} disabled={isBusy} style={{ background: 'none', border: 'none', cursor: 'pointer', color: C.border2, padding: 5, borderRadius: 7 }} onMouseEnter={e => e.currentTarget.style.color = C.teal} onMouseLeave={e => e.currentTarget.style.color = C.border2}><IcoEdit size={14} /></button>
-                  <button type="button" onClick={(e) => delItem(e, m)} disabled={isBusy} style={{ background: 'none', border: 'none', cursor: 'pointer', color: C.border2, padding: 5, borderRadius: 7 }} onMouseEnter={e => e.currentTarget.style.color = C.red} onMouseLeave={e => e.currentTarget.style.color = C.border2}><IcoTrash size={14} /></button>
+                  <div style={{display:'flex', gap:4}}>
+                    <button type="button" onClick={(e) => openEdit(e, m)} disabled={isBusy} style={{ background: 'none', border: 'none', cursor: 'pointer', color: C.border2, padding: 5, borderRadius: 7 }} onMouseEnter={e => e.currentTarget.style.color = C.teal} onMouseLeave={e => e.currentTarget.style.color = C.border2}><IcoEdit size={16} /></button>
+                    <button type="button" onClick={(e) => delItem(e, m)} disabled={isBusy} style={{ background: 'none', border: 'none', cursor: 'pointer', color: C.border2, padding: 5, borderRadius: 7 }} onMouseEnter={e => e.currentTarget.style.color = C.red} onMouseLeave={e => e.currentTarget.style.color = C.border2}><IcoTrash size={16} /></button>
+                  </div>
                 </div>
               </div>
             );
@@ -649,7 +669,7 @@ function CustomersView({ data, onRefresh }) {
     <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
       {showAdd && (
         <div onClick={e => e.target === e.currentTarget && setShowAdd(false)} style={S.mOv}>
-          <div style={{ ...S.mBx, maxWidth: 420 }}>
+          <div className="mBx-mob" style={{ ...S.mBx, maxWidth: 420 }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 18 }}>
               <h3 style={{ fontSize: 17, fontWeight: 800, color: C.txt }}>{editItem ? '✏️ Düzenle' : '➕ Yeni Müşteri'}</h3>
               <button type="button" onClick={() => setShowAdd(false)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: C.txt2, display: 'flex' }}><IcoX size={20} /></button>
@@ -694,10 +714,10 @@ function CustomersView({ data, onRefresh }) {
           <h2 style={{ fontSize: 22, fontWeight: 900, color: C.txt }}>Müşteri Portföyü</h2>
           <p style={{ fontSize: 12, color: C.txt2, marginTop: 2 }}>{filtered.length} / {data.length} firma</p>
         </div>
-        <div style={{ display: 'flex', gap: 8 }}>
+        <div className="header-btns" style={{ display: 'flex', gap: 8 }}>
           <button type="button" onClick={exportXL} style={{ ...S.bCan, padding: '8px 14px', width: 'auto', display: 'flex', alignItems: 'center', gap: 5 }}>📊 Excel</button>
           <button type="button" onClick={openAdd} style={{ ...S.bSav, background: C.navActive, padding: '8px 16px', width: 'auto', display: 'flex', alignItems: 'center', gap: 5 }}>
-            <IcoPlus size={16} /> Yeni Müşteri
+            <IcoPlus size={16} /> Yeni
           </button>
         </div>
       </div>
@@ -714,11 +734,11 @@ function CustomersView({ data, onRefresh }) {
       </div>
 
       <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
-        <div style={{ position: 'relative', flex: 1, minWidth: 200 }}>
+        <div className="search-wrap" style={{ position: 'relative', flex: 1, minWidth: 200 }}>
           <span style={{ position: 'absolute', left: 11, top: '50%', transform: 'translateY(-50%)', color: C.txt2, display: 'flex' }}><IcoSearch size={14} /></span>
           <input placeholder="Firma adı, bölge veya not ara…" value={q} onChange={e => setQ(e.target.value)} style={{ ...S.inp, paddingLeft: 34 }} />
         </div>
-        <select value={sort} onChange={e => setSort(e.target.value)} style={{ ...S.inp, width: 'auto', cursor: 'pointer' }}>
+        <select value={sort} onChange={e => setSort(e.target.value)} className="search-wrap" style={{ ...S.inp, width: 'auto', cursor: 'pointer' }}>
           <option value="az">🔤 A-Z</option>
           <option value="late">📅 Son Ziyarete Göre</option>
           <option value="bolge">📍 Bölgeye Göre</option>
@@ -741,7 +761,7 @@ function CustomersView({ data, onRefresh }) {
         })}
       </div>
 
-      {/* Performanslı Liste (useMemo ile klavye kasmaları önlenmiştir) */}
+      {/* Performanslı Liste */}
       <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
         {renderedList}
       </div>
@@ -843,19 +863,20 @@ function SampleItem({ s, isVar, isSel, toggleSel, tbl, onRefresh, busy, setBusy,
         <input type="text" value={localNote} onChange={e => setLocalNote(e.target.value)} onBlur={handleNoteBlur} onKeyDown={handleNoteKeyDown} placeholder="Not ekle..."
           style={{ flex:1, minWidth:120, padding:'6px 10px', fontSize:12, borderRadius:8, border:`1px solid ${C.border2}`, outline:'none', color:C.txt, fontFamily:'Inter,sans-serif' }} />
 
-        <select value={localStatus} disabled={isBusy} onChange={handleStatusChange}
-          style={{ padding:'6px 10px', borderRadius:8, border:`1px solid ${col}`, background:bg, color:col, fontSize:12, fontWeight:700, cursor:'pointer', outline:'none' }}>
-          {STATUSES.map(st => <option key={st} value={st}>{SHORT[st] || st}</option>)}
-        </select>
-
-        <div style={{ display:'flex', gap:4, flexShrink:0 }}>
-          <button onClick={() => hasPhoto ? openPV(s.id, 0) : openPhotoInput(s.id)} title="Fotoğraflar"
-            style={{ background:hasPhoto?bg:'none', border:hasPhoto?`1px solid ${col}`:'none', cursor:'pointer', color:hasPhoto?col:C.txt2, padding:6, borderRadius:8, display:'flex', alignItems:'center', gap:4 }}>
-            <IcoCamera size={15}/> {hasPhoto && <span style={{fontSize:10,fontWeight:800}}>{photos.length}</span>}
-          </button>
-          <button onClick={() => openEditModal(s)} style={{ background:'none', border:'none', cursor:'pointer', color:C.txt2, padding:6, borderRadius:8 }} title="Düzenle"><IcoEdit size={15}/></button>
-          <button onClick={toggleArchive} style={{ background:s.arsiv?C.grayS:'none', border:'none', cursor:'pointer', color:C.txt2, padding:6, borderRadius:8 }} title={s.arsiv?"Arşivden Çıkar":"Arşivle"}><IcoArchive size={15}/></button>
-          <button onClick={delItem} style={{ background:'none', border:'none', cursor:'pointer', color:C.red, opacity:0.7, padding:6, borderRadius:8 }} title="Sil"><IcoTrash size={15}/></button>
+        <div className="action-row" style={{ display:'flex', gap:8, flexShrink:0, flexWrap:'wrap' }}>
+          <select value={localStatus} disabled={isBusy} onChange={handleStatusChange}
+            style={{ padding:'6px 10px', borderRadius:8, border:`1px solid ${col}`, background:bg, color:col, fontSize:12, fontWeight:700, cursor:'pointer', outline:'none' }}>
+            {STATUSES.map(st => <option key={st} value={st}>{SHORT[st] || st}</option>)}
+          </select>
+          <div style={{ display:'flex', gap:4 }}>
+            <button onClick={() => hasPhoto ? openPV(s.id, 0) : openPhotoInput(s.id)} title="Fotoğraflar"
+              style={{ background:hasPhoto?bg:'none', border:hasPhoto?`1px solid ${col}`:'none', cursor:'pointer', color:hasPhoto?col:C.txt2, padding:6, borderRadius:8, display:'flex', alignItems:'center', gap:4 }}>
+              <IcoCamera size={15}/> {hasPhoto && <span style={{fontSize:10,fontWeight:800}}>{photos.length}</span>}
+            </button>
+            <button onClick={() => openEditModal(s)} style={{ background:'none', border:'none', cursor:'pointer', color:C.txt2, padding:6, borderRadius:8 }} title="Düzenle"><IcoEdit size={15}/></button>
+            <button onClick={toggleArchive} style={{ background:s.arsiv?C.grayS:'none', border:'none', cursor:'pointer', color:C.txt2, padding:6, borderRadius:8 }} title={s.arsiv?"Arşivden Çıkar":"Arşivle"}><IcoArchive size={15}/></button>
+            <button onClick={delItem} style={{ background:'none', border:'none', cursor:'pointer', color:C.red, opacity:0.7, padding:6, borderRadius:8 }} title="Sil"><IcoTrash size={15}/></button>
+          </div>
         </div>
       </div>
 
@@ -1201,7 +1222,7 @@ function SamplesView({ data, tbl, onRefresh }) {
       {/* Firma Değiştirme Modalı */}
       {firmaChangeModal && (
         <div onClick={e=>e.target===e.currentTarget&&setFirmaChangeModal(null)} style={S.mOv}>
-          <div style={{...S.mBx, maxWidth:400}}>
+          <div className="mBx-mob" style={{...S.mBx, maxWidth:400}}>
             <div style={{ display:'flex', justifyContent:'space-between', marginBottom:16 }}><h3 style={{ fontSize:17, fontWeight:800 }}>🏢 Firma Değiştir</h3><button onClick={()=>setFirmaChangeModal(null)} style={{ background:'none', border:'none', cursor:'pointer' }}><IcoX/></button></div>
             <p style={{ fontSize:12, color:C.txt2, marginBottom:16 }}>"{mfOld}" firmasındaki tüm numuneler yeni firmaya taşınacak.</p>
             <div style={{ marginBottom:16 }}><label style={S.lbl}>YENİ FİRMA</label><FirmaInput value={mfNew} onChange={setMfNew} firmalar={firmalarList} /></div>
@@ -1213,7 +1234,7 @@ function SamplesView({ data, tbl, onRefresh }) {
       {/* Yeni / Düzenle Modal */}
       {showAdd && (
         <div onClick={e=>e.target===e.currentTarget&&setShowAdd(false)} style={S.mOv}>
-          <div style={{...S.mBx, maxWidth:500}}>
+          <div className="mBx-mob" style={{...S.mBx, maxWidth:500}}>
             <div style={{ display:'flex', justifyContent:'space-between', marginBottom:18 }}><h3 style={{ fontSize:17, fontWeight:800 }}>{editItem ? (isV(editItem.numune)?'✏️ Varyant Düzenle':'✏️ Numune Düzenle') : '📦 Yeni Numune'}</h3><button onClick={()=>setShowAdd(false)} style={{ background:'none', border:'none', cursor:'pointer' }}><IcoX/></button></div>
             {!editItem && <div style={{ marginBottom:16 }}><label style={S.lbl}>FİRMA ADI *</label><FirmaInput value={form.firma} onChange={v=>setForm(f=>({...f,firma:v}))} firmalar={firmalarList} /></div>}
             
@@ -1238,12 +1259,15 @@ function SamplesView({ data, tbl, onRefresh }) {
       {/* Başlık, Arama, Filtreler */}
       <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', flexWrap:'wrap', gap:10 }}>
         <div><h2 style={{ fontSize:22, fontWeight:900, color:C.txt }}>Numune Takibi</h2><p style={{ fontSize:12, color:C.txt2, marginTop:2 }}>{filtered.length} / {counts.all} kayıt</p></div>
-        <div style={{ display:'flex', gap:8 }}><button onClick={exportXL} style={{...S.bCan, width:'auto', padding:'8px 14px'}}>📊 Excel</button><button onClick={()=>openAdd()} style={{...S.bSav, width:'auto', background:'linear-gradient(135deg,#C2410C,#EA580C)', display:'flex', alignItems:'center', gap:5, padding:'8px 16px'}}><IcoPlus size={16}/> Yeni</button></div>
+        <div className="header-btns" style={{ display:'flex', gap:8 }}>
+          <button onClick={exportXL} style={{...S.bCan, width:'auto', padding:'8px 14px'}}>📊 Excel</button>
+          <button onClick={()=>openAdd()} style={{...S.bSav, width:'auto', background:'linear-gradient(135deg,#C2410C,#EA580C)', display:'flex', alignItems:'center', justifyContent:'center', gap:5, padding:'8px 16px'}}><IcoPlus size={16}/> Yeni</button>
+        </div>
       </div>
 
       <div style={{ display:'flex', gap:10, flexWrap:'wrap' }}>
-        <div style={{ position:'relative', flex:1, minWidth:200 }}><span style={{ position:'absolute', left:11, top:'50%', transform:'translateY(-50%)', color:C.txt2 }}><IcoSearch size={14}/></span><input placeholder="Firma, kod veya not ara…" value={q} onChange={e=>setQ(e.target.value)} style={{...S.inp, paddingLeft:34}} /></div>
-        <select value={sort} onChange={e=>setSort(e.target.value)} style={{...S.inp, width:'auto'}}><option value="date">⏱ Tarihe Göre</option><option value="alpha">🔤 A-Z Sıralı</option><option value="status">🔵 Duruma Göre</option></select>
+        <div className="search-wrap" style={{ position:'relative', flex:1, minWidth:200 }}><span style={{ position:'absolute', left:11, top:'50%', transform:'translateY(-50%)', color:C.txt2 }}><IcoSearch size={14}/></span><input placeholder="Firma, kod veya not ara…" value={q} onChange={e=>setQ(e.target.value)} style={{...S.inp, paddingLeft:34}} /></div>
+        <select value={sort} onChange={e=>setSort(e.target.value)} className="search-wrap" style={{...S.inp, width:'auto'}}><option value="date">⏱ Tarihe Göre</option><option value="alpha">🔤 A-Z Sıralı</option><option value="status">🔵 Duruma Göre</option></select>
       </div>
 
       <div style={{ display:'flex', gap:7, flexWrap:'wrap' }}>
@@ -1479,7 +1503,7 @@ function PricesView({ data, onRefresh }) {
 
     return (
       <div style={S.mOv} onClick={onClose}>
-        <div style={{ ...S.mBx, maxWidth: 800, height: 500, display: 'flex', flexDirection: 'column' }} onClick={e => e.stopPropagation()}>
+        <div className="mBx-mob" style={{ ...S.mBx, maxWidth: 800, height: 500, display: 'flex', flexDirection: 'column' }} onClick={e => e.stopPropagation()}>
           <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 16 }}>
             <h3 style={{ fontSize: 17, fontWeight: 800 }}>📊 Fiyat Analizi (En Yüksek 15 Ürün)</h3>
             <button onClick={onClose} style={{ background: 'none', border: 'none', cursor: 'pointer' }}><IcoX size={20}/></button>
@@ -1531,8 +1555,8 @@ function PricesView({ data, onRefresh }) {
           </div>
           
           {isO && (
-            <div style={{ overflowX:'auto' }}>
-              <table style={{ width:'100%', borderCollapse:'collapse', fontSize:13 }}>
+            <div className="table-responsive">
+              <table style={{ width:'100%', borderCollapse:'collapse', fontSize:13, minWidth: 600 }}>
                 <thead>
                   <tr>
                     <th style={{ ...S.th, width:36, textAlign:'center' }}></th>
@@ -1585,12 +1609,13 @@ function PricesView({ data, onRefresh }) {
 
   return(
     <div style={{ display:'flex', flexDirection:'column', gap:14 }}>
+      
       {showChartModal && <PriceChartModal data={allItems} onClose={() => setShowChartModal(false)} />}
       
       {/* Toplu Güncelle Modal */}
       {bulkModal && (
         <div onClick={e => e.target === e.currentTarget && setBulkModal(false)} style={S.mOv}>
-          <div style={{ ...S.mBx, maxWidth: 400 }}>
+          <div className="mBx-mob" style={{ ...S.mBx, maxWidth: 400 }}>
             <div style={{ display:'flex', justifyContent:'space-between', marginBottom:16 }}>
               <h3 style={{ fontSize:17, fontWeight:800, color:C.txt }}>📈 Toplu Fiyat Güncelle</h3>
               <button onClick={() => setBulkModal(false)} style={{ background:'none', border:'none', cursor:'pointer', color:C.txt2 }}><IcoX size={20}/></button>
@@ -1638,7 +1663,7 @@ function PricesView({ data, onRefresh }) {
       {/* Ekle / Düzenle Modal */}
       {modal && (
         <div onClick={e => e.target === e.currentTarget && setModal(null)} style={S.mOv}>
-          <div style={S.mBx}>
+          <div className="mBx-mob" style={S.mBx}>
             <div style={{ display:'flex', justifyContent:'space-between', marginBottom:16 }}>
               <h3 style={{ fontSize:17, fontWeight:800 }}>{modal === 'new' ? '➕ Yeni Ürün' : '✏️ Düzenle'}</h3>
               <button onClick={() => setModal(null)} style={{ background:'none', border:'none', cursor:'pointer' }}><IcoX size={20}/></button>
@@ -1674,12 +1699,12 @@ function PricesView({ data, onRefresh }) {
           <h2 style={{ fontSize:22, fontWeight:900, color:C.txt }}>İplik Fiyatları</h2>
           <p style={{ fontSize:12, color:C.txt2, marginTop:2 }}>{Object.keys(G).length} bölüm · {allItems.length} ürün</p>
         </div>
-        <div style={{ display:'flex', gap:8 }}>
+        <div className="header-btns" style={{ display:'flex', gap:8 }}>
           <button onClick={() => setShowChartModal(true)} style={{ ...S.bCan, background:C.navActive, color:'#fff', border:'none', display:'flex', alignItems:'center', gap:5 }}>
             📊 Grafik
           </button>
           <button onClick={() => setBulkModal(true)} style={{ ...S.bCan, background:C.navActive, color:'#fff', border:'none', display:'flex', alignItems:'center', gap:5 }}>
-            📈 Toplu Güncelle
+            📈 Toplu İşlem
           </button>
           <button onClick={() => { setForm({ urun_kodu:'', denye:'', pesin_fiyat:'', bolum_adi:'' }); setModal('new'); }} style={{ ...S.bSav, background:C.green, width:'auto', display:'flex', alignItems:'center', gap:5 }}>
             <IcoPlus size={16}/> Yeni Ürün
@@ -1689,7 +1714,7 @@ function PricesView({ data, onRefresh }) {
 
       {/* Arama ve Filtreler */}
       <div style={{ display:'flex', gap:10, flexWrap:'wrap' }}>
-        <div style={{ position:'relative', flex:1, minWidth:200 }}>
+        <div className="search-wrap" style={{ position:'relative', flex:1, minWidth:200 }}>
           <span style={{ position:'absolute', left:11, top:'50%', transform:'translateY(-50%)', color:C.txt2 }}><IcoSearch size={14}/></span>
           <input placeholder="Ürün kodu veya denye ara…" value={q} onChange={e => setQ(e.target.value)} style={{ ...S.inp, paddingLeft:34 }} />
         </div>
@@ -1811,8 +1836,8 @@ function CostView({data,onRefresh}) {
         </div>
       )}
       {tb==='h'&&(
-        <div style={S.card}>
-          <table style={{width:'100%',borderCollapse:'collapse',fontSize:12,whiteSpace:'nowrap'}}>
+        <div className="table-responsive" style={S.card}>
+          <table style={{width:'100%',borderCollapse:'collapse',fontSize:12,whiteSpace:'nowrap',minWidth:600}}>
             <thead><tr><th style={S.th}>İplik</th><th style={S.th}>Denye</th><th style={S.th}>Günlük</th><th style={S.th}>Net ($)</th><th style={S.th}>Satış ($)</th><th style={S.th}>Tarih</th></tr></thead>
             <tbody>
               {data.slice(0, visCount).map(r=><tr key={r.id} className="hov-row"><td style={{...S.td,fontWeight:700}}>{r.iplik||'—'}</td><td style={S.td}>{r.denye}</td><td style={S.td}>{r.gunluk?.toFixed(2)}</td><td style={{...S.td,color:C.teal,fontWeight:900}}>${r.net?.toFixed(4)}</td><td style={{...S.td,color:C.green,fontWeight:900}}>${r.satis?.toFixed(4)}</td><td style={{...S.td,color:C.txt2}}>{fmtDate(r.tarih)}</td></tr>)}
@@ -1827,7 +1852,7 @@ function CostView({data,onRefresh}) {
       )}
       {tb==='m'&&(
         <div>
-          {hM&&<div onClick={e=>e.target===e.currentTarget&&setHm(null)} style={S.mOv}><div style={{...S.mBx,maxWidth:350}}><div style={{display:'flex',justifyContent:'space-between',marginBottom:16}}><h3 style={{fontSize:17,fontWeight:800}}>Hammadde</h3><button onClick={()=>setHm(null)} style={{background:'none',border:'none',cursor:'pointer'}}><IcoX/></button></div><div style={{marginBottom:12}}><label style={S.lbl}>Ad</label><input value={hF.ad} onChange={e=>setHf(x=>({...x,ad:e.target.value}))} style={S.inp}/></div><div style={{marginBottom:12}}><label style={S.lbl}>Fiyat ($)</label><input type="number" step="0.01" value={hF.fiyat} onChange={e=>setHf(x=>({...x,fiyat:e.target.value}))} style={S.inp}/></div><button onClick={saveHam} style={{...S.bSav,background:C.green,width:'100%'}}>Kaydet</button></div></div>}
+          {hM&&<div onClick={e=>e.target===e.currentTarget&&setHm(null)} style={S.mOv}><div className="mBx-mob" style={{...S.mBx,maxWidth:350}}><div style={{display:'flex',justifyContent:'space-between',marginBottom:16}}><h3 style={{fontSize:17,fontWeight:800}}>Hammadde</h3><button onClick={()=>setHm(null)} style={{background:'none',border:'none',cursor:'pointer'}}><IcoX/></button></div><div style={{marginBottom:12}}><label style={S.lbl}>Ad</label><input value={hF.ad} onChange={e=>setHf(x=>({...x,ad:e.target.value}))} style={S.inp}/></div><div style={{marginBottom:12}}><label style={S.lbl}>Fiyat ($)</label><input type="number" step="0.01" value={hF.fiyat} onChange={e=>setHf(x=>({...x,fiyat:e.target.value}))} style={S.inp}/></div><button onClick={saveHam} style={{...S.bSav,background:C.green,width:'100%'}}>Kaydet</button></div></div>}
           <div style={{display:'flex',justifyContent:'flex-end',marginBottom:10}}><button onClick={()=>{setHf({ad:'',fiyat:''});setHm('new')}} style={{...S.bSav,background:C.navActive,width:'auto'}}>+ Ekle</button></div>
           <div style={S.card}><table style={{width:'100%',borderCollapse:'collapse',fontSize:13}}><thead><tr><th style={S.th}>Ad</th><th style={S.th}>Fiyat ($)</th><th style={S.th}>İşlem</th></tr></thead><tbody>{hA.map(h=><tr key={h.id} className="hov-row"><td style={{...S.td,fontWeight:700}}>{h.ad}</td><td style={{...S.td,fontFamily:'monospace',color:C.green}}>${h.fiyat}</td><td style={S.td}><button onClick={()=>{setHf(h);setHm(h)}} style={{background:'none',border:'none',cursor:'pointer',marginRight:8}}><IcoEdit size={14}/></button><button onClick={() => delHam(h)} style={{background:'none',border:'none',color:C.red,cursor:'pointer'}}><IcoTrash size={14}/></button></td></tr>)}</tbody></table></div>
         </div>
@@ -2097,53 +2122,63 @@ function OffersView({ data, customers, onRefresh }) {
             </div>
           </div>
 
-          {isOpen && teklifler.map((t, ti) => {
-            const [dBg, dCol] = DCLR[t.durum] || [C.tealS, C.teal];
-            const diff = daysDiff(t.gecerlilik_tarihi);
-            const isBusy = busy === t.id;
-            
-            return (
-              <div key={t.id || ti} className="hov-row" style={{ padding:'12px 20px', borderBottom:ti < teklifler.length - 1 ? `1px solid ${C.border}` : 'none', opacity:isBusy ? 0.5 : 1, display:'flex', alignItems:'center', gap:12 }}>
-                <input type="checkbox" checked={selIds.has(t.id)} onChange={() => toggleSel(t.id)} style={{ width:16, height:16, cursor:'pointer', accentColor:C.green, flexShrink:0 }} />
-                <div style={{ flex:1, minWidth:0 }}>
-                  <div style={{ display:'flex', alignItems:'center', gap:8, flexWrap:'wrap' }}>
-                    <span style={{ fontWeight:700, fontSize:13, color:C.txt }}>{t.urun || '—'}</span>
-                    {t.fiyat && <span style={{ fontFamily:'monospace', fontWeight:900, color:C.green, fontSize:14 }}>${t.fiyat}</span>}
-                  </div>
-                  <div style={{ display:'flex', gap:10, marginTop:4, flexWrap:'wrap', alignItems:'center' }}>
-                    {t.teklif_tarihi && <span style={{ fontSize:11, color:C.txt2, fontFamily:'monospace' }}>📅 {fmtDate(t.teklif_tarihi)}</span>}
-                    {diff !== null && t.durum === 'Teklif Verildi' && (
-                      <span style={{ fontSize:11, fontWeight:700, color:diff < 0 ? C.red : diff < 7 ? C.amber : C.green }}>
-                        {diff < 0 ? `⚠️ ${Math.abs(diff)} gün geçti` : `⏱ ${diff} gün kaldı`}
-                      </span>
-                    )}
-                    {t.notlar && <span style={{ fontSize:11, color:C.txt2, fontStyle:'italic' }}>💬 {t.notlar}</span>}
-                  </div>
-                </div>
-                
-                <select value={t.durum} disabled={isBusy} onChange={e => setDurum(t, e.target.value)}
-                  style={{ padding:'5px 9px', borderRadius:8, border:`1.5px solid ${dCol}`, background:dBg, color:dCol, fontSize:11, fontWeight:700, cursor:'pointer', outline:'none', flexShrink:0 }}>
-                  {DURUMLAR.map(d => <option key={d}>{d}</option>)}
-                </select>
-                
-                <div style={{ display:'flex', gap:4, flexShrink:0 }}>
-                  <button onClick={() => openEdit(t)} disabled={isBusy} style={{ background:'none', border:'none', cursor:'pointer', color:C.border2, padding:5, borderRadius:6 }} onMouseEnter={e => e.currentTarget.style.color = C.teal} onMouseLeave={e => e.currentTarget.style.color = C.border2}><IcoEdit size={14}/></button>
-                  <button onClick={() => delItem(t)} disabled={isBusy} style={{ background:'none', border:'none', cursor:'pointer', color:C.border2, padding:5, borderRadius:6 }} onMouseEnter={e => e.currentTarget.style.color = C.red} onMouseLeave={e => e.currentTarget.style.color = C.border2}><IcoTrash size={14}/></button>
-                </div>
-              </div>
-            );
-          })}
+          {isOpen && (
+            <div className="table-responsive">
+              <table style={{ width:'100%', borderCollapse:'collapse', fontSize:13, minWidth: 600 }}>
+                <tbody>
+                  {teklifler.map((t, ti) => {
+                    const [dBg, dCol] = DCLR[t.durum] || [C.tealS, C.teal];
+                    const diff = daysDiff(t.gecerlilik_tarihi);
+                    const isBusy = busy === t.id;
+                    
+                    return (
+                      <tr key={t.id || ti} className="hov-row" style={{ opacity:isBusy ? 0.5 : 1, borderBottom:ti < teklifler.length - 1 ? `1px solid ${C.border}` : 'none' }}>
+                        <td style={{ ...S.td, width: 36, textAlign:'center' }}>
+                          <input type="checkbox" checked={selIds.has(t.id)} onChange={() => toggleSel(t.id)} style={{ cursor:'pointer', accentColor:C.green }} />
+                        </td>
+                        <td style={{ ...S.td, fontWeight:700, color:C.txt }}>{t.urun || '—'}</td>
+                        <td style={{ ...S.td, fontFamily:'monospace', fontWeight:900, color:C.green, fontSize:14 }}>{t.fiyat ? `$${t.fiyat}` : ''}</td>
+                        <td style={{ ...S.td, fontSize:11, color:C.txt2, fontFamily:'monospace' }}>
+                          {t.teklif_tarihi ? `📅 ${fmtDate(t.teklif_tarihi)}` : ''}
+                        </td>
+                        <td style={{ ...S.td, fontSize:11 }}>
+                          {diff !== null && t.durum === 'Teklif Verildi' && (
+                            <span style={{ fontWeight:700, color:diff < 0 ? C.red : diff < 7 ? C.amber : C.green }}>
+                              {diff < 0 ? `⚠️ ${Math.abs(diff)} gün geçti` : `⏱ ${diff} gün kaldı`}
+                            </span>
+                          )}
+                        </td>
+                        <td style={{ ...S.td, fontSize:11, color:C.txt2, fontStyle:'italic' }}>{t.notlar ? `💬 ${t.notlar}` : ''}</td>
+                        <td style={{ ...S.td, textAlign:'right' }}>
+                          <select value={t.durum} disabled={isBusy} onChange={e => setDurum(t, e.target.value)}
+                            style={{ padding:'5px 9px', borderRadius:8, border:`1.5px solid ${dCol}`, background:dBg, color:dCol, fontSize:11, fontWeight:700, cursor:'pointer', outline:'none' }}>
+                            {DURUMLAR.map(d => <option key={d}>{d}</option>)}
+                          </select>
+                        </td>
+                        <td style={{ ...S.td, textAlign:'center' }}>
+                          <div style={{ display:'flex', justifyContent:'center', gap:4 }}>
+                            <button onClick={() => openEdit(t)} disabled={isBusy} style={{ background:'none', border:'none', cursor:'pointer', color:C.border2, padding:5, borderRadius:6 }} onMouseEnter={e => e.currentTarget.style.color = C.teal} onMouseLeave={e => e.currentTarget.style.color = C.border2}><IcoEdit size={14}/></button>
+                            <button onClick={() => delItem(t)} disabled={isBusy} style={{ background:'none', border:'none', cursor:'pointer', color:C.border2, padding:5, borderRadius:6 }} onMouseEnter={e => e.currentTarget.style.color = C.red} onMouseLeave={e => e.currentTarget.style.color = C.border2}><IcoTrash size={14}/></button>
+                          </div>
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
+          )}
         </div>
       );
     });
-  }, [groupedFirms, openFirms, q, selIds, busy]);
+  }, [groupedFirms, openFirms, q, selIds, busy, statusFilter]);
 
   return (
     <div style={{ display:'flex', flexDirection:'column', gap:14 }}>
       {/* İçe Aktar Modal */}
       {impModal && (
         <div onClick={e => e.target === e.currentTarget && setImpModal(false)} style={S.mOv}>
-          <div style={{ ...S.mBx, maxWidth:420 }}>
+          <div className="mBx-mob" style={{ ...S.mBx, maxWidth:420 }}>
             <div style={{ display:'flex', justifyContent:'space-between', marginBottom:16 }}>
               <h3 style={{ fontSize:17, fontWeight:800, color:C.txt }}>📥 Excel'den Aktar</h3>
               <button onClick={() => setImpModal(false)} style={{ background:'none', border:'none', cursor:'pointer' }}><IcoX size={20}/></button>
@@ -2201,7 +2236,7 @@ function OffersView({ data, customers, onRefresh }) {
       {/* Düzenle/Ekle Modal */}
       {modal && (
         <div onClick={e => e.target === e.currentTarget && setModal(null)} style={S.mOv}>
-          <div style={{ ...S.mBx, maxWidth:500 }}>
+          <div className="mBx-mob" style={{ ...S.mBx, maxWidth:500 }}>
             <div style={{ display:'flex', justifyContent:'space-between', marginBottom:16 }}>
               <h3 style={{ fontSize:17, fontWeight:800, color:C.txt }}>{modal === 'new' ? '➕ Yeni Teklif' : '✏️ Teklifi Düzenle'}</h3>
               <button onClick={() => setModal(null)} style={{ background:'none', border:'none', cursor:'pointer' }}><IcoX size={20}/></button>
@@ -2278,7 +2313,7 @@ function OffersView({ data, customers, onRefresh }) {
           <h2 style={{ fontSize:22, fontWeight:900, color:C.txt }}>Fiyat Teklifleri</h2>
           <p style={{ fontSize:12, color:C.txt2, marginTop:2 }}>{filtered.length} / {data.length} teklif · {groupedFirms.length} firma</p>
         </div>
-        <div style={{ display:'flex', gap:8 }}>
+        <div className="header-btns" style={{ display:'flex', gap:8 }}>
           <button onClick={() => exportFirmaXL('', filtered)} style={{ ...S.bCan, width:'auto', padding:'8px 14px', color:C.green, borderColor:C.green, display:'flex', alignItems:'center', gap:5 }}>📊 Excel</button>
           <button onClick={() => setImpModal(true)} style={{ ...S.bCan, width:'auto', padding:'8px 14px', display:'flex', alignItems:'center', gap:5 }}>📥 İçe Aktar</button>
           <button onClick={() => openAdd()} style={{ ...S.bSav, background:C.navActive, width:'auto', padding:'8px 16px', display:'flex', alignItems:'center', gap:5 }}><IcoPlus size={16}/> Yeni Teklif</button>
@@ -2308,7 +2343,7 @@ function OffersView({ data, customers, onRefresh }) {
 
       {/* Filtre ve Arama */}
       <div style={{ display:'flex', gap:10, flexWrap:'wrap' }}>
-        <div style={{ position:'relative', flex:1, minWidth:200 }}>
+        <div className="search-wrap" style={{ position:'relative', flex:1, minWidth:200 }}>
           <span style={{ position:'absolute', left:11, top:'50%', transform:'translateY(-50%)', color:C.txt2 }}><IcoSearch size={14}/></span>
           <input placeholder="Firma, ürün veya not ara…" value={q} onChange={e => setQ(e.target.value)} style={{ ...S.inp, paddingLeft:34 }} />
         </div>
@@ -2514,7 +2549,7 @@ function NotesView({ data, customers, onRefresh }) {
       {/* Modal */}
       {modal && (
         <div onClick={e => e.target === e.currentTarget && setModal(null)} style={S.mOv}>
-          <div style={{ ...S.mBx, maxWidth: 500, background: NOTE_COLORS[form.renk]?.bg || '#fff', border: `2px solid ${NOTE_COLORS[form.renk]?.border || '#E2E8F0'}` }}>
+          <div className="mBx-mob" style={{ ...S.mBx, maxWidth: 500, background: NOTE_COLORS[form.renk]?.bg || '#fff', border: `2px solid ${NOTE_COLORS[form.renk]?.border || '#E2E8F0'}` }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 16 }}>
               <h3 style={{ fontSize: 17, fontWeight: 800, color: NOTE_COLORS[form.renk]?.txt || C.txt }}>{modal === 'new' ? '📝 Yeni Not' : '✏️ Notu Düzenle'}</h3>
               <button onClick={() => setModal(null)} style={{ background: 'none', border: 'none', cursor: 'pointer' }}><IcoX size={20} /></button>
@@ -2586,7 +2621,7 @@ function NotesView({ data, customers, onRefresh }) {
 
       {/* Arama ve Filtreler */}
       <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
-        <div style={{ position: 'relative', flex: 1, minWidth: 200 }}>
+        <div className="search-wrap" style={{ position: 'relative', flex: 1, minWidth: 200 }}>
           <span style={{ position: 'absolute', left: 11, top: '50%', transform: 'translateY(-50%)', color: C.txt2 }}><IcoSearch size={14} /></span>
           <input placeholder="Not veya firma ara…" value={q} onChange={e => setQ(e.target.value)} style={{ ...S.inp, paddingLeft: 34 }} />
         </div>
@@ -2687,8 +2722,31 @@ function App() {
   const goTo = (id) => { setTab(id); setSideOpen(false); };
   const current = nav.find(n => n.id === tab);
 
+  // Swipe-to-open mantığı
+  const touchStart = useRef(null);
+  
+  const onTouchStart = (e) => {
+    touchStart.current = { x: e.touches[0].clientX, y: e.touches[0].clientY };
+  };
+
+  const onTouchEnd = (e) => {
+    if (!touchStart.current) return;
+    const dx = e.changedTouches[0].clientX - touchStart.current.x;
+    const dy = e.changedTouches[0].clientY - touchStart.current.y;
+
+    // Sola kaydırılarak açma (Ekranın en solundan başlanmalı)
+    if (touchStart.current.x < 40 && dx > 60 && Math.abs(dy) < 60) {
+      setSideOpen(true);
+    }
+    // Menü açıkken sağa kaydırarak kapatma
+    else if (sideOpen && dx < -60 && Math.abs(dy) < 60) {
+      setSideOpen(false);
+    }
+    touchStart.current = null;
+  };
+
   return (
-    <div style={{ display:'flex', height:'100vh', background:C.page, color:C.txt, overflow:'hidden' }}>
+    <div onTouchStart={onTouchStart} onTouchEnd={onTouchEnd} style={{ display:'flex', height:'100vh', background:C.page, color:C.txt, overflow:'hidden' }}>
       {sideOpen && <div onClick={()=>setSideOpen(false)} style={{position:'fixed',inset:0,background:'rgba(10,21,32,.65)',zIndex:20,backdropFilter:'blur(3px)'}} />}
 
       <aside className={`ypSidebarWrap${sideOpen?' open':''}`} style={{ width:252, background:C.sidebar, borderRight:`1px solid ${C.sBorder}`, boxShadow:'4px 0 24px rgba(0,0,0,.4)', display:'flex', flexDirection:'column' }}>
@@ -2725,7 +2783,7 @@ function App() {
           </div>
         </header>
 
-        <div style={{ flex:1, overflowY:'auto', padding:'24px', position:'relative' }}>
+        <div className="p-mob" style={{ flex:1, overflowY:'auto', padding:'24px', position:'relative' }}>
           <div style={{ maxWidth:1100, margin:'0 auto' }}>
             {loading ? (
               <div style={{ display:'flex', flexDirection:'column', alignItems:'center', justifyContent:'center', height:280, gap:14 }}>
