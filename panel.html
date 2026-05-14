@@ -130,13 +130,13 @@ const setupExcelSheet = (sh, title, headers, colWidths) => {
   const tc = sh.getCell(1, 1);
   tc.value = title;
   tc.font = { bold: true, size: 14, color: { argb: 'FFFFFFFF' } };
-  tc.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF0F172A' } }; // Lacivert (Sidebar rengi)
+  tc.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF0F172A' } };
   tc.alignment = { horizontal: 'center', vertical: 'middle' };
   sh.getRow(1).height = 32;
 
   const hr = sh.addRow(headers);
   hr.eachCell((c) => {
-    c.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF0891B2' } }; // Teal rengi
+    c.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF0891B2' } };
     c.font = { color: { argb: 'FFFFFFFF' }, bold: true, size: 11 };
     c.alignment = { horizontal: 'center', vertical: 'middle' };
     c.border = { top: {style:'thin', color:{argb:'FF0F172A'}}, bottom: {style:'thin', color:{argb:'FF0F172A'}}, left: {style:'thin', color:{argb:'FF0F172A'}}, right: {style:'thin', color:{argb:'FF0F172A'}} };
@@ -151,7 +151,7 @@ const addExcelRow = (sh, data, isEven, aligns = []) => {
   r.eachCell((c, i) => {
     c.alignment = aligns[i-1] || { vertical: 'middle' };
     c.border = { top: {style:'thin', color:{argb:'FFE2E8F0'}}, bottom: {style:'thin', color:{argb:'FFE2E8F0'}}, left: {style:'thin', color:{argb:'FFE2E8F0'}}, right: {style:'thin', color:{argb:'FFE2E8F0'}} };
-    if (isEven) c.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFF8FAFC' } }; // Zebra efekti
+    if (isEven) c.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFF8FAFC' } };
   });
   return r;
 };
@@ -185,21 +185,19 @@ const fmtDateTime = d => {
   } catch { return d; }
 };
 
-// Geliştirilmiş Türkçe Karakter Duyarlılığı (Arama ve Filtreler için)
+// ÇOK GÜÇLÜ TÜRKÇE KARAKTER NORMALİZASYONU (Güneş = gunes)
 const trl = s => {
   if (s == null) return '';
-  const map = {
-    'I': 'i', 'İ': 'i', 'ı': 'i', 'i': 'i',
-    'Ş': 's', 'ş': 's', 'S': 's', 's': 's',
-    'Ğ': 'g', 'ğ': 'g', 'G': 'g', 'g': 'g',
-    'Ü': 'u', 'ü': 'u', 'U': 'u', 'u': 'u',
-    'Ö': 'o', 'ö': 'o', 'O': 'o', 'o': 'o',
-    'Ç': 'c', 'ç': 'c', 'C': 'c', 'c': 'c'
-  };
-  return s.toString().replace(/[IİıŞşĞğÜüÖöÇç]/g, match => map[match]).toLowerCase();
+  return s.toString()
+    .replace(/Ğ/g, 'g').replace(/ğ/g, 'g')
+    .replace(/Ü/g, 'u').replace(/ü/g, 'u')
+    .replace(/Ş/g, 's').replace(/ş/g, 's')
+    .replace(/I/g, 'i').replace(/ı/g, 'i').replace(/İ/g, 'i')
+    .replace(/Ö/g, 'o').replace(/ö/g, 'o')
+    .replace(/Ç/g, 'c').replace(/ç/g, 'c')
+    .toLowerCase();
 };
 
-// Notlar için Sabitler ve Yardımcılar
 const NOTE_COLORS = {
   default: { bg: '#FFFFFF', border: '#E2E8F0', txt: '#1E293B', label: '⬜ Varsayılan' },
   sari:    { bg: '#FEFCE8', border: '#FEF08A', txt: '#78350F', label: '🟡 Sarı' },
@@ -254,6 +252,7 @@ function StatusBadge({ status }) {
   return <span style={{ padding: '4px 11px', borderRadius: 8, fontSize: 11, fontWeight: 700, background: bg, color: col, whiteSpace: 'nowrap' }}>{status}</span>;
 }
 
+// Akıllı Müşteri Arama Inputu (Hoşver ve Güneş sorunu burada çözüldü)
 function FirmaInput({ value, onChange, firmalar, placeholder }) {
   const [op, setOp] = useState(false);
   const [tch, setTch] = useState(false);
@@ -269,12 +268,43 @@ function FirmaInput({ value, onChange, firmalar, placeholder }) {
   
   return (
     <div ref={r} style={{ position: 'relative' }}>
-      <input value={value} onChange={e => { onChange(e.target.value); setOp(true); setTch(true) }} onFocus={() => { setOp(true); setTch(true) }} placeholder={placeholder || "Firma ara…"} style={S.inp} />
+      <input value={value} onChange={e => { onChange(e.target.value); setOp(true); setTch(true) }} onFocus={() => { setOp(true); setTch(true) }} placeholder={placeholder || "Firma ara veya yaz…"} style={S.inp} />
       {op && m.length > 0 && (
         <div style={{ position: 'absolute', top: '100%', left: 0, right: 0, zIndex: 200, background: '#fff', border: `1px solid ${C.border2}`, borderRadius: 10, boxShadow: '0 8px 24px rgba(0,0,0,.15)', maxHeight: 220, overflowY: 'auto', marginTop: 4 }}>
           {m.map(f => (
             <div key={f} onMouseDown={e => { e.preventDefault(); onChange(f); setOp(false) }} style={{ padding: '10px 14px', fontSize: 13, fontWeight: 600, color: C.txt, cursor: 'pointer', borderBottom: `1px solid ${C.border}` }} onMouseEnter={e => e.currentTarget.style.background = C.greenS} onMouseLeave={e => e.currentTarget.style.background = 'transparent'}>
               🏢 {f}
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
+// Akıllı Ürün Arama Inputu (Teklifler modülü için eklendi)
+function UrunInput({ value, onChange, urunler, onSelectPrice, placeholder }) {
+  const [op, setOp] = useState(false);
+  const [tch, setTch] = useState(false);
+  const r = useRef(null);
+  
+  const m = useMemo(() => (!tch || !value) ? urunler.slice(0, 8) : urunler.filter(u => trl(u.kodu).includes(trl(value))).slice(0, 10), [value, urunler, tch]);
+  
+  useEffect(() => {
+    const h = e => { if (r.current && !r.current.contains(e.target)) setOp(false); };
+    document.addEventListener('mousedown', h);
+    return () => document.removeEventListener('mousedown', h);
+  }, []);
+  
+  return (
+    <div ref={r} style={{ position: 'relative', flex: 1 }}>
+      <input value={value} onChange={e => { onChange(e.target.value); setOp(true); setTch(true) }} onFocus={() => { setOp(true); setTch(true) }} placeholder={placeholder || "Ürün Seç..."} style={S.inp} />
+      {op && m.length > 0 && (
+        <div style={{ position: 'absolute', top: '100%', left: 0, right: 0, zIndex: 200, background: '#fff', border: `1px solid ${C.border2}`, borderRadius: 10, boxShadow: '0 8px 24px rgba(0,0,0,.15)', maxHeight: 220, overflowY: 'auto', marginTop: 4 }}>
+          {m.map(u => (
+            <div key={u.id} onMouseDown={e => { e.preventDefault(); onChange(u.kodu); if(onSelectPrice) onSelectPrice(u.fiyat, u.para_birimi); setOp(false); }} style={{ padding: '10px 14px', fontSize: 13, fontWeight: 600, color: C.txt, cursor: 'pointer', borderBottom: `1px solid ${C.border}`, display: 'flex', justifyContent: 'space-between' }} onMouseEnter={e => e.currentTarget.style.background = C.greenS} onMouseLeave={e => e.currentTarget.style.background = 'transparent'}>
+              <span>📦 {u.kodu}</span>
+              {u.fiyat && <span style={{color: C.green}}>{getCurrencySymbol(u.para_birimi)}{u.fiyat}</span>}
             </div>
           ))}
         </div>
@@ -297,7 +327,6 @@ function CostInput({ label, val, onChange, step = 0.001 }) {
 function DashboardView({ customers, samples, prices, notes, offers, onNav }) {
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 24 }}>
-      {/* Hoşgeldiniz & Tarih Alanı (Yeni Profesyonel Dokunuş) */}
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', flexWrap: 'wrap', gap: 10 }}>
         <div>
           <h2 style={{ fontSize: 24, fontWeight: 900, color: C.txt }}>Özet Durum</h2>
@@ -308,7 +337,6 @@ function DashboardView({ customers, samples, prices, notes, offers, onNav }) {
         </div>
       </div>
 
-      {/* Metric Cards */}
       <div className="dash-cards" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: 16 }}>
         {[
           { t: 'Toplam Müşteri', v: customers.length || 0, I: IcoUsers, g: C.navActive, id: 'customers', desc: 'Sistemde kayıtlı' },
@@ -336,9 +364,7 @@ function DashboardView({ customers, samples, prices, notes, offers, onNav }) {
         ))}
       </div>
 
-      {/* Bottom Grids */}
       <div className="grid-mob" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: 20 }}>
-        {/* Son Numuneler */}
         <div style={{ ...S.card, display: 'flex', flexDirection: 'column', marginBottom: 0 }}>
           <div style={{ padding: '20px 24px', borderBottom: `1px solid ${C.border}`, display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: '#FAFAFA' }}>
             <h3 style={{ fontSize: 15, fontWeight: 800, display: 'flex', alignItems: 'center', gap: 8 }}><IcoPkg size={18} color={C.teal}/> Son Numuneler</h3>
@@ -367,7 +393,6 @@ function DashboardView({ customers, samples, prices, notes, offers, onNav }) {
           </div>
         </div>
 
-        {/* Son Notlar */}
         <div style={{ ...S.card, display: 'flex', flexDirection: 'column', marginBottom: 0 }}>
           <div style={{ padding: '20px 24px', borderBottom: `1px solid ${C.border}`, display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: '#FAFAFA' }}>
             <h3 style={{ fontSize: 15, fontWeight: 800, display: 'flex', alignItems: 'center', gap: 8 }}><IcoFile size={18} color={C.amber}/> Son Notlar</h3>
@@ -548,7 +573,6 @@ function CustomersView({ data, onRefresh }) {
 
     return bList.map(bolge => {
       const items = bMap[bolge];
-      // Uygulanan sıralamaya göre bölge içini sırala
       items.sort((a, b) => {
         if (sort === 'az') return (a.firma_adi || '').localeCompare(b.firma_adi || '', 'tr');
         if (sort === 'late') return (daysSince(b.son_ziyaret) || 0) - (daysSince(a.son_ziyaret) || 0);
@@ -627,7 +651,7 @@ function CustomersView({ data, onRefresh }) {
         </div>
       );
     });
-  }, [filtered, openBolge, q, sf, sort, busy]); // Form state here triggers NO re-renders of the list!
+  }, [filtered, openBolge, q, sf, sort, busy]);
 
   const exportXL = async () => {
     const dt = safeFileDate();
@@ -896,7 +920,7 @@ function SampleItem({ s, isVar, isSel, toggleSel, tbl, onRefresh, busy, setBusy,
   );
 }
 
-function SamplesView({ data, tbl, onRefresh }) {
+function SamplesView({ data, customers, tbl, onRefresh }) {
   const [q, setQ] = useState('');
   const [sf, setSf] = useState('all');
   const [sort, setSort] = useState('date');
@@ -919,8 +943,10 @@ function SamplesView({ data, tbl, onRefresh }) {
   const [multiRows, setMultiRows] = useState([{ numune: '', fiyat: '', varyantlar: '', aciklama: '' }]);
 
   const firmalarList = useMemo(() => {
-    return [...new Set(data.map(i => (i.firma||'').trim().toUpperCase()).filter(Boolean))].sort();
-  }, [data]);
+    const sFirms = data.map(i => (i.firma||'').trim().toUpperCase());
+    const cFirms = (customers||[]).map(c => (c.firma_adi||'').trim().toUpperCase());
+    return [...new Set([...sFirms, ...cFirms].filter(Boolean))].sort();
+  }, [data, customers]);
 
   const STATUSES = ['Beklemede','Takip Et','Gönderildi','Onaylandı','Reddedildi','Arşiv'];
   const SHORT = { Beklemede:'Bekle', 'Takip Et':'Takip', Gönderildi:'Gitti', Onaylandı:'Onay', Reddedildi:'Red', Arşiv:'Arşiv' };
@@ -962,7 +988,6 @@ function SamplesView({ data, tbl, onRefresh }) {
     sortedKeys.forEach(firmaName => {
       let items = G.get(firmaName);
       
-      // Beklemede olanları her koşulda en üste alıyoruz
       items.sort((a,b) => {
         const aB = (a.durum === 'Beklemede' || !a.durum) ? -1 : 1;
         const bB = (b.durum === 'Beklemede' || !b.durum) ? -1 : 1;
@@ -1882,18 +1907,17 @@ function CostView({data,onRefresh}) {
 }
 
 // ── 6. TEKLİFLER ─────────────────────────────────────────────────────────
-function OffersView({ data, customers, onRefresh }) {
+function OffersView({ data, customers, prices, onRefresh }) {
   const [q, setQ] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
   const [busy, setBusy] = useState(null);
-  const [modal, setModal] = useState(null); // null | 'new' | item
+  const [modal, setModal] = useState(null);
   const [saving, setSaving] = useState(false);
   const [openFirms, setOpenFirms] = useState(new Set());
 
   const [selIds, setSelIds] = useState(new Set());
   const [bulkBusy, setBulkBusy] = useState(false);
 
-  // Excel İçe Aktar State
   const [impModal, setImpModal] = useState(false);
   const [impFirma, setImpFirma] = useState('');
   const [impDate, setImpDate] = useState(new Date().toISOString().slice(0,10));
@@ -1901,7 +1925,6 @@ function OffersView({ data, customers, onRefresh }) {
   const [impRows, setImpRows] = useState([]);
   const [impSaving, setImpSaving] = useState(false);
 
-  // Form State
   const emptyForm = { 
     firma_adi: '', urun: '', fiyat: '', durum: 'Teklif Verildi',
     teklif_tarihi: new Date().toISOString().slice(0,10), 
@@ -1913,6 +1936,10 @@ function OffersView({ data, customers, onRefresh }) {
   const firmalarList = useMemo(() => {
     return [...new Set(customers.map(c => c.firma_adi).filter(Boolean))].sort();
   }, [customers]);
+
+  const urunlerList = useMemo(() => {
+     return (prices || []).map(p => ({ id: p.id, kodu: p.urun_kodu, fiyat: p.pesin_fiyat, para_birimi: p.para_birimi || 'USD' })).filter(p => p.kodu);
+  }, [prices]);
 
   const DURUMLAR = ['Teklif Verildi', 'Onaylandı', 'Onaylanmadı'];
   const DCLR = {
@@ -1945,7 +1972,6 @@ function OffersView({ data, customers, onRefresh }) {
       G.get(f).push(t);
     });
     
-    // Her firmanın kendi içindeki tekliflerini Yeniden Eskiye (En yeni tarih en üstte) sırala
     G.forEach(items => {
       items.sort((a,b) => {
         const dA = new Date(a.teklif_tarihi || a.created_at || 0).getTime();
@@ -2066,7 +2092,7 @@ function OffersView({ data, customers, onRefresh }) {
       firma_adi: impFirma.trim().toUpperCase(),
       urun: r.urun, fiyat: r.fiyat,
       durum: impDurum, teklif_tarihi: impDate || null,
-      para_birimi: 'USD', // Excel'den aktarılanlar varsayılan olarak USD
+      para_birimi: 'USD',
       updated_at: now, created_at: now
     }));
     await db.from('fiyat_teklifleri').insert(payload);
@@ -2112,7 +2138,6 @@ function OffersView({ data, customers, onRefresh }) {
   const teklif = data.filter(t => t.durum === 'Teklif Verildi').length;
   const ret = data.filter(t => t.durum === 'Onaylanmadı').length;
   
-  // Tutar hesaplarken USD ve EUR ayrı ayrı toplanır
   const onayTutarUSD = data.filter(t => t.durum === 'Onaylandı' && (!t.para_birimi || t.para_birimi === 'USD')).reduce((s,t) => s + parseFloat(t.fiyat || 0), 0);
   const onayTutarEUR = data.filter(t => t.durum === 'Onaylandı' && t.para_birimi === 'EUR').reduce((s,t) => s + parseFloat(t.fiyat || 0), 0);
 
@@ -2294,8 +2319,13 @@ function OffersView({ data, customers, onRefresh }) {
                 </div>
                 {multiRows.map((r, i) => (
                   <div key={i} style={{ display:'flex', flexWrap:'wrap', gap:6, marginBottom:6, background:'rgba(0,0,0,0.02)', padding:8, borderRadius:8 }}>
-                    <div style={{flex: '1 1 100%'}}>
-                      <input value={r.urun} onChange={e => setMultiRows(p => p.map((x,j) => j===i ? {...x, urun: e.target.value} : x))} placeholder="Ürün" style={S.inp} />
+                    <div style={{flex: '1 1 100%', display: 'flex'}}>
+                      <UrunInput 
+                          value={r.urun} 
+                          onChange={v => setMultiRows(p => p.map((x,j) => j===i ? {...x, urun: v} : x))} 
+                          urunler={urunlerList}
+                          onSelectPrice={(f, pb) => setMultiRows(p => p.map((x,j) => j===i ? {...x, fiyat: f, para_birimi: pb} : x))}
+                      />
                     </div>
                     <div style={{display:'flex', flex: '1 1 100%', gap:6}}>
                       <input type="number" step="0.01" value={r.fiyat} onChange={e => setMultiRows(p => p.map((x,j) => j===i ? {...x, fiyat: e.target.value} : x))} placeholder="Fiyat" style={{ ...S.inp, flex: 1, textAlign:'right', fontFamily:'monospace' }} />
@@ -2313,7 +2343,7 @@ function OffersView({ data, customers, onRefresh }) {
             ) : (
               <div style={{ marginBottom:12 }}>
                 <label style={S.lbl}>Ürün / Kalite *</label>
-                <input value={form.urun} onChange={e => setForm(f => ({ ...f, urun: e.target.value }))} style={S.inp} />
+                <UrunInput value={form.urun} onChange={v => setForm(f => ({ ...f, urun: v }))} urunler={urunlerList} onSelectPrice={(f, pb) => setForm(prev => ({...prev, fiyat: f, para_birimi: pb}))} />
                 <label style={{ ...S.lbl, marginTop:10 }}>Fiyat & Para Birimi</label>
                 <div style={{ display: 'flex', gap: 8 }}>
                     <input type="number" step="0.01" value={form.fiyat} onChange={e => setForm(f => ({ ...f, fiyat: e.target.value }))} style={{ ...S.inp, fontFamily:'monospace', flex: 1 }} placeholder="Fiyat" />
@@ -2853,11 +2883,11 @@ function App() {
               <>
                 {tab === 'dashboard' && <DashboardView customers={customers} samples={samples} prices={prices} notes={notes} offers={offers} onNav={goTo} />}
                 {tab === 'customers' && <CustomersView data={customers} onRefresh={loadData} />}
-                {tab === 'samples'   && <SamplesView   data={samples} tbl={samplesTbl} onRefresh={loadData} />}
+                {tab === 'samples'   && <SamplesView   data={samples} customers={customers} tbl={samplesTbl} onRefresh={loadData} />}
                 {tab === 'prices'    && <PricesView    data={prices}    onRefresh={loadData} />}
                 {tab === 'cost'      && <CostView      data={costs}     onRefresh={loadData} />}
                 {tab === 'notes'     && <NotesView     data={notes} customers={customers} onRefresh={loadData} />}
-                {tab === 'offers'    && <OffersView    data={offers} customers={customers} onRefresh={loadData} />}
+                {tab === 'offers'    && <OffersView    data={offers} customers={customers} prices={prices} onRefresh={loadData} />}
                 {tab === 'converter' && <ConverterView />}
               </>
             )}
