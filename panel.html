@@ -119,6 +119,7 @@ const IcoClock = (p) => <Ico {...p}><circle cx="12" cy="12" r="10"/><polyline po
 
 // ── YARDIMCILAR & SABİTLER ──────────────────────────────────────────
 const safeFileDate = () => new Date().toISOString().slice(0, 10);
+const getCurrencySymbol = (c) => c === 'EUR' ? '€' : '$';
 
 // PROFESYONEL EXCEL YARDIMCILARI (ORTAK TEMA)
 const setupExcelSheet = (sh, title, headers, colWidths) => {
@@ -1261,7 +1262,7 @@ function SamplesView({ data, tbl, onRefresh }) {
         <div><h2 style={{ fontSize:22, fontWeight:900, color:C.txt }}>Numune Takibi</h2><p style={{ fontSize:12, color:C.txt2, marginTop:2 }}>{filtered.length} / {counts.all} kayıt</p></div>
         <div className="header-btns" style={{ display:'flex', gap:8 }}>
           <button onClick={exportXL} style={{...S.bCan, width:'auto', padding:'8px 14px'}}>📊 Excel</button>
-          <button onClick={()=>openAdd()} style={{...S.bSav, width:'auto', background:'linear-gradient(135deg,#C2410C,#EA580C)', display:'flex', alignItems:'center', justifyContent:'center', gap:5, padding:'8px 16px'}}><IcoPlus size={16}/> Yeni</button>
+          <button onClick={()=>openAdd()} style={{...S.bSav, width:'auto', background:'linear-gradient(135deg,#C2410C,#EA580C)', display:'flex', alignItems:'center', gap:5, padding:'8px 16px'}}><IcoPlus size={16}/> Yeni</button>
         </div>
       </div>
 
@@ -1289,7 +1290,7 @@ function SamplesView({ data, tbl, onRefresh }) {
         </div>
       )}
 
-      {/* Performanslı Liste (useMemo ile klavye kasmaları önlenmiştir) */}
+      {/* Performanslı Liste */}
       <div style={{ display:'flex', flexDirection:'column', gap:16 }}>
         {renderedList}
       </div>
@@ -1315,7 +1316,7 @@ function PricesView({ data, onRefresh }) {
   const [selIds, setSelIds] = useState(new Set());
   const [openCats, setOpenCats] = useState(new Set());
   
-  const [form, setForm] = useState({ urun_kodu: '', denye: '', pesin_fiyat: '', bolum_adi: '' });
+  const [form, setForm] = useState({ urun_kodu: '', denye: '', pesin_fiyat: '', bolum_adi: '', para_birimi: 'USD' });
   
   const [showChartModal, setShowChartModal] = useState(false);
 
@@ -1362,6 +1363,7 @@ function PricesView({ data, onRefresh }) {
       pesin_fiyat: pf, 
       vadeli_fiyat: pf > 0 ? parseFloat((pf + 0.10).toFixed(4)) : 0, 
       bolum_adi: form.bolum_adi.trim().toUpperCase() || null,
+      para_birimi: form.para_birimi,
       updated_at: new Date().toISOString()
     };
     
@@ -1425,7 +1427,7 @@ function PricesView({ data, onRefresh }) {
     if (bulkType === 'pct_dn')   nv = sample.pesin_fiyat * (1 - v / 100);
     if (bulkType === 'fixed_up') nv = sample.pesin_fiyat + v;
     if (bulkType === 'fixed_dn') nv = Math.max(0, sample.pesin_fiyat - v);
-    return { urun: sample.urun_kodu, eski: sample.pesin_fiyat.toFixed(2), yeni: nv.toFixed(2) };
+    return { urun: sample.urun_kodu, eski: sample.pesin_fiyat.toFixed(2), yeni: nv.toFixed(2), sembol: getCurrencySymbol(sample.para_birimi) };
   };
 
   const exportXL = async (wP) => {
@@ -1458,8 +1460,9 @@ function PricesView({ data, onRefresh }) {
       }
       
       const c = p.pesin_fiyat || 0;
+      const sym = getCurrencySymbol(p.para_birimi);
       const dataRow = wP
-        ? [p.urun_kodu || '', p.denye || '-', c ? '$' + c.toFixed(2) : '-', c ? '$' + (c + 0.10).toFixed(2) : '-', c ? '$' + (c + 0.20).toFixed(2) : '-']
+        ? [p.urun_kodu || '', p.denye || '-', c ? sym + c.toFixed(2) : '-', c ? sym + (c + 0.10).toFixed(2) : '-', c ? sym + (c + 0.20).toFixed(2) : '-']
         : [p.urun_kodu || '', p.denye || '-', p.bolum_adi || '-'];
         
       const aligns = wP 
@@ -1494,7 +1497,7 @@ function PricesView({ data, onRefresh }) {
         type: 'bar',
         data: {
           labels: priced.map(d => (d.urun_kodu || '').substring(0, 15)),
-          datasets: [{ label: 'Peşin Fiyat ($)', data: priced.map(d => d.pesin_fiyat), backgroundColor: '#0891B2', borderRadius: 6 }]
+          datasets: [{ label: 'Peşin Fiyat', data: priced.map(d => d.pesin_fiyat), backgroundColor: '#0891B2', borderRadius: 6 }]
         },
         options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } } }
       });
@@ -1546,9 +1549,9 @@ function PricesView({ data, onRefresh }) {
             <span style={{ background:C.tealS, color:C.teal, fontSize:11, fontWeight:700, padding:'3px 9px', borderRadius:10 }}>{fi.length}</span>
             {missingPrice > 0 && <span style={{ background:C.amberS, color:C.amber, fontSize:10, fontWeight:700, padding:'3px 8px', borderRadius:8 }}>⚠️ {missingPrice} fiyatsız</span>}
             
-            <button onClick={e => { e.stopPropagation(); setForm({ urun_kodu:'', denye:'', pesin_fiyat:'', bolum_adi:c }); setModal('new') }} style={{ background:C.greenS, color:C.green, border:`1px solid rgba(21,128,61,.2)`, padding:'4px 8px', borderRadius:6, cursor:'pointer', display:'flex', alignItems:'center', gap:3, fontSize:11, fontWeight:700 }}>+ Ekle</button>
+            <button onClick={e => { e.stopPropagation(); setForm({ urun_kodu:'', denye:'', pesin_fiyat:'', bolum_adi:c, para_birimi:'USD' }); setModal('new') }} style={{ background:C.greenS, color:C.green, border:`1px solid rgba(21,128,61,.2)`, padding:'4px 8px', borderRadius:6, cursor:'pointer', display:'flex', alignItems:'center', gap:3, fontSize:11, fontWeight:700 }}>+ Ekle</button>
             {hdr && (
-              <button onClick={e => { e.stopPropagation(); setForm({ urun_kodu: hdr.urun_kodu || '', denye: hdr.denye || '', pesin_fiyat: hdr.pesin_fiyat || '', bolum_adi: hdr.bolum_adi || '' }); setModal(hdr); }} style={{ background:'none', border:'none', cursor:'pointer', color:C.border2, padding:4, borderRadius:6 }}>
+              <button onClick={e => { e.stopPropagation(); setForm({ urun_kodu: hdr.urun_kodu || '', denye: hdr.denye || '', pesin_fiyat: hdr.pesin_fiyat || '', bolum_adi: hdr.bolum_adi || '', para_birimi: hdr.para_birimi || 'USD' }); setModal(hdr); }} style={{ background:'none', border:'none', cursor:'pointer', color:C.border2, padding:4, borderRadius:6 }}>
                 <IcoEdit size={14}/>
               </button>
             )}
@@ -1562,8 +1565,8 @@ function PricesView({ data, onRefresh }) {
                     <th style={{ ...S.th, width:36, textAlign:'center' }}></th>
                     <th style={S.th}>Ürün Kodu</th>
                     <th style={S.th}>Denye</th>
-                    <th style={{ ...S.th, textAlign:'right' }}>Peşin ($)</th>
-                    <th style={{ ...S.th, textAlign:'right' }}>90 Gün ($)</th>
+                    <th style={{ ...S.th, textAlign:'right' }}>Peşin</th>
+                    <th style={{ ...S.th, textAlign:'right' }}>90 Gün</th>
                     <th style={{ ...S.th, textAlign:'center' }}>Tarih</th>
                     <th style={{ ...S.th, textAlign:'center' }}>İşlem</th>
                   </tr>
@@ -1574,6 +1577,7 @@ function PricesView({ data, onRefresh }) {
                     const iE = editPrice && editPrice.id === p.id;
                     const pf = p.pesin_fiyat;
                     const tm = p.updated_at ? new Date(p.updated_at).toLocaleDateString('tr-TR', { day:'2-digit', month:'2-digit', year:'2-digit' }) : '';
+                    const sym = getCurrencySymbol(p.para_birimi);
                     
                     return (
                       <tr key={p.id} className="hov-row" style={{ opacity:bI ? 0.5 : 1, background:selIds.has(p.id) ? 'rgba(22,163,74,.06)' : 'none', borderBottom:`1px solid ${C.border}` }}>
@@ -1584,14 +1588,14 @@ function PricesView({ data, onRefresh }) {
                           {iE ? (
                             <input autoFocus type="number" step="0.01" value={editPrice.v} onChange={e => setEditPrice({ id:p.id, v:e.target.value })} onBlur={() => commitEdit(p)} onKeyDown={e => { if(e.key === 'Enter') commitEdit(p); if(e.key === 'Escape') setEditPrice(null); }} style={{ width:72, padding:'3px 7px', border:`2px solid ${C.green}`, borderRadius:6, fontSize:13, fontFamily:'monospace', fontWeight:700, color:C.green, outline:'none', textAlign:'right' }}/>
                           ) : (
-                            <span onClick={() => setEditPrice({ id:p.id, v:String(pf || '') })} title="Tıkla düzenle" style={{ cursor:'text', fontFamily:'monospace', fontWeight:900, fontSize:14, color:pf ? C.green : '#CBD5E1', borderBottom:`1px dashed ${pf ? C.green : '#CBD5E1'}` }}>{pf ? pf.toFixed(2) + ' $' : '—'}</span>
+                            <span onClick={() => setEditPrice({ id:p.id, v:String(pf || '') })} title="Tıkla düzenle" style={{ cursor:'text', fontFamily:'monospace', fontWeight:900, fontSize:14, color:pf ? C.green : '#CBD5E1', borderBottom:`1px dashed ${pf ? C.green : '#CBD5E1'}` }}>{pf ? sym + pf.toFixed(2) : '—'}</span>
                           )}
                         </td>
-                        <td style={{ ...S.td, textAlign:'right', fontFamily:'monospace', fontSize:13, color:pf ? C.txt2 : '#CBD5E1', fontWeight:pf ? 600 : 400 }}>{pf ? (pf + 0.10).toFixed(2) + ' $' : '—'}</td>
+                        <td style={{ ...S.td, textAlign:'right', fontFamily:'monospace', fontSize:13, color:pf ? C.txt2 : '#CBD5E1', fontWeight:pf ? 600 : 400 }}>{pf ? sym + (pf + 0.10).toFixed(2) : '—'}</td>
                         <td style={{ ...S.td, textAlign:'center', fontSize:11, color:C.txt2, fontFamily:'monospace' }}>{tm || '—'}</td>
                         <td style={{ ...S.td, textAlign:'center' }}>
                           <div style={{ display:'flex', justifyContent:'center', gap:4 }}>
-                            <button onClick={() => { setForm({ urun_kodu:p.urun_kodu || '', denye:p.denye || '', pesin_fiyat:p.pesin_fiyat || '', bolum_adi:p.bolum_adi || '' }); setModal(p); }} style={{ background:'none', border:'none', cursor:'pointer', color:C.border2, padding:4, borderRadius:6 }} onMouseEnter={e => e.currentTarget.style.color = C.teal} onMouseLeave={e => e.currentTarget.style.color = C.border2}><IcoEdit size={13}/></button>
+                            <button onClick={() => { setForm({ urun_kodu:p.urun_kodu || '', denye:p.denye || '', pesin_fiyat:p.pesin_fiyat || '', bolum_adi:p.bolum_adi || '', para_birimi:p.para_birimi || 'USD' }); setModal(p); }} style={{ background:'none', border:'none', cursor:'pointer', color:C.border2, padding:4, borderRadius:6 }} onMouseEnter={e => e.currentTarget.style.color = C.teal} onMouseLeave={e => e.currentTarget.style.color = C.border2}><IcoEdit size={13}/></button>
                             <button onClick={() => delItem(p)} style={{ background:'none', border:'none', cursor:'pointer', color:C.border2, padding:4, borderRadius:6 }} onMouseEnter={e => e.currentTarget.style.color = C.red} onMouseLeave={e => e.currentTarget.style.color = C.border2}><IcoTrash size={13}/></button>
                           </div>
                         </td>
@@ -1627,8 +1631,8 @@ function PricesView({ data, onRefresh }) {
               {[
                 { k:'pct_up', l:'% Artış', icon:'📈' },
                 { k:'pct_dn', l:'% Azalış', icon:'📉' },
-                { k:'fixed_up', l:'$ Artış', icon:'➕' },
-                { k:'fixed_dn', l:'$ Azalış', icon:'➖' }
+                { k:'fixed_up', l:'Artış', icon:'➕' },
+                { k:'fixed_dn', l:'Azalış', icon:'➖' }
               ].map(o => (
                 <button key={o.k} onClick={() => setBulkType(o.k)}
                   style={{ padding:'10px 8px', borderRadius:10, border:`2px solid ${bulkType === o.k ? C.green : C.border2}`, background:bulkType === o.k ? C.greenS : 'none', color:bulkType === o.k ? C.green : C.txt, fontWeight:bulkType === o.k ? 800 : 500, fontSize:13, cursor:'pointer', transition:'all .15s' }}>
@@ -1637,7 +1641,7 @@ function PricesView({ data, onRefresh }) {
               ))}
             </div>
             <div style={{ marginBottom:14 }}>
-              <label style={S.lbl}>{bulkType.startsWith('pct') ? 'Yüzde (%)' : 'Miktar ($)'}</label>
+              <label style={S.lbl}>{bulkType.startsWith('pct') ? 'Yüzde (%)' : 'Değer'}</label>
               <input type="number" step="0.01" min="0" value={bulkVal} onChange={e => setBulkVal(e.target.value)} placeholder="0.00" style={{ ...S.inp, fontSize:15, fontFamily:'monospace', textAlign:'right' }} />
             </div>
             {(() => { 
@@ -1645,8 +1649,8 @@ function PricesView({ data, onRefresh }) {
               return pr && (
                 <div style={{ padding:'10px 14px', background:C.greenS, borderRadius:10, marginBottom:14, border:`1px solid rgba(21,128,61,.2)`, fontSize:12 }}>
                   <span style={{ color:C.txt2 }}>Örnek: </span><span style={{ fontWeight:700, color:C.txt, fontFamily:'monospace' }}>{pr.urun}</span>
-                  <span style={{ color:C.txt2 }}> → </span><span style={{ color:C.txt2, fontFamily:'monospace', textDecoration:'line-through' }}>${pr.eski}</span>
-                  <span style={{ color:C.txt2 }}> → </span><span style={{ color:C.green, fontFamily:'monospace', fontWeight:800 }}>${pr.yeni}</span>
+                  <span style={{ color:C.txt2 }}> → </span><span style={{ color:C.txt2, fontFamily:'monospace', textDecoration:'line-through' }}>{pr.sembol}{pr.eski}</span>
+                  <span style={{ color:C.txt2 }}> → </span><span style={{ color:C.green, fontFamily:'monospace', fontWeight:800 }}>{pr.sembol}{pr.yeni}</span>
                 </div>
               ); 
             })()}
@@ -1675,11 +1679,17 @@ function PricesView({ data, onRefresh }) {
               </div>
             ))}
             <div style={{ marginBottom:18 }}>
-              <label style={S.lbl}>Peşin Fiyat ($)</label>
-              <input type="number" step="0.01" min="0" value={form.pesin_fiyat} onChange={e => setForm(f => ({ ...f, pesin_fiyat: e.target.value }))} style={{ ...S.inp, fontFamily:'monospace' }} />
+              <label style={S.lbl}>Peşin Fiyat & Para Birimi</label>
+              <div style={{ display: 'flex', gap: 8 }}>
+                <input type="number" step="0.01" min="0" value={form.pesin_fiyat} onChange={e => setForm(f => ({ ...f, pesin_fiyat: e.target.value }))} style={{ ...S.inp, fontFamily:'monospace' }} placeholder="Fiyat" />
+                <select value={form.para_birimi} onChange={e => setForm(f => ({ ...f, para_birimi: e.target.value }))} style={{ ...S.inp, width: 100, cursor: 'pointer' }}>
+                  <option value="USD">USD ($)</option>
+                  <option value="EUR">EUR (€)</option>
+                </select>
+              </div>
               {form.pesin_fiyat && (
                 <p style={{ fontSize:11, color:C.txt2, marginTop:4 }}>
-                  90 gün vadeli: ${((parseFloat(form.pesin_fiyat) || 0) + 0.10).toFixed(2)} · 180 gün: ${((parseFloat(form.pesin_fiyat) || 0) + 0.20).toFixed(2)}
+                  90 gün vadeli: {getCurrencySymbol(form.para_birimi)}{((parseFloat(form.pesin_fiyat) || 0) + 0.10).toFixed(2)} · 180 gün: {getCurrencySymbol(form.para_birimi)}{((parseFloat(form.pesin_fiyat) || 0) + 0.20).toFixed(2)}
                 </p>
               )}
             </div>
@@ -1706,7 +1716,7 @@ function PricesView({ data, onRefresh }) {
           <button onClick={() => setBulkModal(true)} style={{ ...S.bCan, background:C.navActive, color:'#fff', border:'none', display:'flex', alignItems:'center', gap:5 }}>
             📈 Toplu İşlem
           </button>
-          <button onClick={() => { setForm({ urun_kodu:'', denye:'', pesin_fiyat:'', bolum_adi:'' }); setModal('new'); }} style={{ ...S.bSav, background:C.green, width:'auto', display:'flex', alignItems:'center', gap:5 }}>
+          <button onClick={() => { setForm({ urun_kodu:'', denye:'', pesin_fiyat:'', bolum_adi:'', para_birimi:'USD' }); setModal('new'); }} style={{ ...S.bSav, background:C.green, width:'auto', display:'flex', alignItems:'center', gap:5 }}>
             <IcoPlus size={16}/> Yeni Ürün
           </button>
         </div>
@@ -1885,10 +1895,10 @@ function OffersView({ data, customers, onRefresh }) {
   const emptyForm = { 
     firma_adi: '', urun: '', fiyat: '', durum: 'Teklif Verildi',
     teklif_tarihi: new Date().toISOString().slice(0,10), 
-    gecerlilik_tarihi: '', notlar: '' 
+    gecerlilik_tarihi: '', notlar: '', para_birimi: 'USD'
   };
   const [form, setForm] = useState(emptyForm);
-  const [multiRows, setMultiRows] = useState([{ urun: '', fiyat: '' }]);
+  const [multiRows, setMultiRows] = useState([{ urun: '', fiyat: '', para_birimi: 'USD' }]);
 
   const firmalarList = useMemo(() => {
     return [...new Set(customers.map(c => c.firma_adi).filter(Boolean))].sort();
@@ -1924,6 +1934,16 @@ function OffersView({ data, customers, onRefresh }) {
       if (!G.has(f)) G.set(f, []);
       G.get(f).push(t);
     });
+    
+    // Her firmanın kendi içindeki tekliflerini Yeniden Eskiye (En yeni tarih en üstte) sırala
+    G.forEach(items => {
+      items.sort((a,b) => {
+        const dA = new Date(a.teklif_tarihi || a.created_at || 0).getTime();
+        const dB = new Date(b.teklif_tarihi || b.created_at || 0).getTime();
+        return dB - dA;
+      });
+    });
+
     return [...G.entries()].sort((a,b) => {
       const da = a[1][0]?.teklif_tarihi || a[1][0]?.created_at || '';
       const db2 = b[1][0]?.teklif_tarihi || b[1][0]?.created_at || '';
@@ -1974,7 +1994,7 @@ function OffersView({ data, customers, onRefresh }) {
 
   const openAdd = (firmaAdi = '') => {
     setForm({ ...emptyForm, firma_adi: firmaAdi });
-    setMultiRows([{ urun:'', fiyat:'' }]);
+    setMultiRows([{ urun:'', fiyat:'', para_birimi: 'USD' }]);
     setModal('new');
   };
 
@@ -1982,7 +2002,8 @@ function OffersView({ data, customers, onRefresh }) {
     setForm({ 
       firma_adi: t.firma_adi || '', urun: t.urun || '', fiyat: String(t.fiyat || ''),
       durum: t.durum || 'Teklif Verildi', teklif_tarihi: t.teklif_tarihi || '',
-      gecerlilik_tarihi: t.gecerlilik_tarihi || '', notlar: t.notlar || '' 
+      gecerlilik_tarihi: t.gecerlilik_tarihi || '', notlar: t.notlar || '',
+      para_birimi: t.para_birimi || 'USD'
     });
     setModal(t);
   };
@@ -2000,11 +2021,11 @@ function OffersView({ data, customers, onRefresh }) {
     if (modal === 'new') {
       const validRows = multiRows.filter(r => r.urun.trim());
       if (!validRows.length) { setSaving(false); return; }
-      const payload = validRows.map(r => ({ ...base, urun: r.urun.trim(), fiyat: parseFloat(r.fiyat) || null, created_at: now }));
+      const payload = validRows.map(r => ({ ...base, urun: r.urun.trim(), fiyat: parseFloat(r.fiyat) || null, para_birimi: r.para_birimi || 'USD', created_at: now }));
       await db.from('fiyat_teklifleri').insert(payload);
     } else {
       if (!form.urun.trim()) { setSaving(false); return; }
-      await db.from('fiyat_teklifleri').update({ ...base, urun: form.urun.trim(), fiyat: parseFloat(form.fiyat) || null }).eq('id', modal.id);
+      await db.from('fiyat_teklifleri').update({ ...base, urun: form.urun.trim(), fiyat: parseFloat(form.fiyat) || null, para_birimi: form.para_birimi || 'USD' }).eq('id', modal.id);
     }
     setSaving(false); setModal(null); await onRefresh();
   };
@@ -2035,6 +2056,7 @@ function OffersView({ data, customers, onRefresh }) {
       firma_adi: impFirma.trim().toUpperCase(),
       urun: r.urun, fiyat: r.fiyat,
       durum: impDurum, teklif_tarihi: impDate || null,
+      para_birimi: 'USD', // Excel'den aktarılanlar varsayılan olarak USD
       updated_at: now, created_at: now
     }));
     await db.from('fiyat_teklifleri').insert(payload);
@@ -2054,8 +2076,9 @@ function OffersView({ data, customers, onRefresh }) {
     
     const rows = teklifler || filtered;
     rows.forEach((t, idx) => {
+      const sym = getCurrencySymbol(t.para_birimi);
       const row = addExcelRow(sh, 
-        [t.firma_adi || '', t.urun || '', t.fiyat ? '$'+t.fiyat : '', t.durum || '', fmtDate(t.teklif_tarihi), t.notlar || ''],
+        [t.firma_adi || '', t.urun || '', t.fiyat ? sym + t.fiyat : '', t.durum || '', fmtDate(t.teklif_tarihi), t.notlar || ''],
         idx % 2 === 0,
         [{horizontal:'left'}, {horizontal:'left'}, {horizontal:'right'}, {horizontal:'center'}, {horizontal:'center'}, {horizontal:'left', wrapText:true}]
       );
@@ -2078,7 +2101,10 @@ function OffersView({ data, customers, onRefresh }) {
   const onay = data.filter(t => t.durum === 'Onaylandı').length;
   const teklif = data.filter(t => t.durum === 'Teklif Verildi').length;
   const ret = data.filter(t => t.durum === 'Onaylanmadı').length;
-  const onayTutar = data.filter(t => t.durum === 'Onaylandı' && t.fiyat).reduce((s,t) => s + parseFloat(t.fiyat || 0), 0);
+  
+  // Tutar hesaplarken USD ve EUR ayrı ayrı toplanır
+  const onayTutarUSD = data.filter(t => t.durum === 'Onaylandı' && (!t.para_birimi || t.para_birimi === 'USD')).reduce((s,t) => s + parseFloat(t.fiyat || 0), 0);
+  const onayTutarEUR = data.filter(t => t.durum === 'Onaylandı' && t.para_birimi === 'EUR').reduce((s,t) => s + parseFloat(t.fiyat || 0), 0);
 
   const renderedList = useMemo(() => {
     if (groupedFirms.length === 0) {
@@ -2130,6 +2156,7 @@ function OffersView({ data, customers, onRefresh }) {
                     const [dBg, dCol] = DCLR[t.durum] || [C.tealS, C.teal];
                     const diff = daysDiff(t.gecerlilik_tarihi);
                     const isBusy = busy === t.id;
+                    const sym = getCurrencySymbol(t.para_birimi);
                     
                     return (
                       <tr key={t.id || ti} className="hov-row" style={{ opacity:isBusy ? 0.5 : 1, borderBottom:ti < teklifler.length - 1 ? `1px solid ${C.border}` : 'none' }}>
@@ -2137,7 +2164,7 @@ function OffersView({ data, customers, onRefresh }) {
                           <input type="checkbox" checked={selIds.has(t.id)} onChange={() => toggleSel(t.id)} style={{ cursor:'pointer', accentColor:C.green }} />
                         </td>
                         <td style={{ ...S.td, fontWeight:700, color:C.txt }}>{t.urun || '—'}</td>
-                        <td style={{ ...S.td, fontFamily:'monospace', fontWeight:900, color:C.green, fontSize:14 }}>{t.fiyat ? `$${t.fiyat}` : ''}</td>
+                        <td style={{ ...S.td, fontFamily:'monospace', fontWeight:900, color:C.green, fontSize:14 }}>{t.fiyat ? `${sym}${t.fiyat}` : ''}</td>
                         <td style={{ ...S.td, fontSize:11, color:C.txt2, fontFamily:'monospace' }}>
                           {t.teklif_tarihi ? `📅 ${fmtDate(t.teklif_tarihi)}` : ''}
                         </td>
@@ -2251,14 +2278,18 @@ function OffersView({ data, customers, onRefresh }) {
               <div style={{ marginBottom:12 }}>
                 <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:6 }}>
                   <label style={S.lbl}>Ürün / Kalite & Fiyat</label>
-                  <button onClick={() => setMultiRows(r => [...r, { urun:'', fiyat:'' }])} style={{ fontSize:11, fontWeight:700, color:C.teal, background:C.tealS, border:`1px solid rgba(8,145,178,.2)`, borderRadius:7, padding:'3px 9px', cursor:'pointer', display:'flex', alignItems:'center', gap:3 }}>
+                  <button onClick={() => setMultiRows(r => [...r, { urun:'', fiyat:'', para_birimi:'USD' }])} style={{ fontSize:11, fontWeight:700, color:C.teal, background:C.tealS, border:`1px solid rgba(8,145,178,.2)`, borderRadius:7, padding:'3px 9px', cursor:'pointer', display:'flex', alignItems:'center', gap:3 }}>
                     <IcoPlus size={11}/> Satır Ekle
                   </button>
                 </div>
                 {multiRows.map((r, i) => (
-                  <div key={i} style={{ display:'grid', gridTemplateColumns:'1fr 90px 28px', gap:6, marginBottom:6 }}>
+                  <div key={i} style={{ display:'grid', gridTemplateColumns:'1fr 90px 70px 28px', gap:6, marginBottom:6 }}>
                     <input value={r.urun} onChange={e => setMultiRows(p => p.map((x,j) => j===i ? {...x, urun: e.target.value} : x))} placeholder="Ürün" style={S.inp} />
-                    <input type="number" step="0.01" value={r.fiyat} onChange={e => setMultiRows(p => p.map((x,j) => j===i ? {...x, fiyat: e.target.value} : x))} placeholder="$ Fiyat" style={{ ...S.inp, textAlign:'right', fontFamily:'monospace' }} />
+                    <input type="number" step="0.01" value={r.fiyat} onChange={e => setMultiRows(p => p.map((x,j) => j===i ? {...x, fiyat: e.target.value} : x))} placeholder="Fiyat" style={{ ...S.inp, textAlign:'right', fontFamily:'monospace' }} />
+                    <select value={r.para_birimi || 'USD'} onChange={e => setMultiRows(p => p.map((x,j) => j===i ? {...x, para_birimi: e.target.value} : x))} style={{...S.inp, padding:'9px 4px'}}>
+                       <option value="USD">USD</option>
+                       <option value="EUR">EUR</option>
+                    </select>
                     {multiRows.length > 1 ? (
                       <button onClick={() => setMultiRows(p => p.filter((_,j) => j!==i))} style={{ background:'none', border:`1px solid ${C.border2}`, borderRadius:8, cursor:'pointer', color:C.red, display:'flex', alignItems:'center', justifyContent:'center' }}><IcoX size={14}/></button>
                     ) : <div/>}
@@ -2269,8 +2300,14 @@ function OffersView({ data, customers, onRefresh }) {
               <div style={{ marginBottom:12 }}>
                 <label style={S.lbl}>Ürün / Kalite *</label>
                 <input value={form.urun} onChange={e => setForm(f => ({ ...f, urun: e.target.value }))} style={S.inp} />
-                <label style={{ ...S.lbl, marginTop:10 }}>Fiyat ($)</label>
-                <input type="number" step="0.01" value={form.fiyat} onChange={e => setForm(f => ({ ...f, fiyat: e.target.value }))} style={{ ...S.inp, fontFamily:'monospace' }} />
+                <label style={{ ...S.lbl, marginTop:10 }}>Fiyat & Para Birimi</label>
+                <div style={{ display: 'flex', gap: 8 }}>
+                    <input type="number" step="0.01" value={form.fiyat} onChange={e => setForm(f => ({ ...f, fiyat: e.target.value }))} style={{ ...S.inp, fontFamily:'monospace' }} placeholder="Fiyat" />
+                    <select value={form.para_birimi} onChange={e => setForm(f => ({ ...f, para_birimi: e.target.value }))} style={{ ...S.inp, width: 100, cursor: 'pointer' }}>
+                       <option value="USD">USD ($)</option>
+                       <option value="EUR">EUR (€)</option>
+                    </select>
+                </div>
               </div>
             )}
             
@@ -2335,11 +2372,19 @@ function OffersView({ data, customers, onRefresh }) {
         ))}
       </div>
       
-      {onayTutar > 0 && (
-        <div style={{ background:C.greenS, borderRadius:10, padding:'10px 16px', border:`1px solid rgba(21,128,61,.2)`, fontSize:13, fontWeight:700, color:C.green }}>
-          💰 Onaylanan toplam tutar: <span style={{ fontFamily:'monospace', fontSize:15 }}>${onayTutar.toFixed(2)}</span>
-        </div>
-      )}
+      {/* Döviz Bazlı Toplam Tutar Gösterimi */}
+      <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
+          {onayTutarUSD > 0 && (
+            <div style={{ flex: 1, background:C.greenS, borderRadius:10, padding:'10px 16px', border:`1px solid rgba(21,128,61,.2)`, fontSize:13, fontWeight:700, color:C.green }}>
+              💰 Onaylanan (USD): <span style={{ fontFamily:'monospace', fontSize:15 }}>${onayTutarUSD.toFixed(2)}</span>
+            </div>
+          )}
+          {onayTutarEUR > 0 && (
+            <div style={{ flex: 1, background:C.greenS, borderRadius:10, padding:'10px 16px', border:`1px solid rgba(21,128,61,.2)`, fontSize:13, fontWeight:700, color:C.green }}>
+              💰 Onaylanan (EUR): <span style={{ fontFamily:'monospace', fontSize:15 }}>€{onayTutarEUR.toFixed(2)}</span>
+            </div>
+          )}
+      </div>
 
       {/* Filtre ve Arama */}
       <div style={{ display:'flex', gap:10, flexWrap:'wrap' }}>
