@@ -77,7 +77,7 @@
 <div id="root"></div>
 
 <script type="text/babel" data-presets="react">
-const { useState, useEffect, useRef, useMemo, useCallback } = React;
+const { useState, useEffect, useRef, useMemo, useCallback, useDeferredValue } = React;
 
 const SUPABASE_URL = 'https://zmlbdpjcergcvcurihuy.supabase.co';
 const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InptbGJkcGpjZXJnY3ZjdXJpaHV5Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzU1MTA2MzIsImV4cCI6MjA5MTA4NjYzMn0.Jh4e_UXSL7CH7EzLBhhXtQYM0-iQwrFU3GHnoe-njBM';
@@ -121,7 +121,7 @@ const IcoClock = (p) => <Ico {...p}><circle cx="12" cy="12" r="10"/><polyline po
 
 // ── YARDIMCILAR & SABİTLER ──────────────────────────────────────────
 const safeFileDate = () => new Date().toISOString().slice(0, 10);
-// Eğer veritabanında para_birimi yoksa, notlarda (EUR) gibi arayıp simgeyi çıkarıyoruz.
+
 const getCurrencySymbol = (c, noteStr) => {
   const ns = noteStr || '';
   if (c === 'EUR' || ns.includes('(EUR)') || ns.includes('[EUR]')) return '€';
@@ -287,6 +287,37 @@ function FirmaInput({ value, onChange, firmalar, placeholder }) {
   );
 }
 
+// Akıllı Ürün Arama Inputu (Teklifler modülü için eklendi)
+function UrunInput({ value, onChange, urunler, onSelectProduct, placeholder }) {
+  const [op, setOp] = useState(false);
+  const [tch, setTch] = useState(false);
+  const r = useRef(null);
+  
+  const m = useMemo(() => (!tch || !value) ? urunler.slice(0, 8) : urunler.filter(u => trl(u.kodu).includes(trl(value))).slice(0, 10), [value, urunler, tch]);
+  
+  useEffect(() => {
+    const h = e => { if (r.current && !r.current.contains(e.target)) setOp(false); };
+    document.addEventListener('mousedown', h);
+    return () => document.removeEventListener('mousedown', h);
+  }, []);
+  
+  return (
+    <div ref={r} style={{ position: 'relative', flex: 1 }}>
+      <input value={value} onChange={e => { onChange(e.target.value); setOp(true); setTch(true) }} onFocus={() => { setOp(true); setTch(true) }} placeholder={placeholder || "Ürün Seç veya Yaz..."} style={S.inp} />
+      {op && m.length > 0 && (
+        <div style={{ position: 'absolute', top: '100%', left: 0, right: 0, zIndex: 200, background: '#fff', border: `1px solid ${C.border2}`, borderRadius: 10, boxShadow: '0 8px 24px rgba(0,0,0,.15)', maxHeight: 220, overflowY: 'auto', marginTop: 4 }}>
+          {m.map(u => (
+            <div key={u.id} onMouseDown={e => { e.preventDefault(); onChange(u.kodu); if(onSelectProduct) onSelectProduct(u); setOp(false); }} style={{ padding: '10px 14px', fontSize: 13, fontWeight: 600, color: C.txt, cursor: 'pointer', borderBottom: `1px solid ${C.border}`, display: 'flex', justifyContent: 'space-between' }} onMouseEnter={e => e.currentTarget.style.background = C.greenS} onMouseLeave={e => e.currentTarget.style.background = 'transparent'}>
+              <span>📦 {u.kodu}</span>
+              {u.fiyat && <span style={{color: C.green}}>{getCurrencySymbol(u.para_birimi)}{u.fiyat}</span>}
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
 // Maliyet Modülü için Özel Input
 function CostInput({ label, val, onChange, step = 0.001 }) {
   return (
@@ -401,6 +432,7 @@ function DashboardView({ customers, samples, prices, notes, offers, onNav }) {
 // ── 2. MÜŞTERİLER ────────────────────────────────────────────────────
 function CustomersView({ data, onRefresh }) {
   const [q, setQ] = useState('');
+  const deferredQ = useDeferredValue(q);
   const [sf, setSf] = useState('all');
   const [sort, setSort] = useState('az');
   const [busy, setBusy] = useState(null);
@@ -429,20 +461,22 @@ function CustomersView({ data, onRefresh }) {
 
   const visited = (m) => m.ziyaret_durumu === 'ziyaret edildi';
 
-  const filtered = data.filter(m => {
-    if (sf === 'visited' && !visited(m)) return false;
-    if (sf === 'pending' && visited(m)) return false;
-    if (sf === 'late' && lateLevel(m) !== 'red' && lateLevel(m) !== 'amber') return false;
-    if (sf === 'notlu' && !m.notlar) return false;
-    if (q) {
-      const Q = trl(q);
-      const f1 = trl(m.firma_adi || '');
-      const f2 = trl(m.bolge || '');
-      const f3 = trl(m.notlar || '');
-      if (!f1.includes(Q) && !f2.includes(Q) && !f3.includes(Q)) return false;
-    }
-    return true;
-  });
+  const filtered = useMemo(() => {
+    return data.filter(m => {
+      if (sf === 'visited' && !visited(m)) return false;
+      if (sf === 'pending' && visited(m)) return false;
+      if (sf === 'late' && lateLevel(m) !== 'red' && lateLevel(m) !== 'amber') return false;
+      if (sf === 'notlu' && !m.notlar) return false;
+      if (deferredQ) {
+        const Q = trl(deferredQ);
+        const f1 = trl(m.firma_adi || '');
+        const f2 = trl(m.bolge || '');
+        const f3 = trl(m.notlar || '');
+        if (!f1.includes(Q) && !f2.includes(Q) && !f3.includes(Q)) return false;
+      }
+      return true;
+    });
+  }, [data, sf, deferredQ]);
 
   const toggleVisitStatus = async (e, m) => {
     e.preventDefault();
@@ -528,7 +562,7 @@ function CustomersView({ data, onRefresh }) {
     if (filtered.length === 0) {
       return (
         <div style={{ padding: 32, textAlign: 'center', color: C.txt2, background: C.surface, borderRadius: 16, border: `1px solid ${C.border}` }}>
-          {q || sf !== 'all' ? 'Filtreye uyan kayıt yok.' : 'Henüz müşteri kaydı yok.'}
+          {deferredQ || sf !== 'all' ? 'Filtreye uyan kayıt yok.' : 'Henüz müşteri kaydı yok.'}
         </div>
       );
     }
@@ -553,7 +587,7 @@ function CustomersView({ data, onRefresh }) {
         return 0;
       });
 
-      const isOpen = openBolge.has(bolge) || q.length > 0 || sf !== 'all';
+      const isOpen = openBolge.has(bolge) || deferredQ.length > 0 || sf !== 'all';
       const lateC = items.filter(m => lateLevel(m) !== null).length;
       
       return (
@@ -625,7 +659,7 @@ function CustomersView({ data, onRefresh }) {
         </div>
       );
     });
-  }, [filtered, openBolge, q, sf, sort, busy]);
+  }, [filtered, openBolge, deferredQ, sf, sort, busy]);
 
   const exportXL = async () => {
     const dt = safeFileDate();
@@ -896,6 +930,7 @@ function SampleItem({ s, isVar, isSel, toggleSel, tbl, onRefresh, busy, setBusy,
 
 function SamplesView({ data, customers, tbl, onRefresh }) {
   const [q, setQ] = useState('');
+  const deferredQ = useDeferredValue(q);
   const [sf, setSf] = useState('all');
   const [sort, setSort] = useState('date');
   const [busy, setBusy] = useState(null);
@@ -935,13 +970,13 @@ function SamplesView({ data, customers, tbl, onRefresh }) {
     return data.filter(s => {
       if (sf === 'Arşiv') return isArsiv(s);
       if (sf !== 'all') { if (isArsiv(s) || getDur(s) !== sf) return false; } else { if (isArsiv(s)) return false; }
-      if (q) {
-        const Q = trl(q);
+      if (deferredQ) {
+        const Q = trl(deferredQ);
         if (!trl(s.firma||'').includes(Q) && !trl(s.numune||'').includes(Q) && !trl(s.aciklama||'').includes(Q)) return false;
       }
       return true;
     });
-  }, [data, sf, q]);
+  }, [data, sf, deferredQ]);
 
   const groupedFirms = useMemo(() => {
     const G = new Map();
@@ -1302,8 +1337,10 @@ function SamplesView({ data, customers, tbl, onRefresh }) {
 // ── 4. FİYATLAR ──────────────────────────────────────────────────────
 function PricesView({ data, onRefresh }) {
   const [q, setQ] = useState('');
+  const deferredQ = useDeferredValue(q);
   const [priceFilter, setPriceFilter] = useState('all');
   const [busy, setBusy] = useState(null);
+  const [exportType, setExportType] = useState('all');
   
   const [modal, setModal] = useState(null);
   const [editPrice, setEditPrice] = useState(null);
@@ -1451,18 +1488,25 @@ function PricesView({ data, onRefresh }) {
     return { urun: sample.urun_kodu, eski: sample.pesin_fiyat.toFixed(2), yeni: nv.toFixed(2), sembol: getCurrencySymbol(sample.para_birimi, sample.bolum_adi) };
   };
 
-  const exportXL = async (wP) => {
-    const items = selIds.size > 0 ? allItems.filter(p => selIds.has(p.id)) : allItems.filter(p => wP ? true : !p.pesin_fiyat);
+  const exportXL = async (type) => {
+    const items = selIds.size > 0 ? allItems.filter(p => selIds.has(p.id)) : allItems.filter(p => type !== 'none' ? p.pesin_fiyat > 0 : !p.pesin_fiyat);
     if (!items.length) return;
     
     const dt = safeFileDate();
     const wb = new ExcelJS.Workbook();
-    const sh = wb.addWorksheet(wP ? 'Fiyat Listesi' : 'Eksik Fiyatlar', { views: [{ state: 'frozen', ySplit: 2 }] });
+    const sh = wb.addWorksheet(type === 'none' ? 'Eksik Fiyatlar' : 'Fiyat Listesi', { views: [{ state: 'frozen', ySplit: 2 }] });
     
-    const title = (wP ? 'YANTEKS FİYAT LİSTESİ' : 'YANTEKS EKSİK FİYATLAR') + ' · ' + dt;
-    const hdrs = wP ? ['ÜRÜN ADI', 'DENYE', 'PEŞİN', '90 GÜN', '180 GÜN'] : ['ÜRÜN ADI', 'DENYE', 'BÖLÜM'];
-    const wds = wP ? [35, 15, 16, 16, 16] : [35, 15, 25];
+    let title = 'YANTEKS FİYAT LİSTESİ · ' + dt;
+    if (type === 'none') title = 'YANTEKS EKSİK FİYATLAR · ' + dt;
     
+    let hdrs = [];
+    let wds = [];
+    if (type === 'none') { hdrs = ['ÜRÜN ADI', 'DENYE', 'BÖLÜM']; wds = [35, 15, 25]; }
+    else if (type === 'all') { hdrs = ['ÜRÜN ADI', 'DENYE', 'PEŞİN', '90 GÜN', '180 GÜN']; wds = [35, 15, 16, 16, 16]; }
+    else if (type === 'pesin') { hdrs = ['ÜRÜN ADI', 'DENYE', 'PEŞİN FİYAT']; wds = [35, 15, 16]; }
+    else if (type === '90') { hdrs = ['ÜRÜN ADI', 'DENYE', '90 GÜN FİYAT']; wds = [35, 15, 16]; }
+    else if (type === '180') { hdrs = ['ÜRÜN ADI', 'DENYE', '180 GÜN FİYAT']; wds = [35, 15, 16]; }
+
     setupExcelSheet(sh, title, hdrs, wds);
     
     let curBolum = '';
@@ -1482,20 +1526,34 @@ function PricesView({ data, onRefresh }) {
       
       const c = p.pesin_fiyat || 0;
       const sym = getCurrencySymbol(p.para_birimi, p.bolum_adi);
-      const dataRow = wP
-        ? [p.urun_kodu || '', p.denye || '-', c ? sym + c.toFixed(2) : '-', c ? sym + (c + 0.10).toFixed(2) : '-', c ? sym + (c + 0.20).toFixed(2) : '-']
-        : [p.urun_kodu || '', p.denye || '-', p.bolum_adi || '-'];
-        
-      const aligns = wP 
-        ? [{horizontal:'left'}, {horizontal:'center'}, {horizontal:'right'}, {horizontal:'right'}, {horizontal:'right'}]
-        : [{horizontal:'left'}, {horizontal:'center'}, {horizontal:'left'}];
+      let dataRow = [];
+      let aligns = [];
+
+      if(type === 'none') {
+          dataRow = [p.urun_kodu || '', p.denye || '-', p.bolum_adi || '-'];
+          aligns = [{horizontal:'left'}, {horizontal:'center'}, {horizontal:'left'}];
+      } else if (type === 'all') {
+          dataRow = [p.urun_kodu || '', p.denye || '-', c ? sym + c.toFixed(2) : '-', c ? sym + (c + 0.10).toFixed(2) : '-', c ? sym + (c + 0.20).toFixed(2) : '-'];
+          aligns = [{horizontal:'left'}, {horizontal:'center'}, {horizontal:'right'}, {horizontal:'right'}, {horizontal:'right'}];
+      } else if (type === 'pesin') {
+          dataRow = [p.urun_kodu || '', p.denye || '-', c ? sym + c.toFixed(2) : '-'];
+          aligns = [{horizontal:'left'}, {horizontal:'center'}, {horizontal:'right'}];
+      } else if (type === '90') {
+          dataRow = [p.urun_kodu || '', p.denye || '-', c ? sym + (c + 0.10).toFixed(2) : '-'];
+          aligns = [{horizontal:'left'}, {horizontal:'center'}, {horizontal:'right'}];
+      } else if (type === '180') {
+          dataRow = [p.urun_kodu || '', p.denye || '-', c ? sym + (c + 0.20).toFixed(2) : '-'];
+          aligns = [{horizontal:'left'}, {horizontal:'center'}, {horizontal:'right'}];
+      }
 
       const row = addExcelRow(sh, dataRow, rIdx % 2 === 0, aligns);
       row.getCell(1).font = { bold: true, color: { argb: 'FF1E293B' } };
-      if (wP && c > 0) { 
+      if (type !== 'none' && c > 0) { 
         row.getCell(3).font = { color: { argb: 'FF16A34A' }, bold: true }; 
-        row.getCell(4).font = { color: { argb: 'FF475569' } }; 
-        row.getCell(5).font = { color: { argb: 'FF475569' } }; 
+        if (type === 'all') {
+            row.getCell(4).font = { color: { argb: 'FF475569' } }; 
+            row.getCell(5).font = { color: { argb: 'FF475569' } }; 
+        }
       }
       rIdx++;
     });
@@ -1504,7 +1562,7 @@ function PricesView({ data, onRefresh }) {
     const blob = new Blob([buf], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
     const a = document.createElement('a');
     a.href = URL.createObjectURL(blob);
-    a.download = 'Yanteks_' + (wP ? 'Fiyat_Listesi' : 'Eksik_Fiyatlar') + '_' + dt + '.xlsx';
+    a.download = 'Yanteks_' + (type === 'none' ? 'Eksik_Fiyatlar' : 'Fiyat_Listesi') + '_' + dt + '.xlsx';
     a.click();
   };
 
@@ -1546,16 +1604,16 @@ function PricesView({ data, onRefresh }) {
       const fi = G[c].items.filter(p => {
         if (priceFilter === 'priced' && !p.pesin_fiyat) return false;
         if (priceFilter === 'unpriced' && p.pesin_fiyat) return false;
-        if (q && !(trl(p.urun_kodu || '')).includes(trl(q)) && !(trl(p.denye || '')).includes(trl(q))) return false;
+        if (deferredQ && !(trl(p.urun_kodu || '')).includes(trl(deferredQ)) && !(trl(p.denye || '')).includes(trl(deferredQ))) return false;
         return true;
       });
       
       // Hiyerarşik Sıralama (A-Z)
       fi.sort((a, b) => trl(a.urun_kodu || '').localeCompare(trl(b.urun_kodu || ''), 'tr'));
       
-      if (!fi.length && !(q && trl(c).includes(trl(q)))) return null;
+      if (!fi.length && !(deferredQ && trl(c).includes(trl(deferredQ)))) return null;
       
-      const isO = openCats.has(c) || q || priceFilter !== 'all';
+      const isO = openCats.has(c) || deferredQ || priceFilter !== 'all';
       const missingPrice = fi.filter(p => !p.pesin_fiyat).length;
 
       return (
@@ -1637,7 +1695,7 @@ function PricesView({ data, onRefresh }) {
         </div>
       );
     });
-  }, [G, selIds, busy, editPrice, openCats, q, priceFilter]);
+  }, [G, selIds, busy, editPrice, openCats, deferredQ, priceFilter]);
 
   return(
     <div style={{ display:'flex', flexDirection:'column', gap:14 }}>
@@ -1756,6 +1814,18 @@ function PricesView({ data, onRefresh }) {
           <span style={{ position:'absolute', left:11, top:'50%', transform:'translateY(-50%)', color:C.txt2 }}><IcoSearch size={14}/></span>
           <input placeholder="Ürün kodu veya denye ara…" value={q} onChange={e => setQ(e.target.value)} style={{ ...S.inp, paddingLeft:34 }} />
         </div>
+        
+        {/* Excel İndirme Dropdown */}
+        <div style={{ display:'flex', gap:8, alignItems:'center' }}>
+          <select value={exportType} onChange={e=>setExportType(e.target.value)} style={{...S.inp, width:'auto', padding:'6px 12px', height:'auto'}}>
+            <option value="all">Tüm Vadeler</option>
+            <option value="pesin">Sadece Peşin</option>
+            <option value="90">Sadece 90 Gün</option>
+            <option value="180">Sadece 180 Gün</option>
+            <option value="none">Fiyatsız Çıktı</option>
+          </select>
+          <button onClick={() => exportXL(exportType)} style={{ padding:'6px 13px', borderRadius:8, border:`1px solid ${C.green}`, background:C.greenS, color:C.green, fontWeight:700, fontSize:12, cursor:'pointer', display:'flex', alignItems:'center', gap:4 }}>📊 Excel İndir</button>
+        </div>
       </div>
 
       <div style={{ display:'flex', alignItems:'center', gap:8, flexWrap:'wrap' }}>
@@ -1769,9 +1839,6 @@ function PricesView({ data, onRefresh }) {
             {chip.label} <span style={{ fontSize:11, opacity:.7 }}>({chip.count})</span>
           </button>
         ))}
-        <div style={{ flex:1 }}/>
-        <button onClick={() => exportXL(true)} style={{ padding:'6px 13px', borderRadius:8, border:`1px solid ${C.green}`, background:C.greenS, color:C.green, fontWeight:700, fontSize:11, cursor:'pointer' }}>📊 Fiyatlı Excel</button>
-        <button onClick={() => exportXL(false)} style={{ padding:'6px 13px', borderRadius:8, border:`1px solid ${C.amber}`, background:C.amberS, color:C.amber, fontWeight:700, fontSize:11, cursor:'pointer' }}>⚠️ Fiyatsız Excel</button>
       </div>
       
       {/* Seçim İşlem Çubuğu */}
@@ -1779,7 +1846,7 @@ function PricesView({ data, onRefresh }) {
         <div style={{ display:'flex', alignItems:'center', gap:10, padding:'10px 16px', background:C.greenS, borderRadius:12, border:`1px solid rgba(21,128,61,.2)` }}>
           <span style={{ fontSize:13, fontWeight:700, color:C.green, flex:1 }}>✅ {selIds.size} ürün seçili</span>
           <button onClick={() => setBulkModal(true)} style={{ padding:'6px 13px', borderRadius:8, border:`1px solid #0891B2`, background:'#fff', color:'#0891B2', fontWeight:700, fontSize:11, cursor:'pointer' }}>📈 Toplu Güncelle</button>
-          <button onClick={() => exportXL(true)} style={{ padding:'6px 13px', borderRadius:8, border:`1px solid ${C.green}`, background:'#fff', color:C.green, fontWeight:700, fontSize:11, cursor:'pointer' }}>📊 Excel</button>
+          <button onClick={() => exportXL('all')} style={{ padding:'6px 13px', borderRadius:8, border:`1px solid ${C.green}`, background:'#fff', color:C.green, fontWeight:700, fontSize:11, cursor:'pointer' }}>📊 Excel</button>
           <button onClick={() => setSelIds(new Set())} style={{ padding:'6px 13px', borderRadius:8, border:`1px solid ${C.border2}`, background:'none', color:C.txt2, fontWeight:600, fontSize:11, cursor:'pointer' }}>Temizle</button>
         </div>
       )}
@@ -1902,6 +1969,7 @@ function CostView({data,onRefresh}) {
 // ── 6. TEKLİFLER ─────────────────────────────────────────────────────────
 function OffersView({ data, customers, prices, onRefresh }) {
   const [q, setQ] = useState('');
+  const deferredQ = useDeferredValue(q);
   const [statusFilter, setStatusFilter] = useState('all');
   const [busy, setBusy] = useState(null);
   const [modal, setModal] = useState(null);
@@ -1919,12 +1987,12 @@ function OffersView({ data, customers, prices, onRefresh }) {
   const [impSaving, setImpSaving] = useState(false);
 
   const emptyForm = { 
-    firma_adi: '', urun: '', fiyat: '', durum: 'Teklif Verildi',
+    firma_adi: '', urun: '', base_fiyat: 0, fiyat: '', durum: 'Teklif Verildi',
     teklif_tarihi: new Date().toISOString().slice(0,10), 
-    gecerlilik_tarihi: '', notlar: '', para_birimi: 'USD'
+    gecerlilik_tarihi: '', notlar: '', para_birimi: 'USD', vade: 'Peşin'
   };
   const [form, setForm] = useState(emptyForm);
-  const [multiRows, setMultiRows] = useState([{ urun: '', fiyat: '', para_birimi: 'USD' }]);
+  const [multiRows, setMultiRows] = useState([{ urun: '', base_fiyat: 0, fiyat: '', para_birimi: 'USD', vade: 'Peşin' }]);
 
   const firmalarList = useMemo(() => {
     return [...new Set(customers.map(c => c.firma_adi).filter(Boolean))].sort();
@@ -1949,13 +2017,13 @@ function OffersView({ data, customers, prices, onRefresh }) {
   const filtered = useMemo(() => {
     return data.filter(t => {
       if (statusFilter !== 'all' && t.durum !== statusFilter) return false;
-      if (q) {
-        const Q = trl(q);
+      if (deferredQ) {
+        const Q = trl(deferredQ);
         if (!trl(t.firma_adi||'').includes(Q) && !trl(t.urun||'').includes(Q) && !trl(t.notlar||'').includes(Q)) return false;
       }
       return true;
     });
-  }, [data, statusFilter, q]);
+  }, [data, statusFilter, deferredQ]);
 
   const groupedFirms = useMemo(() => {
     const G = new Map();
@@ -2029,16 +2097,16 @@ function OffersView({ data, customers, prices, onRefresh }) {
 
   const openAdd = (firmaAdi = '') => {
     setForm({ ...emptyForm, firma_adi: firmaAdi });
-    setMultiRows([{ urun:'', fiyat:'', para_birimi: 'USD' }]);
+    setMultiRows([{ urun:'', base_fiyat:0, fiyat:'', para_birimi: 'USD', vade:'Peşin' }]);
     setModal('new');
   };
 
   const openEdit = (t) => {
     setForm({ 
-      firma_adi: t.firma_adi || '', urun: t.urun || '', fiyat: String(t.fiyat || ''),
+      firma_adi: t.firma_adi || '', urun: t.urun || '', base_fiyat: parseFloat(t.fiyat || 0), fiyat: String(t.fiyat || ''),
       durum: t.durum || 'Teklif Verildi', teklif_tarihi: t.teklif_tarihi || '',
       gecerlilik_tarihi: t.gecerlilik_tarihi || '', notlar: t.notlar || '',
-      para_birimi: t.para_birimi || 'USD'
+      para_birimi: t.para_birimi || 'USD', vade: 'Peşin'
     });
     setModal(t);
   };
@@ -2157,12 +2225,12 @@ function OffersView({ data, customers, prices, onRefresh }) {
   const renderedList = useMemo(() => {
     if (groupedFirms.length === 0) {
       return <div style={{ padding:32, textAlign:'center', color:C.txt2, background:C.surface, borderRadius:16, border:`1px solid ${C.border}` }}>
-        {q || statusFilter !== 'all' ? 'Filtreye uyan teklif yok.' : 'Henüz teklif kaydı yok.'}
+        {deferredQ || statusFilter !== 'all' ? 'Filtreye uyan teklif yok.' : 'Henüz teklif kaydı yok.'}
       </div>;
     }
     
     return groupedFirms.map(([firmaAdi, teklifler]) => {
-      const isOpen = openFirms.has(firmaAdi) || q.length > 0;
+      const isOpen = openFirms.has(firmaAdi) || deferredQ.length > 0;
       const onayN = teklifler.filter(t => t.durum === 'Onaylandı').length;
       const teklifN = teklifler.filter(t => t.durum === 'Teklif Verildi').length;
       const retN = teklifler.filter(t => t.durum === 'Onaylanmadı').length;
@@ -2246,14 +2314,29 @@ function OffersView({ data, customers, prices, onRefresh }) {
         </div>
       );
     });
-  }, [groupedFirms, openFirms, q, selIds, busy, statusFilter]);
+  }, [groupedFirms, openFirms, deferredQ, selIds, busy, statusFilter]);
 
   // Urun seçimi için datalist onChange handler
   const handleUrunChange = (val, i) => {
     setMultiRows(p => p.map((x, j) => {
       if (j === i) {
          const match = urunlerList.find(u => u.kodu === val);
-         return match ? { ...x, urun: val, fiyat: match.fiyat, para_birimi: match.para_birimi || 'USD' } : { ...x, urun: val };
+         if (match) {
+            let extra = x.vade === '90 Gün' ? 0.10 : x.vade === '180 Gün' ? 0.20 : 0;
+            return { ...x, urun: val, base_fiyat: match.fiyat, fiyat: (match.fiyat + extra).toFixed(2), para_birimi: match.para_birimi || 'USD' };
+         }
+         return { ...x, urun: val, base_fiyat: 0 };
+      }
+      return x;
+    }));
+  };
+
+  const handleVadeChange = (vadeStr, i) => {
+    setMultiRows(p => p.map((x, j) => {
+      if (j === i) {
+         let extra = vadeStr === '90 Gün' ? 0.10 : vadeStr === '180 Gün' ? 0.20 : 0;
+         let newFiyat = x.base_fiyat > 0 ? (x.base_fiyat + extra).toFixed(2) : x.fiyat;
+         return { ...x, vade: vadeStr, fiyat: newFiyat };
       }
       return x;
     }));
@@ -2341,7 +2424,7 @@ function OffersView({ data, customers, prices, onRefresh }) {
               <div style={{ marginBottom:12 }}>
                 <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:6 }}>
                   <label style={S.lbl}>Ürün / Kalite & Fiyat</label>
-                  <button onClick={() => setMultiRows(r => [...r, { urun:'', fiyat:'', para_birimi:'USD' }])} style={{ fontSize:11, fontWeight:700, color:C.teal, background:C.tealS, border:`1px solid rgba(8,145,178,.2)`, borderRadius:7, padding:'3px 9px', cursor:'pointer', display:'flex', alignItems:'center', gap:3 }}>
+                  <button onClick={() => setMultiRows(r => [...r, { urun:'', base_fiyat:0, fiyat:'', para_birimi:'USD', vade:'Peşin' }])} style={{ fontSize:11, fontWeight:700, color:C.teal, background:C.tealS, border:`1px solid rgba(8,145,178,.2)`, borderRadius:7, padding:'3px 9px', cursor:'pointer', display:'flex', alignItems:'center', gap:3 }}>
                     <IcoPlus size={11}/> Satır Ekle
                   </button>
                 </div>
@@ -2351,8 +2434,13 @@ function OffersView({ data, customers, prices, onRefresh }) {
                       <input list="urunler-datalist" value={r.urun} onChange={e => handleUrunChange(e.target.value, i)} placeholder="Ürün (Yazın veya Seçin)" style={S.inp} />
                     </div>
                     <div style={{display:'flex', flex: '1 1 100%', gap:6}}>
+                      <select value={r.vade} onChange={e => handleVadeChange(e.target.value, i)} style={{...S.inp, padding:'9px 4px', cursor:'pointer', flex: 1}}>
+                         <option value="Peşin">Peşin</option>
+                         <option value="90 Gün">90 Gün</option>
+                         <option value="180 Gün">180 Gün</option>
+                      </select>
                       <input type="number" step="0.01" value={r.fiyat} onChange={e => setMultiRows(p => p.map((x,j) => j===i ? {...x, fiyat: e.target.value} : x))} placeholder="Fiyat" style={{ ...S.inp, flex: 1, textAlign:'right', fontFamily:'monospace' }} />
-                      <select value={r.para_birimi || 'USD'} onChange={e => setMultiRows(p => p.map((x,j) => j===i ? {...x, para_birimi: e.target.value} : x))} style={{...S.inp, width: 80, cursor:'pointer'}}>
+                      <select value={r.para_birimi} onChange={e => setMultiRows(p => p.map((x,j) => j===i ? {...x, para_birimi: e.target.value} : x))} style={{...S.inp, width: 70, padding:'9px 4px', cursor:'pointer'}}>
                          <option value="USD">USD</option>
                          <option value="EUR">EUR</option>
                       </select>
@@ -2369,14 +2457,29 @@ function OffersView({ data, customers, prices, onRefresh }) {
                 <input list="urunler-datalist" value={form.urun} onChange={e => {
                    const val = e.target.value;
                    const match = urunlerList.find(u => u.kodu === val);
-                   setForm(f => match ? { ...f, urun: val, fiyat: match.fiyat, para_birimi: match.para_birimi || 'USD' } : { ...f, urun: val });
+                   if(match) {
+                      let extra = form.vade === '90 Gün' ? 0.10 : form.vade === '180 Gün' ? 0.20 : 0;
+                      setForm(f => ({ ...f, urun: val, base_fiyat: match.fiyat, fiyat: (match.fiyat + extra).toFixed(2), para_birimi: match.para_birimi || 'USD' }));
+                   } else {
+                      setForm(f => ({ ...f, urun: val, base_fiyat: 0 }));
+                   }
                 }} style={S.inp} placeholder="Ürün (Yazın veya Seçin)" />
                 <label style={{ ...S.lbl, marginTop:10 }}>Fiyat & Para Birimi</label>
                 <div style={{ display: 'flex', gap: 8 }}>
+                    <select value={form.vade} onChange={e => {
+                       const newVade = e.target.value;
+                       let extra = newVade === '90 Gün' ? 0.10 : newVade === '180 Gün' ? 0.20 : 0;
+                       let newFiyat = form.base_fiyat > 0 ? (form.base_fiyat + extra).toFixed(2) : form.fiyat;
+                       setForm(f => ({ ...f, vade: newVade, fiyat: newFiyat }));
+                    }} style={{ ...S.inp, flex: 1, cursor: 'pointer' }}>
+                       <option value="Peşin">Peşin</option>
+                       <option value="90 Gün">90 Gün</option>
+                       <option value="180 Gün">180 Gün</option>
+                    </select>
                     <input type="number" step="0.01" value={form.fiyat} onChange={e => setForm(f => ({ ...f, fiyat: e.target.value }))} style={{ ...S.inp, fontFamily:'monospace', flex: 1 }} placeholder="Fiyat" />
-                    <select value={form.para_birimi} onChange={e => setForm(f => ({ ...f, para_birimi: e.target.value }))} style={{ ...S.inp, width: 100, cursor: 'pointer' }}>
-                       <option value="USD">USD ($)</option>
-                       <option value="EUR">EUR (€)</option>
+                    <select value={form.para_birimi} onChange={e => setForm(f => ({ ...f, para_birimi: e.target.value }))} style={{ ...S.inp, width: 80, cursor: 'pointer' }}>
+                       <option value="USD">USD</option>
+                       <option value="EUR">EUR</option>
                     </select>
                 </div>
               </div>
@@ -2506,6 +2609,7 @@ function OffersView({ data, customers, prices, onRefresh }) {
 // ── 7. NOTLARIM ──────────────────────────────────────────────────────
 function NotesView({ data, customers, onRefresh }) {
   const [q, setQ] = useState('');
+  const deferredQ = useDeferredValue(q);
   const [colorFilter, setColorFilter] = useState('all');
   const [tagFilter, setTagFilter] = useState('all');
   const [modal, setModal] = useState(null);
@@ -2523,13 +2627,13 @@ function NotesView({ data, customers, onRefresh }) {
       if (colorFilter !== 'all' && (n.renk || 'default') !== colorFilter) return false;
       const { tags } = parseNoteTags(n.icerik);
       if (tagFilter !== 'all' && !tags.includes(tagFilter)) return false;
-      if (q) {
-        const Q = trl(q);
+      if (deferredQ) {
+        const Q = trl(deferredQ);
         if (!trl(n.icerik || '').includes(Q) && !trl(n.musteri || '').includes(Q)) return false;
       }
       return true;
     }).sort((a, b) => new Date(b.updated_at || b.created_at || 0) - new Date(a.updated_at || a.created_at || 0));
-  }, [data, colorFilter, tagFilter, q]);
+  }, [data, colorFilter, tagFilter, deferredQ]);
 
   const openAdd = () => { setForm(emptyForm); setModal('new'); };
   
@@ -2614,7 +2718,7 @@ function NotesView({ data, customers, onRefresh }) {
     if (filtered.length === 0) {
       return (
         <div style={{ gridColumn: '1/-1', padding: 32, textAlign: 'center', color: C.txt2, background: C.surface, borderRadius: 16, border: `1px solid ${C.border}` }}>
-          {q || colorFilter !== 'all' || tagFilter !== 'all' ? 'Filtreye uyan not yok.' : 'Henüz not eklenmemiş.'}
+          {deferredQ || colorFilter !== 'all' || tagFilter !== 'all' ? 'Filtreye uyan not yok.' : 'Henüz not eklenmemiş.'}
         </div>
       );
     }
