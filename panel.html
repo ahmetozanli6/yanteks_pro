@@ -2167,10 +2167,26 @@ function OffersView({ data, customers, prices, onRefresh }) {
       await wb.xlsx.load(buf);
       const sh = wb.worksheets[0];
       const rows = [];
+      
+      const getExcelVal = (c) => {
+        if (!c || c.value == null) return '';
+        if (typeof c.value === 'object') {
+           if (c.value.result !== undefined) return c.value.result;
+           if (c.value.richText) return c.value.richText.map(rt => rt.text).join('');
+        }
+        return c.value;
+      };
+
       sh.eachRow((row, rn) => {
-        if (rn < 3) return; // Başlıkları atla
-        const urun  = String(row.getCell(1).value || '').trim();
-        const fiyat = parseFloat(row.getCell(3).value) || null;
+        if (rn < 2) return; // 1. satır başlık
+        const urunVal = getExcelVal(row.getCell(1));
+        const urun = String(urunVal).trim();
+        
+        const fiyatVal = getExcelVal(row.getCell(3)); // 3. Sütun (C)
+        let rawFiyat = String(fiyatVal).replace(',', '.').replace(/[^0-9.-]+/g, '');
+        let fiyat = parseFloat(rawFiyat);
+        if (isNaN(fiyat)) fiyat = null;
+        
         if (urun) rows.push({ urun, fiyat });
       });
       setImpRows(rows);
@@ -2188,7 +2204,16 @@ function OffersView({ data, customers, prices, onRefresh }) {
       para_birimi: 'USD',
       updated_at: now, created_at: now
     }));
-    await db.from('fiyat_teklifleri').insert(payload);
+    
+    let res = await db.from('fiyat_teklifleri').insert(payload);
+    if (res.error && res.error.message.includes('para_birimi')) {
+        const safePayload = payload.map(({para_birimi, ...rest}) => ({
+           ...rest, 
+           notlar: `[${para_birimi}]`
+        }));
+        await db.from('fiyat_teklifleri').insert(safePayload);
+    }
+    
     setImpSaving(false); setImpModal(false); setImpFirma(''); setImpRows([]); await onRefresh();
   };
 
@@ -2370,7 +2395,7 @@ function OffersView({ data, customers, prices, onRefresh }) {
             </div>
             <p style={{ fontSize:12, color:C.txt2, marginBottom:14 }}>
               Firma seç, ardından Excel yükle.<br/>
-              <span style={{ fontFamily:'monospace', fontSize:11 }}>A=Ürün Adı · C=Fiyat ($) · 3. satırdan başlar</span>
+              <span style={{ fontFamily:'monospace', fontSize:11 }}>A=Ürün Adı · C=Fiyat ($) · 2. satırdan başlar</span>
             </p>
             <div style={{ marginBottom:12 }}>
               <label style={S.lbl}>Firma *</label>
