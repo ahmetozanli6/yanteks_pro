@@ -274,7 +274,8 @@ function FirmaInput({ value, onChange, firmalar, placeholder }) {
   useEffect(() => {
     const h = e => { if (r.current && !r.current.contains(e.target)) setOp(false); };
     document.addEventListener('mousedown', h);
-    return () => document.removeEventListener('mousedown', h);
+    document.addEventListener('touchstart', h);
+    return () => { document.removeEventListener('mousedown', h); document.removeEventListener('touchstart', h); };
   }, []);
   
   return (
@@ -283,7 +284,7 @@ function FirmaInput({ value, onChange, firmalar, placeholder }) {
       {op && m.length > 0 && (
         <div style={{ position: 'absolute', top: '100%', left: 0, right: 0, zIndex: 200, background: '#fff', border: `1px solid ${C.border2}`, borderRadius: 10, boxShadow: '0 8px 24px rgba(0,0,0,.15)', maxHeight: 220, overflowY: 'auto', marginTop: 4 }}>
           {m.map(f => (
-            <div key={f} onMouseDown={e => { e.preventDefault(); onChange(f); setOp(false) }} style={{ padding: '10px 14px', fontSize: 13, fontWeight: 600, color: C.txt, cursor: 'pointer', borderBottom: `1px solid ${C.border}` }} onMouseEnter={e => e.currentTarget.style.background = C.greenS} onMouseLeave={e => e.currentTarget.style.background = 'transparent'}>
+            <div key={f} onPointerDown={e => { e.preventDefault(); onChange(f); setOp(false) }} style={{ padding: '10px 14px', fontSize: 13, fontWeight: 600, color: C.txt, cursor: 'pointer', borderBottom: `1px solid ${C.border}` }} onMouseEnter={e => e.currentTarget.style.background = C.greenS} onMouseLeave={e => e.currentTarget.style.background = 'transparent'}>
               🏢 {f}
             </div>
           ))}
@@ -293,33 +294,38 @@ function FirmaInput({ value, onChange, firmalar, placeholder }) {
   );
 }
 
-// Akıllı Ürün Arama Inputu (Teklifler modülü için eklendi)
-function UrunInput({ value, onChange, urunler, onSelectProduct, placeholder }) {
-  const [op, setOp] = useState(false);
-  const [tch, setTch] = useState(false);
-  const r = useRef(null);
-  
-  const m = useMemo(() => (!tch || !value) ? urunler.slice(0, 8) : urunler.filter(u => trl(u.kodu).includes(trl(value))).slice(0, 10), [value, urunler, tch]);
-  
-  useEffect(() => {
-    const h = e => { if (r.current && !r.current.contains(e.target)) setOp(false); };
-    document.addEventListener('mousedown', h);
-    return () => document.removeEventListener('mousedown', h);
-  }, []);
-  
+// Akıllı Mobil Odaklı Ürün Seçici
+function UrunSelector({ value, onChange, urunler, onSelectProduct }) {
+  const isCustom = value && !urunler.some(u => u.kodu === value);
+  const [mode, setMode] = useState(isCustom ? 'manual' : 'select');
+
+  if (mode === 'select') {
+    return (
+      <select 
+        value={urunler.some(u=>u.kodu===value) ? value : ""} 
+        onChange={e => {
+          if(e.target.value === '__MANUAL__') {
+            setMode('manual');
+            onChange('');
+          } else {
+            const match = urunler.find(u => u.kodu === e.target.value);
+            if(match && onSelectProduct) onSelectProduct(match);
+            else onChange(e.target.value);
+          }
+        }}
+        style={{...S.inp, cursor:'pointer'}}
+      >
+        <option value="" disabled>-- Listeden Seçin --</option>
+        {urunler.map(u => <option key={u.id} value={u.kodu}>{u.kodu}</option>)}
+        <option value="__MANUAL__">✍️ Manuel Olarak Yaz...</option>
+      </select>
+    );
+  }
+
   return (
-    <div ref={r} style={{ position: 'relative', flex: 1 }}>
-      <input value={value} onChange={e => { onChange(e.target.value); setOp(true); setTch(true) }} onFocus={() => { setOp(true); setTch(true) }} placeholder={placeholder || "Ürün Seç veya Yaz..."} style={S.inp} />
-      {op && m.length > 0 && (
-        <div style={{ position: 'absolute', top: '100%', left: 0, right: 0, zIndex: 200, background: '#fff', border: `1px solid ${C.border2}`, borderRadius: 10, boxShadow: '0 8px 24px rgba(0,0,0,.15)', maxHeight: 220, overflowY: 'auto', marginTop: 4 }}>
-          {m.map(u => (
-            <div key={u.id} onMouseDown={e => { e.preventDefault(); onChange(u.kodu); if(onSelectProduct) onSelectProduct(u); setOp(false); }} style={{ padding: '10px 14px', fontSize: 13, fontWeight: 600, color: C.txt, cursor: 'pointer', borderBottom: `1px solid ${C.border}`, display: 'flex', justifyContent: 'space-between' }} onMouseEnter={e => e.currentTarget.style.background = C.greenS} onMouseLeave={e => e.currentTarget.style.background = 'transparent'}>
-              <span>📦 {u.kodu}</span>
-              {u.fiyat && <span style={{color: C.green}}>{getCurrencySymbol(u.para_birimi)}{u.fiyat}</span>}
-            </div>
-          ))}
-        </div>
-      )}
+    <div style={{display:'flex', gap:6, flex:1}}>
+      <input value={value} onChange={e=>onChange(e.target.value)} placeholder="Ürün girin..." style={{...S.inp, flex:1}} autoFocus />
+      <button type="button" onClick={()=>{setMode('select'); onChange('');}} style={{background:C.page, border:`1px solid ${C.border}`, borderRadius:8, padding:'0 10px', fontSize:14}} title="Listeden Seç">📋</button>
     </div>
   );
 }
@@ -1823,7 +1829,7 @@ function PricesView({ data, onRefresh }) {
         
         {/* Excel İndirme Dropdown */}
         <div style={{ display:'flex', gap:8, alignItems:'center' }}>
-          <select value={exportType} onChange={e=>setExportType(e.target.value)} style={{...S.inp, width:'auto', padding:'6px 12px', height:'auto'}}>
+          <select value={exportType} onChange={e=>setExportType(e.target.value)} style={{...S.inp, width:'auto', padding:'6px 12px', height:'auto', cursor:'pointer'}}>
             <option value="all">Tüm Vadeler</option>
             <option value="pesin">Sadece Peşin</option>
             <option value="90">Sadece 90 Gün</option>
@@ -2164,7 +2170,7 @@ function OffersView({ data, customers, prices, onRefresh }) {
       sh.eachRow((row, rn) => {
         if (rn < 3) return; // Başlıkları atla
         const urun  = String(row.getCell(1).value || '').trim();
-        const fiyat = parseFloat(row.getCell(2).value) || null;
+        const fiyat = parseFloat(row.getCell(3).value) || null;
         if (urun) rows.push({ urun, fiyat });
       });
       setImpRows(rows);
@@ -2364,7 +2370,7 @@ function OffersView({ data, customers, prices, onRefresh }) {
             </div>
             <p style={{ fontSize:12, color:C.txt2, marginBottom:14 }}>
               Firma seç, ardından Excel yükle.<br/>
-              <span style={{ fontFamily:'monospace', fontSize:11 }}>A=Ürün Adı · B=Fiyat ($) · 3. satırdan başlar</span>
+              <span style={{ fontFamily:'monospace', fontSize:11 }}>A=Ürün Adı · C=Fiyat ($) · 3. satırdan başlar</span>
             </p>
             <div style={{ marginBottom:12 }}>
               <label style={S.lbl}>Firma *</label>
@@ -2437,10 +2443,31 @@ function OffersView({ data, customers, prices, onRefresh }) {
                 {multiRows.map((r, i) => (
                   <div key={i} style={{ display:'flex', flexWrap:'wrap', gap:6, marginBottom:6, background:'rgba(0,0,0,0.02)', padding:8, borderRadius:8 }}>
                     <div style={{flex: '1 1 100%', display: 'flex'}}>
-                      <input list="urunler-datalist" value={r.urun} onChange={e => handleUrunChange(e.target.value, i)} placeholder="Ürün (Yazın veya Seçin)" style={S.inp} />
+                      <UrunSelector 
+                        value={r.urun} 
+                        onChange={v => setMultiRows(p => p.map((x,j) => j===i ? {...x, urun: v} : x))} 
+                        urunler={urunlerList}
+                        onSelectProduct={(u) => {
+                          setMultiRows(p => p.map((x,j) => {
+                            if (j !== i) return x;
+                            let extra = x.vade === '90 Gün' ? 0.10 : x.vade === '180 Gün' ? 0.20 : 0;
+                            return { ...x, urun: u.kodu, base_fiyat: u.fiyat, fiyat: (u.fiyat + extra).toFixed(2), para_birimi: u.para_birimi || 'USD' };
+                          }));
+                        }}
+                      />
                     </div>
                     <div style={{display:'flex', flex: '1 1 100%', gap:6}}>
-                      <select value={r.vade} onChange={e => handleVadeChange(e.target.value, i)} style={{...S.inp, padding:'9px 4px', cursor:'pointer', flex: 1}}>
+                      <select value={r.vade} onChange={e => {
+                        const newVade = e.target.value;
+                        setMultiRows(p => p.map((x, j) => {
+                          if (j === i) {
+                             let extra = newVade === '90 Gün' ? 0.10 : newVade === '180 Gün' ? 0.20 : 0;
+                             let newFiyat = x.base_fiyat > 0 ? (x.base_fiyat + extra).toFixed(2) : x.fiyat;
+                             return { ...x, vade: newVade, fiyat: newFiyat };
+                          }
+                          return x;
+                        }));
+                      }} style={{...S.inp, padding:'9px 4px', cursor:'pointer', flex: 1}}>
                          <option value="Peşin">Peşin</option>
                          <option value="90 Gün">90 Gün</option>
                          <option value="180 Gün">180 Gün</option>
@@ -2460,16 +2487,17 @@ function OffersView({ data, customers, prices, onRefresh }) {
             ) : (
               <div style={{ marginBottom:12 }}>
                 <label style={S.lbl}>Ürün / Kalite *</label>
-                <input list="urunler-datalist" value={form.urun} onChange={e => {
-                   const val = e.target.value;
-                   const match = urunlerList.find(u => u.kodu === val);
-                   if(match) {
+                <div style={{display:'flex'}}>
+                  <UrunSelector 
+                    value={form.urun} 
+                    onChange={v => setForm(f => ({ ...f, urun: v }))} 
+                    urunler={urunlerList}
+                    onSelectProduct={u => {
                       let extra = form.vade === '90 Gün' ? 0.10 : form.vade === '180 Gün' ? 0.20 : 0;
-                      setForm(f => ({ ...f, urun: val, base_fiyat: match.fiyat, fiyat: (match.fiyat + extra).toFixed(2), para_birimi: match.para_birimi || 'USD' }));
-                   } else {
-                      setForm(f => ({ ...f, urun: val, base_fiyat: 0 }));
-                   }
-                }} style={S.inp} placeholder="Ürün (Yazın veya Seçin)" />
+                      setForm(f => ({ ...f, urun: u.kodu, base_fiyat: u.fiyat, fiyat: (u.fiyat + extra).toFixed(2), para_birimi: u.para_birimi || 'USD' }));
+                    }}
+                  />
+                </div>
                 <label style={{ ...S.lbl, marginTop:10 }}>Fiyat & Para Birimi</label>
                 <div style={{ display: 'flex', gap: 8 }}>
                     <select value={form.vade} onChange={e => {
