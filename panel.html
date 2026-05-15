@@ -2187,7 +2187,8 @@ function OffersView({ data, customers, prices, onRefresh }) {
         let fiyat = parseFloat(rawFiyat);
         if (isNaN(fiyat)) fiyat = null;
         
-        if (urun) rows.push({ urun, fiyat });
+        // Fiyatı olmayan (null) satırları çekmiyoruz!
+        if (urun && fiyat !== null) rows.push({ urun, fiyat });
       });
       setImpRows(rows);
     } catch(e) { alert('Excel okunamadı: ' + e.message); }
@@ -2395,7 +2396,7 @@ function OffersView({ data, customers, prices, onRefresh }) {
             </div>
             <p style={{ fontSize:12, color:C.txt2, marginBottom:14 }}>
               Firma seç, ardından Excel yükle.<br/>
-              <span style={{ fontFamily:'monospace', fontSize:11 }}>A=Ürün Adı · C=Fiyat ($) · 2. satırdan başlar</span>
+              <span style={{ fontFamily:'monospace', fontSize:11 }}>A=Ürün Adı · C=Fiyat ($) · 3. satırdan başlar</span>
             </p>
             <div style={{ marginBottom:12 }}>
               <label style={S.lbl}>Firma *</label>
