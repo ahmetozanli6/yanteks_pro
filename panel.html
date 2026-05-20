@@ -294,38 +294,37 @@ function FirmaInput({ value, onChange, firmalar, placeholder }) {
   );
 }
 
-// Akıllı Mobil Odaklı Ürün Seçici
-function UrunSelector({ value, onChange, urunler, onSelectProduct }) {
-  const isCustom = value && !urunler.some(u => u.kodu === value);
-  const [mode, setMode] = useState(isCustom ? 'manual' : 'select');
-
-  if (mode === 'select') {
-    return (
-      <select 
-        value={urunler.some(u=>u.kodu===value) ? value : ""} 
-        onChange={e => {
-          if(e.target.value === '__MANUAL__') {
-            setMode('manual');
-            onChange('');
-          } else {
-            const match = urunler.find(u => u.kodu === e.target.value);
-            if(match && onSelectProduct) onSelectProduct(match);
-            else onChange(e.target.value);
-          }
-        }}
-        style={{...S.inp, cursor:'pointer'}}
-      >
-        <option value="" disabled>-- Listeden Seçin --</option>
-        {urunler.map(u => <option key={u.id} value={u.kodu}>{u.kodu}</option>)}
-        <option value="__MANUAL__">✍️ Manuel Olarak Yaz...</option>
-      </select>
-    );
-  }
-
+// Akıllı Ürün Arama Inputu (Teklifler modülü için eklendi)
+function UrunInput({ value, onChange, urunler, onSelectProduct, placeholder }) {
+  const [op, setOp] = useState(false);
+  const [tch, setTch] = useState(false);
+  const r = useRef(null);
+  
+  const m = useMemo(() => (!tch || !value) ? urunler.slice(0, 50) : urunler.filter(u => trl(u.kodu).includes(trl(value))).slice(0, 50), [value, urunler, tch]);
+  
+  useEffect(() => {
+    const h = e => { if (r.current && !r.current.contains(e.target)) setOp(false); };
+    document.addEventListener('mousedown', h);
+    document.addEventListener('touchstart', h);
+    return () => { document.removeEventListener('mousedown', h); document.removeEventListener('touchstart', h); };
+  }, []);
+  
   return (
-    <div style={{display:'flex', gap:6, flex:1}}>
-      <input value={value} onChange={e=>onChange(e.target.value)} placeholder="Ürün girin..." style={{...S.inp, flex:1}} autoFocus />
-      <button type="button" onClick={()=>{setMode('select'); onChange('');}} style={{background:C.page, border:`1px solid ${C.border}`, borderRadius:8, padding:'0 10px', fontSize:14}} title="Listeden Seç">📋</button>
+    <div ref={r} style={{ position: 'relative', flex: 1 }}>
+      <input value={value} onChange={e => { onChange(e.target.value); setOp(true); setTch(true) }} onFocus={() => { setOp(true); setTch(true) }} placeholder={placeholder || "Ürün ara veya yaz..."} style={{...S.inp, paddingRight: 32}} />
+      <div style={{ position: 'absolute', right: 12, top: '50%', transform: 'translateY(-50%)', pointerEvents: 'none', color: C.txt2 }}>
+        <IcoSearch size={14} />
+      </div>
+      {op && m.length > 0 && (
+        <div style={{ position: 'absolute', top: '100%', left: 0, right: 0, zIndex: 200, background: '#fff', border: `1px solid ${C.border2}`, borderRadius: 10, boxShadow: '0 8px 24px rgba(0,0,0,.15)', maxHeight: 220, overflowY: 'auto', marginTop: 4 }}>
+          {m.map(u => (
+            <div key={u.id} onPointerDown={e => { e.preventDefault(); onChange(u.kodu); if(onSelectProduct) onSelectProduct(u); setOp(false); }} style={{ padding: '10px 14px', fontSize: 13, fontWeight: 600, color: C.txt, cursor: 'pointer', borderBottom: `1px solid ${C.border}`, display: 'flex', justifyContent: 'space-between' }} onMouseEnter={e => e.currentTarget.style.background = C.greenS} onMouseLeave={e => e.currentTarget.style.background = 'transparent'}>
+              <span>📦 {u.kodu}</span>
+              {u.fiyat && <span style={{color: C.green}}>{getCurrencySymbol(u.para_birimi)}{u.fiyat}</span>}
+            </div>
+          ))}
+        </div>
+      )}
     </div>
   );
 }
@@ -1378,16 +1377,18 @@ function PricesView({ data, onRefresh }) {
     const sorted = [...(data || [])].sort((a, b) => (a.id || 0) - (b.id || 0));
     
     sorted.forEach(p => {
-      if (p.bolum_adi) {
-        const b = p.bolum_adi;
-        if (!map[b]) map[b] = { hdr: null, items: [] };
-        map[b].items.push(p);
+      let cleanBolum = (p.bolum_adi || '').replace(/\[USD\]/g, '').replace(/\[EUR\]/g, '').trim();
+
+      if (cleanBolum) {
+        if (!map[cleanBolum]) map[cleanBolum] = { hdr: null, items: [] };
+        map[cleanBolum].items.push(p);
       } 
       else if (!p.denye && !p.bolum_adi) {
         cur = p.urun_kodu || 'Bölümsüz';
         if (!map[cur]) map[cur] = { hdr: p, items: [] };
       } 
       else {
+        cur = 'Bölümsüz';
         if (!map[cur]) map[cur] = { hdr: null, items: [] };
         map[cur].items.push(p);
       }
@@ -1407,12 +1408,15 @@ function PricesView({ data, onRefresh }) {
     if (!form.urun_kodu.trim()) return;
     setSaving(true);
     const pf = parseFloat(form.pesin_fiyat) || 0;
+    
+    let cleanBolumAdi = form.bolum_adi.replace(/\[USD\]/g, '').replace(/\[EUR\]/g, '').trim().toUpperCase();
+
     const pay = { 
       urun_kodu: form.urun_kodu.trim().toUpperCase(), 
       denye: form.denye.trim() || null, 
       pesin_fiyat: pf, 
       vadeli_fiyat: pf > 0 ? parseFloat((pf + 0.10).toFixed(4)) : 0, 
-      bolum_adi: form.bolum_adi.trim().toUpperCase() || null,
+      bolum_adi: cleanBolumAdi || null,
       para_birimi: form.para_birimi,
       updated_at: new Date().toISOString()
     };
@@ -1445,10 +1449,13 @@ function PricesView({ data, onRefresh }) {
     if (isNaN(nv)) { setEditPrice(null); return; }
     setBusy(p.id);
     
+    let cleanBolumAdi = (p.bolum_adi || '').replace(/\[USD\]/g, '').replace(/\[EUR\]/g, '').trim();
+
     let res = await db.from('fiyatlar').update({ 
       pesin_fiyat: nv, 
       vadeli_fiyat: parseFloat((nv + 0.10).toFixed(4)),
       para_birimi: editPrice.cur,
+      bolum_adi: cleanBolumAdi || null,
       updated_at: new Date().toISOString()
     }).eq('id', p.id);
     
@@ -1456,7 +1463,7 @@ function PricesView({ data, onRefresh }) {
         res = await db.from('fiyatlar').update({ 
           pesin_fiyat: nv, 
           vadeli_fiyat: parseFloat((nv + 0.10).toFixed(4)),
-          bolum_adi: (p.bolum_adi||'').replace(/\[.*?\]/g,'').trim() + ` [${editPrice.cur}]`,
+          bolum_adi: (cleanBolumAdi ? cleanBolumAdi + ' ' : '') + `[${editPrice.cur}]`,
           updated_at: new Date().toISOString()
         }).eq('id', p.id);
     }
@@ -1501,15 +1508,16 @@ function PricesView({ data, onRefresh }) {
   };
 
   const exportXL = async (type) => {
-    const items = selIds.size > 0 ? allItems.filter(p => selIds.has(p.id)) : allItems.filter(p => type !== 'none' ? p.pesin_fiyat > 0 : !p.pesin_fiyat);
+    const wP = type !== 'none';
+    const items = selIds.size > 0 ? allItems.filter(p => selIds.has(p.id)) : allItems.filter(p => wP ? p.pesin_fiyat > 0 : !p.pesin_fiyat);
     if (!items.length) return;
     
     const dt = safeFileDate();
     const wb = new ExcelJS.Workbook();
-    const sh = wb.addWorksheet(type === 'none' ? 'Eksik Fiyatlar' : 'Fiyat Listesi', { views: [{ state: 'frozen', ySplit: 2 }] });
+    const sh = wb.addWorksheet(wP ? 'Fiyat Listesi' : 'Eksik Fiyatlar', { views: [{ state: 'frozen', ySplit: 2 }] });
     
     let title = 'YANTEKS FİYAT LİSTESİ · ' + dt;
-    if (type === 'none') title = 'YANTEKS EKSİK FİYATLAR · ' + dt;
+    if (!wP) title = 'YANTEKS EKSİK FİYATLAR · ' + dt;
     
     let hdrs = [];
     let wds = [];
@@ -1524,9 +1532,10 @@ function PricesView({ data, onRefresh }) {
     let curBolum = '';
     let rIdx = 0;
     items.forEach(p => {
-      if (p.bolum_adi && p.bolum_adi !== curBolum) {
-        curBolum = p.bolum_adi;
-        rIdx = 0; // Kategori değiştiğinde zebra efektini sıfırla
+      let cleanBolum = (p.bolum_adi || '').replace(/\[USD\]/g, '').replace(/\[EUR\]/g, '').trim();
+      if (cleanBolum && cleanBolum !== curBolum) {
+        curBolum = cleanBolum;
+        rIdx = 0; 
         const r = sh.addRow(['📂 ' + curBolum]);
         sh.mergeCells(r.number, 1, r.number, hdrs.length);
         r.getCell(1).fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFF1F5F9' } };
@@ -1560,7 +1569,7 @@ function PricesView({ data, onRefresh }) {
 
       const row = addExcelRow(sh, dataRow, rIdx % 2 === 0, aligns);
       row.getCell(1).font = { bold: true, color: { argb: 'FF1E293B' } };
-      if (type !== 'none' && c > 0) { 
+      if (wP && c > 0) { 
         row.getCell(3).font = { color: { argb: 'FF16A34A' }, bold: true }; 
         if (type === 'all') {
             row.getCell(4).font = { color: { argb: 'FF475569' } }; 
@@ -1693,7 +1702,7 @@ function PricesView({ data, onRefresh }) {
                         <td style={{ ...S.td, textAlign:'center', fontSize:11, color:C.txt2, fontFamily:'monospace' }}>{tm || '—'}</td>
                         <td style={{ ...S.td, textAlign:'center' }}>
                           <div style={{ display:'flex', justifyContent:'center', gap:4 }}>
-                            <button onClick={() => { setForm({ urun_kodu:p.urun_kodu || '', denye:p.denye || '', pesin_fiyat:p.pesin_fiyat || '', bolum_adi:p.bolum_adi || '', para_birimi:p.para_birimi || 'USD' }); setModal(p); }} style={{ background:'none', border:'none', cursor:'pointer', color:C.border2, padding:4, borderRadius:6 }} onMouseEnter={e => e.currentTarget.style.color = C.teal} onMouseLeave={e => e.currentTarget.style.color = C.border2}><IcoEdit size={13}/></button>
+                            <button onClick={() => { setForm({ urun_kodu:p.urun_kodu || '', denye:p.denye || '', pesin_fiyat:p.pesin_fiyat || '', bolum_adi:(p.bolum_adi || '').replace(/\[USD\]/g, '').replace(/\[EUR\]/g, '').trim(), para_birimi:p.para_birimi || ((p.bolum_adi || '').includes('[EUR]') ? 'EUR' : 'USD') }); setModal(p); }} style={{ background:'none', border:'none', cursor:'pointer', color:C.border2, padding:4, borderRadius:6 }} onMouseEnter={e => e.currentTarget.style.color = C.teal} onMouseLeave={e => e.currentTarget.style.color = C.border2}><IcoEdit size={13}/></button>
                             <button onClick={() => delItem(p)} style={{ background:'none', border:'none', cursor:'pointer', color:C.border2, padding:4, borderRadius:6 }} onMouseEnter={e => e.currentTarget.style.color = C.red} onMouseLeave={e => e.currentTarget.style.color = C.border2}><IcoTrash size={13}/></button>
                           </div>
                         </td>
@@ -2469,7 +2478,7 @@ function OffersView({ data, customers, prices, onRefresh }) {
                 {multiRows.map((r, i) => (
                   <div key={i} style={{ display:'flex', flexWrap:'wrap', gap:6, marginBottom:6, background:'rgba(0,0,0,0.02)', padding:8, borderRadius:8 }}>
                     <div style={{flex: '1 1 100%', display: 'flex'}}>
-                      <UrunSelector 
+                      <UrunInput 
                         value={r.urun} 
                         onChange={v => setMultiRows(p => p.map((x,j) => j===i ? {...x, urun: v} : x))} 
                         urunler={urunlerList}
@@ -2514,7 +2523,7 @@ function OffersView({ data, customers, prices, onRefresh }) {
               <div style={{ marginBottom:12 }}>
                 <label style={S.lbl}>Ürün / Kalite *</label>
                 <div style={{display:'flex'}}>
-                  <UrunSelector 
+                  <UrunInput 
                     value={form.urun} 
                     onChange={v => setForm(f => ({ ...f, urun: v }))} 
                     urunler={urunlerList}
