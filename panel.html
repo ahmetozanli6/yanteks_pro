@@ -294,6 +294,42 @@ function FirmaInput({ value, onChange, firmalar, placeholder }) {
   );
 }
 
+// Akıllı Mobil Odaklı Ürün Seçici
+function UrunSelector({ value, onChange, urunler, onSelectProduct }) {
+  const isCustom = value && !urunler.some(u => u.kodu === value);
+  const [mode, setMode] = useState(isCustom ? 'manual' : 'select');
+
+  if (mode === 'select') {
+    return (
+      <select 
+        value={urunler.some(u=>u.kodu===value) ? value : ""} 
+        onChange={e => {
+          if(e.target.value === '__MANUAL__') {
+            setMode('manual');
+            onChange('');
+          } else {
+            const match = urunler.find(u => u.kodu === e.target.value);
+            if(match && onSelectProduct) onSelectProduct(match);
+            else onChange(e.target.value);
+          }
+        }}
+        style={{...S.inp, cursor:'pointer'}}
+      >
+        <option value="" disabled>-- Listeden Seçin --</option>
+        {urunler.map(u => <option key={u.id} value={u.kodu}>{u.kodu}</option>)}
+        <option value="__MANUAL__">✍️ Manuel Olarak Yaz...</option>
+      </select>
+    );
+  }
+
+  return (
+    <div style={{display:'flex', gap:6, flex:1}}>
+      <input value={value} onChange={e=>onChange(e.target.value)} placeholder="Ürün girin..." style={{...S.inp, flex:1}} autoFocus />
+      <button type="button" onClick={()=>{setMode('select'); onChange('');}} style={{background:C.page, border:`1px solid ${C.border}`, borderRadius:8, padding:'0 10px', fontSize:14}} title="Listeden Seç">📋</button>
+    </div>
+  );
+}
+
 // Akıllı Ürün Arama Inputu (Teklifler modülü için eklendi)
 function UrunInput({ value, onChange, urunler, onSelectProduct, placeholder }) {
   const [op, setOp] = useState(false);
@@ -1380,15 +1416,15 @@ function PricesView({ data, onRefresh }) {
       let cleanBolum = (p.bolum_adi || '').replace(/\[USD\]/g, '').replace(/\[EUR\]/g, '').trim();
 
       if (cleanBolum) {
-        if (!map[cleanBolum]) map[cleanBolum] = { hdr: null, items: [] };
-        map[cleanBolum].items.push(p);
+        cur = cleanBolum; // cur güncelleniyor ki alttaki items da buraya düşsün
+        if (!map[cur]) map[cur] = { hdr: null, items: [] };
+        map[cur].items.push(p);
       } 
       else if (!p.denye && !p.bolum_adi) {
         cur = p.urun_kodu || 'Bölümsüz';
         if (!map[cur]) map[cur] = { hdr: p, items: [] };
       } 
       else {
-        cur = 'Bölümsüz';
         if (!map[cur]) map[cur] = { hdr: null, items: [] };
         map[cur].items.push(p);
       }
@@ -1569,7 +1605,7 @@ function PricesView({ data, onRefresh }) {
 
       const row = addExcelRow(sh, dataRow, rIdx % 2 === 0, aligns);
       row.getCell(1).font = { bold: true, color: { argb: 'FF1E293B' } };
-      if (wP && c > 0) { 
+      if (type !== 'none' && c > 0) { 
         row.getCell(3).font = { color: { argb: 'FF16A34A' }, bold: true }; 
         if (type === 'all') {
             row.getCell(4).font = { color: { argb: 'FF475569' } }; 
@@ -2478,7 +2514,7 @@ function OffersView({ data, customers, prices, onRefresh }) {
                 {multiRows.map((r, i) => (
                   <div key={i} style={{ display:'flex', flexWrap:'wrap', gap:6, marginBottom:6, background:'rgba(0,0,0,0.02)', padding:8, borderRadius:8 }}>
                     <div style={{flex: '1 1 100%', display: 'flex'}}>
-                      <UrunInput 
+                      <UrunSelector 
                         value={r.urun} 
                         onChange={v => setMultiRows(p => p.map((x,j) => j===i ? {...x, urun: v} : x))} 
                         urunler={urunlerList}
@@ -2523,7 +2559,7 @@ function OffersView({ data, customers, prices, onRefresh }) {
               <div style={{ marginBottom:12 }}>
                 <label style={S.lbl}>Ürün / Kalite *</label>
                 <div style={{display:'flex'}}>
-                  <UrunInput 
+                  <UrunSelector 
                     value={form.urun} 
                     onChange={v => setForm(f => ({ ...f, urun: v }))} 
                     urunler={urunlerList}
