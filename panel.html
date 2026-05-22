@@ -365,16 +365,6 @@ function UrunInput({ value, onChange, urunler, onSelectProduct, placeholder }) {
   );
 }
 
-// Maliyet Modülü için Özel Input
-function CostInput({ label, val, onChange, step = 0.001 }) {
-  return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
-      <label style={S.lbl}>{label}</label>
-      <input type="number" step={step} value={val} onChange={e => onChange(e.target.value)} style={{ ...S.inp, fontFamily: 'monospace', padding: '6px 10px' }} />
-    </div>
-  );
-}
-
 // ── 1. ÖZET PANEL ────────────────────────────────────────────────────
 function DashboardView({ customers, samples, prices, notes, offers, onNav }) {
   return (
@@ -1917,7 +1907,7 @@ function PricesView({ data, onRefresh }) {
 }
 
 // ── 5. MALİYET ───────────────────────────────────────────────────────
-function CostView({data,onRefresh}) {
+function CostView({data, onRefresh}) {
   const [i,setI]=useState({iplik:'',denye:75,hiz:25,ig:256,hmd:0.964,fire:3,person:10,maas:25000,makine:4,kw:180,kwtuk:2.8,amort:0.005,bobin:0.01,paket:0.005,kar:20});
   const [r,setR]=useState(null),[sv,setSv]=useState(false),[tb,setTb]=useState('c');
   const [hA,setHa]=useState([]);
@@ -1926,9 +1916,17 @@ function CostView({data,onRefresh}) {
   
   const cal=useCallback(()=>{
     const {denye,hiz,ig,hmd,fire,person,maas,makine,kw,kwtuk,amort,bobin,paket,kar}=i;
-    const g=hiz*60*24*(denye/9000)*ig/1000, ay=g*28, hm=hmd*(1+fire/100), is=ay>0?(person*maas*1.1/makine)/ay:0, en=g>0?(kwtuk*24/g)*kw:0, dg=amort+bobin+paket, n=hm+is+en+dg, s=n*(1+kar/100);
+    const g=hiz*60*24*(denye/9000)*ig/1000; 
+    const ay=g*28; 
+    const hm=hmd*(1+fire/100); 
+    const is=ay>0?(person*maas*1.1/makine)/ay:0; 
+    const en=g>0?(kwtuk*24/g)*kw:0; 
+    const dg=amort+bobin+paket; 
+    const n=hm+is+en+dg; 
+    const s=n*(1+kar/100);
     return {g,ay,hm,is,en,dg,n,s};
   },[i]);
+  
   useEffect(()=>{setR(cal())},[i,cal]);
 
   const loadHam = useCallback(async () => {
@@ -1939,7 +1937,15 @@ function CostView({data,onRefresh}) {
   useEffect(() => { loadHam(); }, [loadHam]);
   
   const sV=(k,v)=>setI(p=>({...p,[k]:parseFloat(v)||0}));
-  const saveH=async()=>{setSv(true);await db.from('erp_gecmis').insert([{tarih:new Date().toISOString(),iplik:i.iplik,denye:i.denye,hiz:i.hiz,gunluk:r.g,iscilik:r.is,enerji:r.en,net:r.n,satis:r.s,hammadde:r.hm,kar:i.kar}]);setSv(false);await onRefresh();setTb('h');};
+  
+  const saveH=async()=>{
+    if(!i.iplik.trim()) return;
+    setSv(true);
+    await db.from('erp_gecmis').insert([{tarih:new Date().toISOString(),iplik:i.iplik,denye:i.denye,hiz:i.hiz,gunluk:r.g,iscilik:r.is,enerji:r.en,net:r.n,satis:r.s,hammadde:r.hm,kar:i.kar}]);
+    setSv(false);
+    await onRefresh();
+    setTb('h');
+  };
   
   const saveHam = async () => {
     if(!hF.ad.trim()) return;
@@ -1958,65 +1964,203 @@ function CostView({data,onRefresh}) {
     await loadHam();
   };
 
+  const CInput = ({ label, k, step = 0.001, type="number" }) => (
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+      <label style={{ fontSize: 11, fontWeight: 700, color: C.txt2 }}>{label}</label>
+      <input 
+        type={type} 
+        step={step} 
+        value={i[k]} 
+        onChange={e => sV(k, e.target.value)} 
+        style={{ ...S.inp, fontFamily: type==='number'?'monospace':'inherit', padding: '10px 14px', fontSize: 14, background: '#FAFAFA' }} 
+      />
+    </div>
+  );
+
+  const Section = ({ title, icon, children }) => (
+    <div style={{ background: C.surface, borderRadius: 20, border: `1px solid ${C.border}`, padding: '24px', display: 'flex', flexDirection: 'column', gap: 16, boxShadow: '0 4px 12px rgba(0,0,0,0.02)' }}>
+      <h3 style={{ fontSize: 16, fontWeight: 800, color: C.txt, display: 'flex', alignItems: 'center', gap: 8, borderBottom: `1px solid ${C.border}`, paddingBottom: 12 }}>
+        <span style={{ fontSize: 20 }}>{icon}</span> {title}
+      </h3>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: 16 }}>
+        {children}
+      </div>
+    </div>
+  );
+
   return(
-    <div style={{display:'flex',flexDirection:'column',gap:14}}>
-      <div style={{display:'flex',justifyContent:'space-between'}}><div><h2 style={{fontSize:22,fontWeight:900}}>Maliyet Hesaplama</h2></div><div style={{display:'flex',gap:6}}><button onClick={()=>setTb('c')} style={{...S.bCan,borderColor:tb==='c'?C.teal:C.border,color:tb==='c'?C.teal:C.txt2}}>🧮 Hesap</button><button onClick={()=>setTb('h')} style={{...S.bCan,borderColor:tb==='h'?C.teal:C.border,color:tb==='h'?C.teal:C.txt2}}>📋 Geçmiş</button><button onClick={()=>setTb('m')} style={{...S.bCan,borderColor:tb==='m'?C.teal:C.border,color:tb==='m'?C.teal:C.txt2}}>🏭 Hammadde</button></div></div>
+    <div style={{display:'flex',flexDirection:'column',gap:20}}>
+      {/* BAŞLIK & TABS */}
+      <div style={{display:'flex',justifyContent:'space-between',alignItems:'flex-end',flexWrap:'wrap',gap:16}}>
+        <div>
+          <h2 style={{fontSize:24,fontWeight:900,color:C.txt}}>Maliyet Hesaplama</h2>
+          <p style={{fontSize:13,color:C.txt2,marginTop:4}}>İplik maliyet analizi ve fiyatlandırma aracı</p>
+        </div>
+        <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+          <button onClick={() => setTb('c')} style={{ padding: '8px 16px', borderRadius: 12, border: `2px solid ${tb === 'c' ? C.teal : C.border}`, background: tb === 'c' ? C.tealS : C.surface, color: tb === 'c' ? C.teal : C.txt2, fontWeight: 700, fontSize: 13, transition: 'all 0.2s', cursor: 'pointer' }}>🧮 Hesap Makinesi</button>
+          <button onClick={() => setTb('h')} style={{ padding: '8px 16px', borderRadius: 12, border: `2px solid ${tb === 'h' ? C.teal : C.border}`, background: tb === 'h' ? C.tealS : C.surface, color: tb === 'h' ? C.teal : C.txt2, fontWeight: 700, fontSize: 13, transition: 'all 0.2s', cursor: 'pointer' }}>📋 Geçmiş Kayıtlar</button>
+          <button onClick={() => setTb('m')} style={{ padding: '8px 16px', borderRadius: 12, border: `2px solid ${tb === 'm' ? C.teal : C.border}`, background: tb === 'm' ? C.tealS : C.surface, color: tb === 'm' ? C.teal : C.txt2, fontWeight: 700, fontSize: 13, transition: 'all 0.2s', cursor: 'pointer' }}>🏭 Hammadde</button>
+        </div>
+      </div>
+
+      {/* HESAPLAMA (CALCULATOR) SEKMSİ */}
       {tb==='c'&&r&&(
-        <div style={{display:'flex',flexDirection:'column',gap:12}}>
-          <input value={i.iplik} onChange={e=>setI(p=>({...p,iplik:e.target.value}))} placeholder="İplik Adı" style={S.inp}/>
-          <div style={{display:'grid',gridTemplateColumns:'repeat(auto-fill,minmax(130px,1fr))',gap:10,background:C.page,padding:14,borderRadius:12}}>
-            <CostInput label="Denye" step={1} val={i.denye} onChange={v=>sV('denye',v)} />
-            <CostInput label="Hız(m/dk)" step={1} val={i.hiz} onChange={v=>sV('hiz',v)} />
-            <CostInput label="İğ" step={1} val={i.ig} onChange={v=>sV('ig',v)} />
-          </div>
-          <div style={{display:'grid',gridTemplateColumns:'repeat(auto-fill,minmax(130px,1fr))',gap:10,background:C.page,padding:14,borderRadius:12}}>
-            <CostInput label="HMD Fiyat($)" val={i.hmd} onChange={v=>sV('hmd',v)} />
-            <CostInput label="Fire(%)" step={0.1} val={i.fire} onChange={v=>sV('fire',v)} />
-          </div>
-          <div style={{display:'grid',gridTemplateColumns:'repeat(auto-fill,minmax(130px,1fr))',gap:10,background:C.page,padding:14,borderRadius:12}}>
-            <CostInput label="Çalışan" step={1} val={i.person} onChange={v=>sV('person',v)} />
-            <CostInput label="Maaş(₺)" step={100} val={i.maas} onChange={v=>sV('maas',v)} />
-            <CostInput label="Makine" step={1} val={i.makine} onChange={v=>sV('makine',v)} />
-            <CostInput label="kW" step={1} val={i.kw} onChange={v=>sV('kw',v)} />
-            <CostInput label="kWh(₺)" step={0.1} val={i.kwtuk} onChange={v=>sV('kwtuk',v)} />
-            <CostInput label="Amort($)" val={i.amort} onChange={v=>sV('amort',v)} />
-            <CostInput label="Bobin($)" val={i.bobin} onChange={v=>sV('bobin',v)} />
-            <CostInput label="Paket($)" val={i.paket} onChange={v=>sV('paket',v)} />
-          </div>
-          <div style={{display:'flex',alignItems:'center',gap:10}}><label style={S.lbl}>Kâr Marjı (%)</label><input type="number" step="0.5" value={i.kar} onChange={e=>sV('kar',e.target.value)} style={{...S.inp,width:90}}/></div>
+        <div style={{display:'flex',flexDirection:'column',gap:20}}>
           
-          <div id="printArea" style={{background:'linear-gradient(135deg,#0F172A,#1E2D3D)',borderRadius:18,padding:24,color:'#fff', position:'relative'}}>
-            <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',textAlign:'center',marginBottom:20}}><div><p style={{fontSize:11,color:'rgba(255,255,255,.5)'}}>NET MALİYET</p><p style={{fontSize:42,fontWeight:900,color:'#38BDF8',fontFamily:'monospace'}}>${r.n.toFixed(4)}</p></div><div><p style={{fontSize:11,color:'rgba(255,255,255,.5)'}}>SATIŞ FİYATI</p><p style={{fontSize:42,fontWeight:900,color:'#4ADE80',fontFamily:'monospace'}}>${r.s.toFixed(4)}</p></div></div>
-            <div style={{display:'flex',justifyContent:'space-between',borderTop:'1px solid rgba(255,255,255,.1)',paddingTop:14}}>
-              <div style={{display:'flex',gap:16}}><div><span style={{fontSize:10,color:'rgba(255,255,255,.5)'}}>Günlük: </span><span style={{fontFamily:'monospace',fontWeight:700}}>{r.g.toFixed(2)} kg</span></div></div>
+          <Section title="Ürün & Makine Bilgileri" icon="⚙️">
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+              <label style={{ fontSize: 11, fontWeight: 700, color: C.txt2 }}>İPLİK ADI *</label>
+              <input type="text" value={i.iplik} onChange={e => setI(p => ({...p, iplik: e.target.value}))} placeholder="Örn: 75/36 FDY" style={{ ...S.inp, padding: '10px 14px', fontSize: 14, background: '#FAFAFA' }} />
+            </div>
+            <CInput label="DENYE" k="denye" step={1} />
+            <CInput label="HIZ (M/DK)" k="hiz" step={1} />
+            <CInput label="İĞ SAYISI" k="ig" step={1} />
+          </Section>
+
+          <Section title="Hammadde & Fire" icon="📦">
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+              <label style={{ fontSize: 11, fontWeight: 700, color: C.txt2 }}>KAYITLI HAMMADDELER</label>
+              <select value={i.hmd} onChange={e => sV('hmd', e.target.value)} style={{ ...S.inp, padding: '10px 14px', fontSize: 14, cursor: 'pointer', background: '#FAFAFA' }}>
+                <option value={i.hmd}>Seç veya Manuel Gir (${i.hmd})</option>
+                {hA.map(h => <option key={h.id} value={h.fiyat}>{h.ad} (${h.fiyat})</option>)}
+              </select>
+            </div>
+            <CInput label="HMD FİYAT ($)" k="hmd" />
+            <CInput label="FİRE (%)" k="fire" step={0.1} />
+          </Section>
+
+          <Section title="İşçilik & Enerji" icon="⚡">
+            <CInput label="ÇALIŞAN SAYISI" k="person" step={1} />
+            <CInput label="MAAŞ (₺)" k="maas" step={100} />
+            <CInput label="MAKİNE SAYISI" k="makine" step={1} />
+            <CInput label="MAKİNE GÜCÜ (KW)" k="kw" step={1} />
+            <CInput label="KWH FİYATI (₺)" k="kwtuk" step={0.1} />
+          </Section>
+
+          <Section title="Ek Giderler & Kâr" icon="💰">
+            <CInput label="AMORTİSMAN ($)" k="amort" />
+            <CInput label="BOBİN ($)" k="bobin" />
+            <CInput label="PAKETLEME ($)" k="paket" />
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+              <label style={{ fontSize: 11, fontWeight: 700, color: C.green }}>KÂR MARJI (%)</label>
+              <input type="number" step="0.5" value={i.kar} onChange={e => sV('kar', e.target.value)} style={{ ...S.inp, padding: '10px 14px', fontSize: 15, fontWeight: 800, color: C.green, background: C.greenS, borderColor: 'rgba(21,128,61,0.2)' }} />
+            </div>
+          </Section>
+          
+          {/* ÇIKTI KARTI */}
+          <div id="printArea" style={{background:'linear-gradient(135deg,#0F172A,#1E2D3D)',borderRadius:24,padding:32,color:'#fff', position:'relative', overflow:'hidden', boxShadow:'0 20px 40px rgba(0,0,0,0.15)'}}>
+            <div style={{ position: 'absolute', top: -50, right: -50, width: 200, height: 200, background: 'radial-gradient(circle, rgba(56,189,248,0.1) 0%, transparent 70%)', borderRadius: '50%' }} />
+            <div style={{ position: 'absolute', bottom: -50, left: -50, width: 200, height: 200, background: 'radial-gradient(circle, rgba(74,222,128,0.1) 0%, transparent 70%)', borderRadius: '50%' }} />
+            
+            <div style={{display:'grid',gridTemplateColumns:'repeat(auto-fit, minmax(200px, 1fr))',gap:24,textAlign:'center',marginBottom:30, position:'relative', zIndex:1}}>
+              <div style={{background:'rgba(255,255,255,0.05)',padding:'24px 20px',borderRadius:20,border:'1px solid rgba(255,255,255,0.1)'}}>
+                <p style={{fontSize:12,color:'rgba(255,255,255,0.6)',fontWeight:700,letterSpacing:'0.1em',marginBottom:8}}>NET MALİYET</p>
+                <p style={{fontSize:42,fontWeight:900,color:'#38BDF8',fontFamily:'monospace',lineHeight:1}}>${r.n.toFixed(4)}</p>
+              </div>
+              <div style={{background:'rgba(255,255,255,0.05)',padding:'24px 20px',borderRadius:20,border:'1px solid rgba(255,255,255,0.1)'}}>
+                <p style={{fontSize:12,color:'rgba(255,255,255,0.6)',fontWeight:700,letterSpacing:'0.1em',marginBottom:8}}>SATIŞ FİYATI</p>
+                <p style={{fontSize:42,fontWeight:900,color:'#4ADE80',fontFamily:'monospace',lineHeight:1}}>${r.s.toFixed(4)}</p>
+              </div>
+            </div>
+
+            <div style={{ position:'relative', zIndex:1, marginBottom: 24 }}>
+              <p style={{fontSize:12,color:'rgba(255,255,255,0.8)',fontWeight:700,marginBottom:10}}>MALİYET DAĞILIMI</p>
+              <div style={{height:14,display:'flex',borderRadius:8,overflow:'hidden',border:`1px solid rgba(255,255,255,0.1)`,background:'rgba(0,0,0,0.3)'}}>
+                <div style={{width:`${(r.hm/r.n)*100}%`,background:'#38BDF8'}} title="Hammadde" />
+                <div style={{width:`${(r.is/r.n)*100}%`,background:'#F59E0B'}} title="İşçilik" />
+                <div style={{width:`${(r.en/r.n)*100}%`,background:'#10B981'}} title="Enerji" />
+                <div style={{width:`${(r.dg/r.n)*100}%`,background:'#8B5CF6'}} title="Diğer" />
+              </div>
+              <div style={{display:'flex',justifyContent:'space-between',fontSize:12,color:'rgba(255,255,255,0.7)',marginTop:12,flexWrap:'wrap',gap:12,fontWeight:600}}>
+                <span style={{display:'flex',alignItems:'center',gap:6}}><span style={{width:10,height:10,borderRadius:'50%',background:'#38BDF8'}}></span>HMD: ${r.hm.toFixed(4)}</span>
+                <span style={{display:'flex',alignItems:'center',gap:6}}><span style={{width:10,height:10,borderRadius:'50%',background:'#F59E0B'}}></span>İŞÇ: ${r.is.toFixed(4)}</span>
+                <span style={{display:'flex',alignItems:'center',gap:6}}><span style={{width:10,height:10,borderRadius:'50%',background:'#10B981'}}></span>ENJ: ${r.en.toFixed(4)}</span>
+                <span style={{display:'flex',alignItems:'center',gap:6}}><span style={{width:10,height:10,borderRadius:'50%',background:'#8B5CF6'}}></span>EK: ${r.dg.toFixed(4)}</span>
+              </div>
+            </div>
+
+            <div style={{display:'flex',justifyContent:'space-between',alignItems:'center',borderTop:'1px solid rgba(255,255,255,0.1)',paddingTop:20,flexWrap:'wrap',gap:16,position:'relative',zIndex:1}}>
+              <div style={{display:'flex',alignItems:'center',gap:12,background:'rgba(255,255,255,0.1)',padding:'12px 18px',borderRadius:12}}>
+                <IcoRefresh size={20} color="#94A3B8" />
+                <div>
+                  <span style={{fontSize:11,color:'rgba(255,255,255,0.6)',display:'block',fontWeight:600}}>Tahmini Günlük Üretim</span>
+                  <span style={{fontFamily:'monospace',fontWeight:800,fontSize:16}}>{r.g.toFixed(2)} kg</span>
+                </div>
+              </div>
               <div style={{display:'flex', gap:10}} className="no-print">
-                <button onClick={()=>window.print()} style={{...S.bSav,background:C.amber,width:'auto'}}>📄 Yazdır / PDF</button>
-                <button onClick={saveH} disabled={sv} style={{...S.bSav,background:C.navActive,width:'auto'}}>Geçmişe Kaydet</button>
+                <button onClick={()=>window.print()} style={{...S.bSav,background:'rgba(255,255,255,0.1)',color:'#fff',width:'auto',padding:'12px 20px',border:'1px solid rgba(255,255,255,0.2)'}}>📄 Çıktı Al</button>
+                <button onClick={saveH} disabled={sv || !i.iplik.trim()} style={{...S.bSav,background:C.teal,width:'auto',padding:'12px 20px',opacity:(sv||!i.iplik.trim())?0.5:1}}>💾 Geçmişe Kaydet</button>
               </div>
             </div>
           </div>
         </div>
       )}
+
+      {/* GEÇMİŞ SEKMSİ */}
       {tb==='h'&&(
         <div className="table-responsive" style={S.card}>
-          <table style={{width:'100%',borderCollapse:'collapse',fontSize:12,whiteSpace:'nowrap',minWidth:600}}>
-            <thead><tr><th style={S.th}>İplik</th><th style={S.th}>Denye</th><th style={S.th}>Günlük</th><th style={S.th}>Net ($)</th><th style={S.th}>Satış ($)</th><th style={S.th}>Tarih</th></tr></thead>
+          <div style={{ padding: '16px 20px', borderBottom: `1px solid ${C.border}`, background: '#FAFAFA', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <h3 style={{ fontSize: 16, fontWeight: 800, color: C.txt }}>Geçmiş Hesaplamalar</h3>
+            <span style={{ fontSize: 12, color: C.txt2, fontWeight: 600 }}>Son {visCount} Kayıt</span>
+          </div>
+          <table style={{width:'100%',borderCollapse:'collapse',fontSize:13,whiteSpace:'nowrap',minWidth:600}}>
+            <thead><tr><th style={S.th}>İplik</th><th style={S.th}>Denye</th><th style={S.th}>Günlük</th><th style={S.th}>Net Maliyet</th><th style={S.th}>Satış</th><th style={S.th}>Tarih</th></tr></thead>
             <tbody>
-              {data.slice(0, visCount).map(r=><tr key={r.id} className="hov-row"><td style={{...S.td,fontWeight:700}}>{r.iplik||'—'}</td><td style={S.td}>{r.denye}</td><td style={S.td}>{r.gunluk?.toFixed(2)}</td><td style={{...S.td,color:C.teal,fontWeight:900}}>${r.net?.toFixed(4)}</td><td style={{...S.td,color:C.green,fontWeight:900}}>${r.satis?.toFixed(4)}</td><td style={{...S.td,color:C.txt2}}>{fmtDate(r.tarih)}</td></tr>)}
+              {data.slice(0, visCount).map(r=><tr key={r.id} className="hov-row">
+                <td style={{...S.td,fontWeight:800,color:C.txt}}>{r.iplik||'—'}</td>
+                <td style={S.td}><span style={{ background:C.tealS, color:C.teal, padding:'3px 8px', borderRadius:6, fontSize:11, fontWeight:700, fontFamily:'monospace' }}>{r.denye}</span></td>
+                <td style={{...S.td,fontFamily:'monospace'}}>{r.gunluk?.toFixed(2)} kg</td>
+                <td style={{...S.td,color:C.teal,fontWeight:900,fontFamily:'monospace',fontSize:14}}>${r.net?.toFixed(4)}</td>
+                <td style={{...S.td,color:C.green,fontWeight:900,fontFamily:'monospace',fontSize:14}}>${r.satis?.toFixed(4)}</td>
+                <td style={{...S.td,color:C.txt2,fontSize:12}}>{fmtDate(r.tarih)}</td>
+              </tr>)}
+              {data.length === 0 && <tr><td colSpan="6" style={{ padding: 30, textAlign: 'center', color: C.txt2 }}>Kayıt bulunamadı.</td></tr>}
             </tbody>
           </table>
           {visCount < data.length && (
-             <div style={{padding:'10px'}}>
-               <button onClick={()=>setVisCount(v=>v+20)} style={{...S.bCan, width:'100%'}}>⬇️ Daha Fazla Göster</button>
+             <div style={{padding:'12px 20px', background: '#FAFAFA', borderTop: `1px solid ${C.border}`}}>
+               <button onClick={()=>setVisCount(v=>v+20)} style={{...S.bCan, width:'100%', background: '#fff'}}>⬇️ Daha Fazla Göster</button>
              </div>
           )}
         </div>
       )}
+
+      {/* HAMMADDE SEKMSİ */}
       {tb==='m'&&(
         <div>
-          {hM&&<div onClick={e=>e.target===e.currentTarget&&setHm(null)} style={S.mOv}><div className="mBx-mob" style={{...S.mBx,maxWidth:350}}><div style={{display:'flex',justifyContent:'space-between',marginBottom:16}}><h3 style={{fontSize:17,fontWeight:800}}>Hammadde</h3><button onClick={()=>setHm(null)} style={{background:'none',border:'none',cursor:'pointer'}}><IcoX/></button></div><div style={{marginBottom:12}}><label style={S.lbl}>Ad</label><input value={hF.ad} onChange={e=>setHf(x=>({...x,ad:e.target.value}))} style={S.inp}/></div><div style={{marginBottom:12}}><label style={S.lbl}>Fiyat ($)</label><input type="number" step="0.01" value={hF.fiyat} onChange={e=>setHf(x=>({...x,fiyat:e.target.value}))} style={S.inp}/></div><button onClick={saveHam} style={{...S.bSav,background:C.green,width:'100%'}}>Kaydet</button></div></div>}
-          <div style={{display:'flex',justifyContent:'flex-end',marginBottom:10}}><button onClick={()=>{setHf({ad:'',fiyat:''});setHm('new')}} style={{...S.bSav,background:C.navActive,width:'auto'}}>+ Ekle</button></div>
-          <div style={S.card}><table style={{width:'100%',borderCollapse:'collapse',fontSize:13}}><thead><tr><th style={S.th}>Ad</th><th style={S.th}>Fiyat ($)</th><th style={S.th}>İşlem</th></tr></thead><tbody>{hA.map(h=><tr key={h.id} className="hov-row"><td style={{...S.td,fontWeight:700}}>{h.ad}</td><td style={{...S.td,fontFamily:'monospace',color:C.green}}>${h.fiyat}</td><td style={S.td}><button onClick={()=>{setHf(h);setHm(h)}} style={{background:'none',border:'none',cursor:'pointer',marginRight:8}}><IcoEdit size={14}/></button><button onClick={() => delHam(h)} style={{background:'none',border:'none',color:C.red,cursor:'pointer'}}><IcoTrash size={14}/></button></td></tr>)}</tbody></table></div>
+          {hM&&<div onClick={e=>e.target===e.currentTarget&&setHm(null)} style={S.mOv}>
+            <div className="mBx-mob" style={{...S.mBx,maxWidth:380}}>
+              <div style={{display:'flex',justifyContent:'space-between',marginBottom:20}}>
+                <h3 style={{fontSize:18,fontWeight:900,color:C.txt}}>🏭 Hammadde</h3>
+                <button onClick={()=>setHm(null)} style={{background:'none',border:'none',cursor:'pointer',color:C.txt2}}><IcoX/></button>
+              </div>
+              <div style={{marginBottom:16}}><label style={S.lbl}>Hammadde Adı *</label><input value={hF.ad} onChange={e=>setHf(x=>({...x,ad:e.target.value}))} placeholder="Örn: Cips" style={S.inp}/></div>
+              <div style={{marginBottom:24}}><label style={S.lbl}>Birim Fiyat ($) *</label><input type="number" step="0.01" value={hF.fiyat} onChange={e=>setHf(x=>({...x,fiyat:e.target.value}))} placeholder="0.964" style={{...S.inp,fontFamily:'monospace'}}/></div>
+              <button onClick={saveHam} disabled={!hF.ad.trim()} style={{...S.bSav,background:C.green,width:'100%',padding:'12px',opacity:!hF.ad.trim()?0.5:1}}>💾 Kaydet</button>
+            </div>
+          </div>}
+
+          <div style={{display:'flex',justifyContent:'space-between',alignItems:'center',marginBottom:16}}>
+            <p style={{fontSize:13,color:C.txt2,fontWeight:600}}>Hammadde fiyatlarını güncelleyerek hesaplamaları hızlandırın.</p>
+            <button onClick={()=>{setHf({ad:'',fiyat:''});setHm('new')}} style={{...S.bSav,background:C.navActive,width:'auto',padding:'8px 16px',display:'flex',alignItems:'center',gap:6}}><IcoPlus size={16}/> Hammadde Ekle</button>
+          </div>
+          
+          <div style={S.card}>
+            <table style={{width:'100%',borderCollapse:'collapse',fontSize:13}}>
+              <thead><tr><th style={S.th}>Hammadde Adı</th><th style={S.th}>Fiyat ($)</th><th style={{...S.th,textAlign:'center'}}>İşlem</th></tr></thead>
+              <tbody>
+                {hA.map(h=><tr key={h.id} className="hov-row">
+                  <td style={{...S.td,fontWeight:800,color:C.txt}}>{h.ad}</td>
+                  <td style={{...S.td,fontFamily:'monospace',color:C.green,fontWeight:800,fontSize:14}}>${h.fiyat}</td>
+                  <td style={{...S.td,textAlign:'center'}}>
+                    <button onClick={()=>{setHf(h);setHm(h)}} style={{background:'none',border:'none',cursor:'pointer',color:C.border2,marginRight:12}} onMouseEnter={e=>e.currentTarget.style.color=C.teal} onMouseLeave={e=>e.currentTarget.style.color=C.border2}><IcoEdit size={16}/></button>
+                    <button onClick={() => delHam(h)} style={{background:'none',border:'none',cursor:'pointer',color:C.border2}} onMouseEnter={e=>e.currentTarget.style.color=C.red} onMouseLeave={e=>e.currentTarget.style.color=C.border2}><IcoTrash size={16}/></button>
+                  </td>
+                </tr>)}
+                {hA.length === 0 && <tr><td colSpan="3" style={{ padding: 30, textAlign: 'center', color: C.txt2 }}>Henüz hammadde eklenmemiş.</td></tr>}
+              </tbody>
+            </table>
+          </div>
         </div>
       )}
     </div>
